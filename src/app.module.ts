@@ -19,11 +19,11 @@ import { AuthModule } from './auth/auth/auth.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: '162.241.60.177',
+      host: 'localhost',
       port: 3306,
-      username: 'vuelveal_rest2',
-      password: 'V#s7EtE)z.74',
-      database: 'vuelveal_restaurant',
+      username: 'root',
+      password: 'siQA8Ew(wbaGEs',
+      database: 'rest',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
