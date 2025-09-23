@@ -18,6 +18,6 @@ async function bootstrap() {
     })
   );
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
-  await app.listen(3000);
+ await app.listen(3000, '0.0.0.0');
 }
 bootstrap();
