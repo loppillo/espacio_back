@@ -21,7 +21,7 @@ import { AuthModule } from './auth/auth/auth.module';
       type: 'mysql',
       host: 'localhost',
       port: 3306,
-      username: 'root',
+      username: 'usuario_node',
       password: 'siQA8Ew(wbaGEs',
       database: 'rest',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
