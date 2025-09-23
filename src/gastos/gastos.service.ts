@@ -5,7 +5,7 @@ import { Gasto } from './entities/gasto.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, getManager } from 'typeorm';
 import { Order } from 'src/orders/entities/order.entity';
-import { Cron, CronExpression } from '@nestjs/schedule';
+
 
 export enum Frecuencia {
   DIARIO = 'diario',
@@ -261,7 +261,7 @@ async getBalanceDiario(fecha: string): Promise<{
 }
 
 
- @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+/* @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async generarGastosRecurrentes() {
     const hoy = new Date();
     const diaSemana = hoy.getDay();
@@ -282,7 +282,7 @@ async getBalanceDiario(fecha: string): Promise<{
       }
     }
   }
-
+*/
   private async crearGasto(g: Gasto) {
     await this.expenseRepository.save({
       ...g,
