@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Query, ParseIntPipe, Put, BadRequestException } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -11,6 +11,48 @@ import { ProductDto } from './dto/productDTO.dto';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+@Put(':id')
+@UseInterceptors(
+  FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
+      },
+    }),
+  }),
+)
+async updateProduct(
+  @Param('id', ParseIntPipe) id: number,
+  @Body() updateProductDto: UpdateProductDto,
+  @UploadedFile() file?: Express.Multer.File,
+) {
+  let imagePath: string | undefined;
+
+  if (file) {
+    // Guardamos solo la ruta relativa
+    imagePath = `/uploads/${file.filename}`;
+  }
+
+  const product = await this.productsService.updateImage(id, updateProductDto, imagePath);
+
+  // Evitar errores si no hay imagen
+  const imageUrl = product.imageUrl
+    ? product.imageUrl.startsWith('http')
+      ? product.imageUrl + `?t=${Date.now()}`
+      : `https://espacioboulevard.com${product.imageUrl}?t=${Date.now()}`
+    : 'https://espacioboulevard.com/uploads/default-image.png';
+
+  return {
+    ...product,
+    imageUrl,
+  };
+}
+
+
+
 
  @Get('buscar')
 buscarProductos(
@@ -29,24 +71,7 @@ buscarProductos(
 
 
 
-  @Post('crear')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
-        },
-      }),
-    }),
-  )
-  async create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
-    if (file) {
-      createProductDto.imageUrl = `/uploads/${file.filename}`;
-    }
-    return this.productsService.create(createProductDto);
-  }
+
 
   @Post()
   @UseInterceptors(FileInterceptor('image', {
@@ -91,10 +116,7 @@ buscarProductos(
     return this.productsService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productsService.update(+id, updateProductDto);
-  }
+
 
   @Delete(':id')
   remove(@Param('id') id: string) {
@@ -102,6 +124,52 @@ buscarProductos(
   }
 
 
+ @Post('crear')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
+        },
+      }),
+    }),
+  )
+  async create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
+    if (file) {
+      // Guardar solo ruta relativa
+      createProductDto.imageUrl = `/uploads/${file.filename}`;
+    }
+
+    const product = await this.productsService.create(createProductDto);
+
+    // Devolver URL completa al frontend
+    return {
+      ...product,
+      imageUrl: product.imageUrl ? `https://espacioboulevard.com${product.imageUrl}` : null,
+    };
+  }
+
+  @Patch('update/:id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateProductDto: UpdateProductDto,
+  ) {
+    const product = await this.productsService.update(id, updateProductDto);
+
+    return {
+      ...product,
+      imageUrl: product.imageUrl ? `https://espacioboulevard.com${product.imageUrl}` : null,
+    };
+  }
+
+  
+
+
 }
+
+
+
 
 

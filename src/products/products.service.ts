@@ -29,26 +29,43 @@ export class ProductsService {
 
 
 
- async create(createProductDto: CreateProductDto) {
-  const category = await this.categoryRepository.findOneBy({
-    id: createProductDto.categoryId,
-  });
+ // products.service.ts
+async create(createProductDto: CreateProductDto) {
+    const category = await this.categoryRepository.findOneBy({ id: createProductDto.categoryId });
+    if (!category) throw new NotFoundException('Categoría no encontrada');
 
-  if (!category) {
-    throw new NotFoundException('Categoría no encontrada');
+    const product = this.proRepository.create({
+      ...createProductDto,
+      category,
+    });
+   
+    return await this.proRepository.save(product);
   }
+async update(id: number, updateProductDto: UpdateProductDto) {
+  const product = await this.proRepository.findOne({ where: { id } });
+  if (!product) throw new NotFoundException(`Producto con id ${id} no encontrado`);
 
-  const newProduct = this.proRepository.create({
-    name: createProductDto.name,
-    description: createProductDto.description,
-    price: createProductDto.price,
-    imageUrl: createProductDto.imageUrl,
-    category: category, // Aquí asignas el objeto Category
-  });
-
-  return await this.proRepository.save(newProduct);
+  this.proRepository.merge(product, updateProductDto);
+  return await this.proRepository.save(product); // 🔥 aquí devuelve la entidad
 }
 
+async updateImage( id: number,
+  updateProductDto: UpdateProductDto,
+  imagePath?: string,
+) {
+  const product = await this.proRepository.findOne({ where: { id } });
+  if (!product) throw new NotFoundException(`Producto con id ${id} no encontrado`);
+
+  // Actualizar campos
+  Object.assign(product, updateProductDto);
+
+  // Actualizar imagen si hay archivo
+  if (imagePath) {
+    product.imageUrl = imagePath;
+  }
+
+  return await this.proRepository.save(product);
+}
 
   async findAll(page: number = 1, limit: number = 10): Promise<PaginationDto<ProductDto>> {
     // Validar que page y limit sean números enteros positivos
@@ -77,7 +94,7 @@ export class ProductsService {
           description,
           price,
           imageUrl: imageUrl
-            ? `http://localhost:3000/${imageUrl.replace(/^\/+/, '')}`
+            ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
             : null,
           category,
         };
@@ -93,7 +110,7 @@ export class ProductsService {
   page = 1,
   limit = 10,
 ): Promise<{ data: ProductDto[]; total: number; currentPage: number }> {
-  const baseUrl = 'http://localhost:3000';
+  const baseUrl = 'https://espacioboulevard.com';
 
   const where: any = {};
 
@@ -136,10 +153,6 @@ export class ProductsService {
 
   async findOne(id: number) {
     return await this.proRepository.findOneBy({id}); 
-  }
-
-  async update(id: number, updateProductDto: UpdateProductDto) {
-    return await this.proRepository.update(id,updateProductDto);
   }
 
   async remove(id: number) {
