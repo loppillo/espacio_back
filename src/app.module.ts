@@ -23,7 +23,7 @@ import { AuthModule } from './auth/auth/auth.module';
       port: 3306,
       username: 'usuario_node',
       password: 'siQA8Ew(wbaGEs',
-      database: 'rest',
+      database: 'pub_app',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
