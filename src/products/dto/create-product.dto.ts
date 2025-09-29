@@ -14,7 +14,8 @@ export class CreateProductDto {
     price: number;
 
 
-    imageUrl?: string;
+    @IsOptional()
+  imageUrl?: string;
     
     @IsOptional()
     categoryId?:number;
