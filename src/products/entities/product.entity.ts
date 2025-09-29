@@ -17,7 +17,7 @@ export class Product {
   @Column('text')
   description: string;
 
-  @Column('decimal')
+  @Column('int')
   price: number;
 
   

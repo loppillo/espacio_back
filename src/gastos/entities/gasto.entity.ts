@@ -15,7 +15,7 @@ export class Gasto {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('int')
   amount: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
