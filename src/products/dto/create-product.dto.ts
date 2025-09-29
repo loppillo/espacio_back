@@ -1,4 +1,5 @@
-import { IsDecimal, IsOptional, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsDecimal, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateProductDto {
     [x: string]: any;
@@ -10,7 +11,8 @@ export class CreateProductDto {
     @IsString()
     description: string;
 
-    @IsString()
+   @Type(() => Number)
+   @IsNumber()
     price: number;
 
 
