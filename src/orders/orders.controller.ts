@@ -72,5 +72,17 @@ async obtenerVentasPorDia(@Query('fecha') fecha: string) {
 }
 
 
+@Get('mesas/:mesaId/productos')
+  async getProductosPorMesa(@Param('mesaId') mesaId: number) {
+    return this.ordersService.getProductosPorMesa(+mesaId);
+  }
+
+  @Delete(':orderId/productos/:productId')
+  async eliminarProducto(
+    @Param('orderId') orderId: number,
+    @Param('productId') productId: number,
+  ) {
+    return this.ordersService.eliminarProducto(+orderId, +productId);
+  }
 
 }

@@ -162,6 +162,41 @@ async remove(id: number) {
   return this.orderRepository.save(orden);
 }
 
+async getProductosPorMesa(mesaId: number): Promise<any[]> {
+    // Traer todas las órdenes activas de la mesa con sus productos
+    const orders = await this.orderRepository.find({
+      where: { mesa: { id: mesaId }, estado: 'activo' },
+      relations: ['products'],
+    });
+
+    if (!orders.length) {
+      throw new NotFoundException('No se encontraron órdenes para esta mesa');
+    }
+
+    // Combinar todos los productos, agregando el orderId para eliminar después
+    const productos = orders.flatMap(order =>
+      order.products.map(p => ({ ...p, orderId: order.id })),
+    );
+
+    return productos;
+  }
+
+  // Eliminar un producto de una orden específica
+  async eliminarProducto(orderId: number, productId: number): Promise<{ message: string }> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['products'],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Orden no encontrada');
+    }
+
+    order.products = order.products.filter(p => p.id !== +productId);
+    await this.orderRepository.save(order);
+
+    return { message: 'Producto eliminado correctamente' };
+  }
 
 }
 

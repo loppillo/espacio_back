@@ -94,4 +94,6 @@ async marcarPedidoPagado(@Param('id') mesaId: number) {
   ): Promise<Order[]> {
     return this.mesaService.getPedidosActuales(id, numeroVenta);
   }
+
+
 }
