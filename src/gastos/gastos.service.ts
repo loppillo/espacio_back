@@ -142,14 +142,16 @@ async getBalanceAnual() {
 async getBalancePorAnio(anio?: number) {
   const entityManager = this.dataSource.manager;
 
-  const whereFechaIngresos = anio
-    ? `WHERE YEAR(createdAt) = ${anio} AND status = 'vendido'`
-    : `WHERE status = 'vendido'`;
+  // Filtros dinámicos según si llega o no el año
+  const whereIngresos = anio
+    ? `WHERE YEAR(createdAt) = ${anio} AND (status = 'vendido' OR status = 'pagado')`
+    : `WHERE (status = 'vendido' OR status = 'pagado')`;
 
-  const whereFechaEgresos = anio
-    ? `WHERE type = 'egreso' AND YEAR(createdAt) = ${anio}`
+  const whereEgresos = anio
+    ? `WHERE YEAR(createdAt) = ${anio} AND type = 'egreso'`
     : `WHERE type = 'egreso'`;
 
+  // Query de ingresos (Orders)
   const ingresosQuery = `
     SELECT 
       YEAR(createdAt) AS anio,
@@ -157,10 +159,11 @@ async getBalancePorAnio(anio?: number) {
       SUM(propina) AS propinas,
       0 AS egresos
     FROM orders
-    ${whereFechaIngresos}
+    ${whereIngresos}
     GROUP BY YEAR(createdAt)
   `;
 
+  // Query de egresos (Expenses/Gastos)
   const egresosQuery = `
     SELECT 
       YEAR(createdAt) AS anio,
@@ -168,28 +171,38 @@ async getBalancePorAnio(anio?: number) {
       0 AS propinas,
       SUM(amount) AS egresos
     FROM expenses
-    ${whereFechaEgresos}
+    ${whereEgresos}
     GROUP BY YEAR(createdAt)
   `;
 
+  // Ejecutar en paralelo
   const [ingresos, egresos] = await Promise.all([
     entityManager.query(ingresosQuery),
     entityManager.query(egresosQuery),
   ]);
 
+  // Combinar resultados
   const resultadoMap = new Map<number, any>();
 
   for (const row of [...ingresos, ...egresos]) {
     const anio = row.anio;
     if (!resultadoMap.has(anio)) {
-      resultadoMap.set(anio, { anio, ingresos: 0, egresos: 0, propinas: 0 });
+      resultadoMap.set(anio, { 
+        anio, 
+        ingresos: 0, 
+        egresos: 0, 
+        propinas: 0,
+        balance: 0
+      });
     }
     const current = resultadoMap.get(anio);
     current.ingresos += Number(row.ingresos);
     current.egresos += Number(row.egresos);
     current.propinas += Number(row.propinas);
+    current.balance = current.ingresos - current.egresos;
   }
 
+  // Ordenado por año ascendente
   return Array.from(resultadoMap.values()).sort((a, b) => a.anio - b.anio);
 }
 
