@@ -142,68 +142,48 @@ async getBalanceAnual() {
 async getBalancePorAnio(anio?: number) {
   const entityManager = this.dataSource.manager;
 
-  // Filtros dinámicos según si llega o no el año
-  const whereIngresos = anio
-    ? `WHERE YEAR(createdAt) = ${anio} AND (status = 'vendido' OR status = 'pagado')`
-    : `WHERE (status = 'vendido' OR status = 'pagado')`;
+  const filtroOrders = anio
+    ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'pagado')`
+    : `WHERE (o.status = 'vendido' OR o.status = 'pagado')`;
 
-  const whereEgresos = anio
-    ? `WHERE YEAR(createdAt) = ${anio} AND type = 'egreso'`
-    : `WHERE type = 'egreso'`;
+  const filtroExpenses = anio
+    ? `WHERE YEAR(e.createdAt) = ${anio} AND e.type = 'egreso'`
+    : `WHERE e.type = 'egreso'`;
 
-  // Query de ingresos (Orders)
-  const ingresosQuery = `
-    SELECT 
-      YEAR(createdAt) AS anio,
-      SUM(total) AS ingresos,
-      SUM(propina) AS propinas,
-      0 AS egresos
-    FROM orders
-    ${whereIngresos}
-    GROUP BY YEAR(createdAt)
+  const query = `
+    SELECT anio,
+           SUM(ingresos) AS ingresos,
+           SUM(propinas) AS propinas,
+           SUM(egresos) AS egresos,
+           (SUM(ingresos) - SUM(egresos)) AS balance
+    FROM (
+      -- ingresos (orders)
+      SELECT 
+        YEAR(o.createdAt) AS anio,
+        SUM(o.total) AS ingresos,
+        SUM(o.propina) AS propinas,
+        0 AS egresos
+      FROM orders o
+      ${filtroOrders}
+      GROUP BY YEAR(o.createdAt)
+
+      UNION ALL
+
+      -- egresos (expenses)
+      SELECT 
+        YEAR(e.createdAt) AS anio,
+        0 AS ingresos,
+        0 AS propinas,
+        SUM(e.amount) AS egresos
+      FROM expenses e
+      ${filtroExpenses}
+      GROUP BY YEAR(e.createdAt)
+    ) resumen
+    GROUP BY anio
+    ORDER BY anio ASC
   `;
 
-  // Query de egresos (Expenses/Gastos)
-  const egresosQuery = `
-    SELECT 
-      YEAR(createdAt) AS anio,
-      0 AS ingresos,
-      0 AS propinas,
-      SUM(amount) AS egresos
-    FROM expenses
-    ${whereEgresos}
-    GROUP BY YEAR(createdAt)
-  `;
-
-  // Ejecutar en paralelo
-  const [ingresos, egresos] = await Promise.all([
-    entityManager.query(ingresosQuery),
-    entityManager.query(egresosQuery),
-  ]);
-
-  // Combinar resultados
-  const resultadoMap = new Map<number, any>();
-
-  for (const row of [...ingresos, ...egresos]) {
-    const anio = row.anio;
-    if (!resultadoMap.has(anio)) {
-      resultadoMap.set(anio, { 
-        anio, 
-        ingresos: 0, 
-        egresos: 0, 
-        propinas: 0,
-        balance: 0
-      });
-    }
-    const current = resultadoMap.get(anio);
-    current.ingresos += Number(row.ingresos);
-    current.egresos += Number(row.egresos);
-    current.propinas += Number(row.propinas);
-    current.balance = current.ingresos - current.egresos;
-  }
-
-  // Ordenado por año ascendente
-  return Array.from(resultadoMap.values()).sort((a, b) => a.anio - b.anio);
+  return await entityManager.query(query);
 }
 
 
