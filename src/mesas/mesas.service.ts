@@ -66,17 +66,22 @@ async findOne(id: number): Promise<Mesa> {
     return await this.mesaRepository.save(mesa);
   }
 
-  async obtenerDetalleMesa(id: number): Promise<Mesa> {
-    const mesa = await this.mesaRepository.findOne({
-      where: { id },
-      relations: ['orders'],  // cargar los orders relacionados
-    });
+ async obtenerDetalleMesa(id: number): Promise<Mesa> {
+  const mesa = await this.mesaRepository.findOne({
+    where: { id },
+    relations: [
+      'orders',
+      'orders.orderProducts',
+      'orders.orderProducts.product', // para traer los detalles de cada producto
+    ],
+  });
 
-    if (!mesa) {
-      throw new NotFoundException(`Mesa con id ${id} no encontrada`);
-    }
-    return mesa;
+  if (!mesa) {
+    throw new NotFoundException(`Mesa con id ${id} no encontrada`);
   }
+
+  return mesa;
+}
 
 async marcarPedidoPagado(mesaId: number): Promise<Mesa> {
     const mesa = await this.mesaRepository.findOne({
