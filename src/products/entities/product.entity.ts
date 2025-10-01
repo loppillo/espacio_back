@@ -20,6 +20,8 @@ export class Product {
   @Column('int')
   price: number;
 
+    @Column('int')
+  cantidad:number;
   
   @Column({ nullable: true })
   imageUrl: string;

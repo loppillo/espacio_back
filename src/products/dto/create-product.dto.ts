@@ -15,6 +15,8 @@ export class CreateProductDto {
    @IsNumber()
     price: number;
 
+    @IsOptional()
+    cantidad:number;
 
     @IsOptional()
   imageUrl?: string;
