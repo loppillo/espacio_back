@@ -104,30 +104,35 @@ async marcarPedidoPagado(mesaId: number): Promise<Mesa> {
   }
 
 async crearNuevoPedido(mesaId: number): Promise<Order> {
-    const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
-    if (!mesa) throw new NotFoundException('Mesa no encontrada');
+  // Buscar la mesa
+  const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+  if (!mesa) throw new NotFoundException('Mesa no encontrada');
 
-   const lastOrder = await this.ordersRepository.findOne({
-    where: {}, // 👈 obligatorio en TypeORM 0.3.x
+  // Obtener el último numeroVenta
+  const lastOrder = await this.ordersRepository.findOne({
+    where: {},
     order: { id: 'DESC' },
   });
   const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
-    const pedido = this.ordersRepository.create({
-      tableNumber: Number(mesa.numero_mesa),
-      cantidad: 0,
-      propina: 0, 
-      numeroVenta: nextNumeroVenta,
-      status: 'Activo',
-      total: 0,
-      orderType: 'default'
-    });
+  // Crear la orden inicial (sin productos)
+  const pedido = this.ordersRepository.create({
+    tableNumber: Number(mesa.numero_mesa),
+    propina: 0,
+    numeroVenta: nextNumeroVenta,
+    status: 'Activo',
+    total: 0,
+    orderType: 'default',
+    orderProducts: [] // inicializar array vacío
+  });
 
-    mesa.status = 'Ocupada';
-    await this.mesaRepository.save(mesa);
+  // Actualizar estado de la mesa
+  mesa.status = 'Ocupada';
+  await this.mesaRepository.save(mesa);
 
-    return await this.ordersRepository.save(pedido);
-  }
+  // Guardar la orden en la base de datos
+  return await this.ordersRepository.save(pedido);
+}
 
     async getPedidosActuales(mesaId: number, numeroVenta: number): Promise<Order[]> {
     return this.ordersRepository.find({

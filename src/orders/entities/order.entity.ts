@@ -21,8 +21,6 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   detalle_venta:string;
 
-  @Column('int')
-  cantidad:number;
 
   @Column({ type: 'varchar', default: 'activo' })
 estado: string;
