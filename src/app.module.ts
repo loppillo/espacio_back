@@ -13,6 +13,7 @@ import { MesasModule } from './mesas/mesas.module';
 import { GastosModule } from './gastos/gastos.module';
 import { CategoriaGastoModule } from './categoria-gasto/categoria-gasto.module';
 import { AuthModule } from './auth/auth/auth.module';
+import { ProductsOrdersModule } from './products-orders/products-orders.module';
 
 
 @Module({
@@ -27,8 +28,7 @@ import { AuthModule } from './auth/auth/auth.module';
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
-    
-    UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule],
+    UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule],
   controllers: [AppController],
   providers: [AppService],
 })

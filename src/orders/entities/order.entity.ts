@@ -1,9 +1,10 @@
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
+import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { Propina } from 'src/propina/entities/propina.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToOne, ManyToMany, JoinTable, DeleteDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToOne, ManyToMany, JoinTable, DeleteDateColumn, OneToMany } from 'typeorm';
 
 
 @Entity('orders')
@@ -49,13 +50,8 @@ estado: string;
   @JoinColumn({ name: 'customerId' })
   customer: Customer;
 
-  @ManyToMany(() => Product, { eager: true }) // optional: eager si quieres que siempre se cargue
-    @JoinTable({
-    name: 'order_products',
-    joinColumn: { name: 'orderId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'productId', referencedColumnName: 'id' },
-  })
-  products: Product[];
+@OneToMany(() => ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true })
+  orderProducts: ProductsOrders[];
 
   @ManyToOne(() => Mesa, (mesa) => mesa.id)
   @JoinColumn({ name: 'mesaId' })
@@ -66,4 +62,5 @@ estado: string;
 
    @Column()
   numeroVenta: number;
+  
 }

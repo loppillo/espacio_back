@@ -136,39 +136,70 @@ async crearNuevoPedido(mesaId: number): Promise<Order> {
   }
 
   async getProductosPorMesa(mesaId: number): Promise<any[]> {
-    // Traer todas las órdenes activas de la mesa con sus productos
-    const orders = await this.ordersRepository.find({
-      where: { mesa: { id: mesaId }, estado: 'activo' },
-      relations: ['products'],
-    });
+  // Traer todas las órdenes activas de la mesa con sus productos
+  const orders = await this.ordersRepository.find({
+    where: { mesa: { id: mesaId }, estado: 'activo' },
+    relations: ['orderProducts', 'orderProducts.product'],
+  });
 
-    if (!orders.length) {
-      throw new NotFoundException('No se encontraron órdenes para esta mesa');
-    }
-
-    // Combinar todos los productos, agregando el orderId para eliminar después
-    const productos = orders.flatMap(order =>
-      order.products.map(p => ({ ...p, orderId: order.id })),
-    );
-
-    return productos;
+  if (!orders.length) {
+    throw new NotFoundException('No se encontraron órdenes para esta mesa');
   }
+
+  // Combinar todos los productos de todas las órdenes
+  const productos = orders.flatMap(order =>
+    order.orderProducts.map(op => ({
+      orderId: order.id,
+      productoId: op.product.id,
+      nombre: op.product.name,   // asumiendo que en Product tienes "nombre"
+      cantidad: op.cantidad,
+      precioUnitario: op.precioUnitario,
+      subtotal: op.subtotal,
+    })),
+  );
+
+  return productos;
+}
+
 
   // Eliminar un producto de una orden específica
-  async eliminarProducto(orderId: number, productId: number): Promise<{ message: string }> {
-    const order = await this.ordersRepository.findOne({
-      where: { id: orderId },
-      relations: ['products'],
-    });
+ async eliminarProducto(
+  orderId: number,
+  productId: number,
+): Promise<{ message: string }> {
+  const order = await this.ordersRepository.findOne({
+    where: { id: orderId },
+    relations: ['orderProducts', 'orderProducts.product'],
+  });
 
-    if (!order) {
-      throw new NotFoundException('Orden no encontrada');
-    }
-
-    order.products = order.products.filter(p => p.id !== +productId);
-    await this.ordersRepository.save(order);
-
-    return { message: 'Producto eliminado correctamente' };
+  if (!order) {
+    throw new NotFoundException('Orden no encontrada');
   }
- 
+
+  // Buscar la relación producto-orden
+  const productOrder = order.orderProducts.find(
+    (op) => op.product.id === productId,
+  );
+
+  if (!productOrder) {
+    throw new NotFoundException(
+      `El producto con id ${productId} no está en la orden`,
+    );
+  }
+
+  if (productOrder.cantidad > 1) {
+    // Si hay más de una unidad, restamos 1
+    productOrder.cantidad -= 1;
+    await this.ordersRepository.save(order);
+  } else {
+    // Si solo queda 1 unidad, quitamos la relación
+    order.orderProducts = order.orderProducts.filter(
+      (op) => op.product.id !== productId,
+    );
+    await this.ordersRepository.save(order);
+  }
+
+  return { message: 'Producto eliminado correctamente' };
+}
+
 }

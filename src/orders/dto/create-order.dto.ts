@@ -1,49 +1,49 @@
+import { Type } from 'class-transformer';
 import {
   IsOptional,
   IsInt,
   IsArray,
   ArrayNotEmpty,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+
+
+class OrderProductDto {
+  @IsInt()
+  id: number; // id del producto
+
+  @IsInt()
+  cantidad: number;
+}
 
 export class CreateOrderDto {
   @IsOptional()
   @IsInt()
   tableNumber?: number;
 
-  @IsOptional()
-  @IsString()
-  detalle_venta: string;
-
-  @IsOptional()
   @IsString()
   orderType: string;
 
-  @IsInt()
-  cantidad: number;
-
-  @IsOptional()
-  @IsInt()
-  propina?: number;
-
   @IsOptional()
   @IsString()
-  status?: string;
+  detalle_venta?: string;
 
-  @IsOptional()
   @IsInt()
-  total: number;
+  propina: number;
 
- @IsOptional()
+  @IsString()
+  status: string;
+
   @IsString()
   paymentMethod: string;
 
   @IsOptional()
-  @IsArray()
-  @ArrayNotEmpty()
-  productIds?: number[];
-
-  // 👇 NUEVO: Añadimos el ID de la mesa
-  @IsOptional()
+  @IsInt()
   mesaId?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderProductDto)
+  products: OrderProductDto[];
 }

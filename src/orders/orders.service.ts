@@ -10,6 +10,7 @@ import { Product } from 'src/products/entities/product.entity';
 import { Propina } from 'src/propina/entities/propina.entity';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
+import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 
 
 @Injectable()
@@ -33,16 +34,7 @@ export class OrdersService {
 
 
 async create(createOrderDto: CreateOrderDto) {
-  const { productIds, propina, mesaId } = createOrderDto;
-
-  // Validar productos (si vienen)
-  let products = [];
-  if (productIds && productIds.length > 0) {
-    products = await this.productRepository.findByIds(productIds);
-    if (products.length !== productIds.length) {
-      throw new BadRequestException('Uno o más productos no se encuentran');
-    }
-  }
+  const { products, propina, mesaId } = createOrderDto;
 
   // Validar mesa (si viene)
   let mesa = null;
@@ -55,25 +47,54 @@ async create(createOrderDto: CreateOrderDto) {
 
   // Obtener el último numeroVenta
   const lastOrder = await this.orderRepository.findOne({
-    where: {}, // 👈 obligatorio en TypeORM 0.3.x
+    where: {},
     order: { id: 'DESC' },
   });
   const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
+  // Crear la orden base (sin productos todavía)
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
     tableNumber: createOrderDto.tableNumber,
-    cantidad: createOrderDto.cantidad,
-    total: createOrderDto.total,
-    products,
-    propina: propina,
+    propina,
     status: createOrderDto.status,
     orderType: createOrderDto.orderType,
     paymentMethod: createOrderDto.paymentMethod,
-    mesa: mesa,
+    mesa,
     numeroVenta: nextNumeroVenta,
+    total: 0, // se recalcula más abajo
   });
 
+  // Inicializar la lista de productos de la orden
+  newOrder.orderProducts = [];
+
+  let total = 0;
+
+  for (const p of products) {
+    // Buscar producto real en la DB
+    const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+    if (!productEntity) {
+      throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+    }
+
+    // Calcular subtotal
+    const subtotal = productEntity.price * p.cantidad;
+    total += subtotal;
+
+    // Crear relación pivot
+    const orderProduct = new ProductsOrders();
+    orderProduct.product = productEntity;
+    orderProduct.cantidad = p.cantidad;
+    orderProduct.precioUnitario = productEntity.price;
+    orderProduct.subtotal = subtotal;
+
+    newOrder.orderProducts.push(orderProduct);
+  }
+
+  // Actualizar el total de la orden
+  newOrder.total = total + (propina || 0);
+
+  // Guardar la orden con cascade → también guarda orderProducts
   return await this.orderRepository.save(newOrder);
 }
 
@@ -110,7 +131,7 @@ async creates(createOrderDto: CreateSOrderDto) {
   });
 
  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-
+/*
   const newOrder = this.orderRepository.create({
     cantidad:createOrderDto.cantidad,
     tableNumber: createOrderDto.tableNumber,
@@ -124,8 +145,8 @@ async creates(createOrderDto: CreateSOrderDto) {
     propina: createOrderDto.propina,
     numeroVenta: nextNumeroVenta
   });
+*/
 
-  return await this.orderRepository.save(newOrder);
 }
 
 
@@ -163,40 +184,69 @@ async remove(id: number) {
 }
 
 async getProductosPorMesa(mesaId: number): Promise<any[]> {
-    // Traer todas las órdenes activas de la mesa con sus productos
-    const orders = await this.orderRepository.find({
-      where: { mesa: { id: mesaId }, estado: 'activo' },
-      relations: ['products'],
-    });
+  // Traer todas las órdenes activas de la mesa con sus productos
+  const orders = await this.orderRepository.find({
+    where: { mesa: { id: mesaId }, estado: 'activo' },
+    relations: ['orderProducts', 'orderProducts.product'],
+  });
 
-    if (!orders.length) {
-      throw new NotFoundException('No se encontraron órdenes para esta mesa');
-    }
-
-    // Combinar todos los productos, agregando el orderId para eliminar después
-    const productos = orders.flatMap(order =>
-      order.products.map(p => ({ ...p, orderId: order.id })),
-    );
-
-    return productos;
+  if (!orders.length) {
+    throw new NotFoundException('No se encontraron órdenes para esta mesa');
   }
+
+  // Combinar productos de todas las órdenes, incluyendo orderId para luego eliminarlos si hace falta
+  const productos = orders.flatMap(order =>
+    order.orderProducts.map(op => ({
+      orderId: order.id,
+      productoId: op.product.id,
+      nombre: op.product.name,
+      precio: op.product.price,
+      cantidad: op.cantidad,
+    })),
+  );
+
+  return productos;
+}
 
   // Eliminar un producto de una orden específica
-  async eliminarProducto(orderId: number, productId: number): Promise<{ message: string }> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['products'],
-    });
+  async eliminarProducto(
+  orderId: number,
+  productId: number,
+): Promise<{ message: string }> {
+  const order = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['orderProducts', 'orderProducts.product'],
+  });
 
-    if (!order) {
-      throw new NotFoundException('Orden no encontrada');
-    }
-
-    order.products = order.products.filter(p => p.id !== +productId);
-    await this.orderRepository.save(order);
-
-    return { message: 'Producto eliminado correctamente' };
+  if (!order) {
+    throw new NotFoundException('Orden no encontrada');
   }
+
+  // Buscar la relación producto-orden
+  const productOrder = order.orderProducts.find(
+    (op) => op.product.id === productId,
+  );
+
+  if (!productOrder) {
+    throw new NotFoundException(
+      `El producto con id ${productId} no está en la orden`,
+    );
+  }
+
+  if (productOrder.cantidad > 1) {
+    // Si hay más de una unidad, se resta 1
+    productOrder.cantidad -= 1;
+    await this.orderRepository.save(order);
+  } else {
+    // Si solo queda una unidad, se elimina la relación
+    order.orderProducts = order.orderProducts.filter(
+      (op) => op.product.id !== productId,
+    );
+    await this.orderRepository.save(order);
+  }
+
+  return { message: 'Producto actualizado correctamente' };
+}
 
 }
 

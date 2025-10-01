@@ -12,15 +12,11 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService, @InjectRepository(Order)
       private readonly orderRepository:Repository<Order>,) {}
 
-  @Post()
+  @Post('s')
   create(@Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(createOrderDto);
   }
 
-  @Post('s')
-  creates(@Body() createOrderDto: CreateSOrderDto) {
-    return this.ordersService.creates(createOrderDto);
-  }
 
 
   @Get()
