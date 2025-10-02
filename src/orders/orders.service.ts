@@ -29,6 +29,8 @@ export class OrdersService {
     private readonly propinaRepository:Repository<Propina>,
      @InjectRepository(Mesa)
     private readonly mesaRepository:Repository<Mesa>,
+        @InjectRepository(ProductsOrders)
+    private readonly orderProductRepository: Repository<ProductsOrders>,
 
   ){}
 
@@ -240,47 +242,27 @@ async getProductosPorMesa(mesaId: number): Promise<any[]> {
 }
 
   // Eliminar un producto de una orden específica
-  async eliminarProducto(
-  orderId: number,
-  productId: number,
-): Promise<{ message: string }> {
-  console.log('📌 eliminarProducto params =>', { orderId, productId });
+async eliminarProducto(orderId: number, productId: number) {
+    const orderProduct = await this.orderProductRepository.findOne({
+      where: { order: { id: orderId }, product: { id: productId } },
+      relations: ['order', 'product'],
+    });
 
-  const order = await this.orderRepository.findOne({
-    where: { id: orderId },
-    relations: ['orderProducts', 'orderProducts.product'],
-  });
+    if (!orderProduct) {
+      throw new NotFoundException('El producto no está en la orden');
+    }
 
-  if (!order) {
-    throw new NotFoundException('Orden no encontrada');
-  }
-  
+    if (orderProduct.cantidad > 1) {
+      orderProduct.cantidad -= 1;
+      orderProduct.subtotal = orderProduct.cantidad * orderProduct.product.price;
+      await this.orderProductRepository.save(orderProduct);
+    } else {
+      await this.orderProductRepository.delete(orderProduct.orderId);
+    }
 
-  // Buscar la relación producto-orden
-  const productOrder = order.orderProducts.find(
-    (op) => op.product.id === productId,
-  );
-
-  if (!productOrder) {
-    throw new NotFoundException(
-      `El producto con id ${productId} no está en la orden`,
-    );
+    return { message: 'Producto eliminado correctamente' };
   }
 
-  if (productOrder.cantidad > 1) {
-    // Si hay más de una unidad, se resta 1
-    productOrder.cantidad -= 1;
-    await this.orderRepository.save(order);
-  } else {
-    // Si solo queda una unidad, se elimina la relación
-    order.orderProducts = order.orderProducts.filter(
-      (op) => op.product.id !== productId,
-    );
-    await this.orderRepository.save(order);
-  }
-
-  return { message: 'Producto actualizado correctamente' };
-}
 
 }
 
