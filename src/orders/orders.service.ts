@@ -256,21 +256,31 @@ async eliminarProducto(orderId: number, productId: number) {
   // 2️⃣ Eliminar el producto de la orden
   await this.productsOrdersRepository.delete({ orderId, productId });
 
-  // 3️⃣ Actualizar el total de la orden
+  // 3️⃣ Obtener productos restantes
   const remainingProducts = await this.productsOrdersRepository.find({
     where: { orderId },
   });
 
-  const newTotal = remainingProducts.reduce(
-    (sum, op) => sum + op.subtotal,
-    0,
-  );
+  // 4️⃣ Recalcular total
+  const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
 
-  await this.orderRepository.update(orderId, { total: newTotal });
+  // 5️⃣ Opcional: actualizar status o propina si no quedan productos
+  const updatedOrder = await this.orderRepository.findOne({ 
+    where: { id: orderId },
+    relations: ['orderProducts'],
+  });
 
-  return { message: 'Producto eliminado correctamente', total: newTotal };
+  updatedOrder.total = newTotal;
+  if (remainingProducts.length === 0) {
+    updatedOrder.status = 'vacío'; // o 'cancelado', según tu lógica
+    updatedOrder.propina = 0;
+  }
+
+  await this.orderRepository.save(updatedOrder);
+
+  // 6️⃣ Devolver la orden actualizada completa
+  return updatedOrder;
 }
-
 
 
 }
