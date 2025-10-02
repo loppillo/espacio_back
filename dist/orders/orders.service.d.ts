@@ -16,8 +16,8 @@ export declare class OrdersService {
     private readonly productRepository;
     private readonly propinaRepository;
     private readonly mesaRepository;
-    private readonly orderProductRepository;
-    constructor(orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, orderProductRepository: Repository<ProductsOrders>);
+    private readonly productsOrdersRepository;
+    constructor(orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>);
     create(createOrderDto: CreateOrderDto): Promise<Order>;
     creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
@@ -31,5 +31,6 @@ export declare class OrdersService {
     getProductosPorMesa(mesaId: number): Promise<any[]>;
     eliminarProducto(orderId: number, productId: number): Promise<{
         message: string;
+        total: number;
     }>;
 }

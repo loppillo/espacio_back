@@ -24,14 +24,14 @@ const propina_entity_1 = require("../propina/entities/propina.entity");
 const mesa_entity_1 = require("../mesas/entities/mesa.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
 let OrdersService = class OrdersService {
-    constructor(orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, orderProductRepository) {
+    constructor(orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, productsOrdersRepository) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.productRepository = productRepository;
         this.propinaRepository = propinaRepository;
         this.mesaRepository = mesaRepository;
-        this.orderProductRepository = orderProductRepository;
+        this.productsOrdersRepository = productsOrdersRepository;
     }
     async create(createOrderDto) {
         const { products, propina, mesaId } = createOrderDto;
@@ -178,22 +178,20 @@ let OrdersService = class OrdersService {
         return productos;
     }
     async eliminarProducto(orderId, productId) {
-        const orderProduct = await this.orderProductRepository.findOne({
-            where: { order: { id: orderId }, product: { id: productId } },
-            relations: ['order', 'product'],
+        const orderProduct = await this.productsOrdersRepository.findOne({
+            where: { orderId, productId },
+            relations: ['product', 'order'],
         });
         if (!orderProduct) {
             throw new common_1.NotFoundException('El producto no está en la orden');
         }
-        if (orderProduct.cantidad > 1) {
-            orderProduct.cantidad -= 1;
-            orderProduct.subtotal = orderProduct.cantidad * orderProduct.product.price;
-            await this.orderProductRepository.save(orderProduct);
-        }
-        else {
-            await this.orderProductRepository.delete(orderProduct.orderId);
-        }
-        return { message: 'Producto eliminado correctamente' };
+        await this.productsOrdersRepository.delete({ orderId, productId });
+        const remainingProducts = await this.productsOrdersRepository.find({
+            where: { orderId },
+        });
+        const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
+        await this.orderRepository.update(orderId, { total: newTotal });
+        return { message: 'Producto eliminado correctamente', total: newTotal };
     }
 };
 exports.OrdersService = OrdersService;

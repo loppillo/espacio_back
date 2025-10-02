@@ -27,5 +27,6 @@ export declare class OrdersController {
     getProductosPorMesa(mesaId: number): Promise<any[]>;
     eliminarProducto(orderId: number, productId: number): Promise<{
         message: string;
+        total: number;
     }>;
 }
