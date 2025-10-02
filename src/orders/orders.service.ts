@@ -102,7 +102,7 @@ async create(createOrderDto: CreateOrderDto) {
 
 
 async creates(createOrderDto: CreateSOrderDto) {
-  const { products, customerId, newCustomer } = createOrderDto;
+  const { products, customerId, newCustomer,propina } = createOrderDto;
 
   // 1️⃣ Validar o crear cliente
   let customer = null;
@@ -149,10 +149,37 @@ async creates(createOrderDto: CreateSOrderDto) {
     createdAt: new Date(),
     orderProducts,
     customer,
-    propina: createOrderDto.propina ?? 0,
+    propina,
     numeroVenta: nextNumeroVenta,
   });
 
+  newOrder.orderProducts = [];
+
+  let total = 0;
+
+  for (const p of products) {
+    // Buscar producto real en la DB
+    const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+    if (!productEntity) {
+      throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+    }
+
+    // Calcular subtotal
+    const subtotal = productEntity.price * p.cantidad;
+    total += subtotal;
+
+    // Crear relación pivot
+    const orderProduct = new ProductsOrders();
+    orderProduct.product = productEntity;
+    orderProduct.cantidad = p.cantidad;
+    orderProduct.precioUnitario = productEntity.price;
+    orderProduct.subtotal = subtotal;
+
+    newOrder.orderProducts.push(orderProduct);
+  }
+
+  // Actualizar el total de la orden
+  newOrder.total = total + (propina || 0);
   // 6️⃣ Guardar y devolver
   return await this.orderRepository.save(newOrder);
 }
