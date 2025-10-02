@@ -16,6 +16,8 @@ export declare class CreateSOrderDto {
     newCustomer?: {
         name: string;
         email?: string;
+        direccion?: string;
+        telefono?: string;
     };
 }
 export {};
