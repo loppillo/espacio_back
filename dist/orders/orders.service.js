@@ -24,13 +24,14 @@ const propina_entity_1 = require("../propina/entities/propina.entity");
 const mesa_entity_1 = require("../mesas/entities/mesa.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
 let OrdersService = class OrdersService {
-    constructor(orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository) {
+    constructor(orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, orderProductRepository) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.productRepository = productRepository;
         this.propinaRepository = propinaRepository;
         this.mesaRepository = mesaRepository;
+        this.orderProductRepository = orderProductRepository;
     }
     async create(createOrderDto) {
         const { products, propina, mesaId } = createOrderDto;
@@ -177,27 +178,22 @@ let OrdersService = class OrdersService {
         return productos;
     }
     async eliminarProducto(orderId, productId) {
-        console.log('📌 eliminarProducto params =>', { orderId, productId });
-        const order = await this.orderRepository.findOne({
-            where: { id: orderId },
-            relations: ['orderProducts', 'orderProducts.product'],
+        const orderProduct = await this.orderProductRepository.findOne({
+            where: { order: { id: orderId }, product: { id: productId } },
+            relations: ['order', 'product'],
         });
-        if (!order) {
-            throw new common_1.NotFoundException('Orden no encontrada');
+        if (!orderProduct) {
+            throw new common_1.NotFoundException('El producto no está en la orden');
         }
-        const productOrder = order.orderProducts.find((op) => op.product.id === productId);
-        if (!productOrder) {
-            throw new common_1.NotFoundException(`El producto con id ${productId} no está en la orden`);
-        }
-        if (productOrder.cantidad > 1) {
-            productOrder.cantidad -= 1;
-            await this.orderRepository.save(order);
+        if (orderProduct.cantidad > 1) {
+            orderProduct.cantidad -= 1;
+            orderProduct.subtotal = orderProduct.cantidad * orderProduct.product.price;
+            await this.orderProductRepository.save(orderProduct);
         }
         else {
-            order.orderProducts = order.orderProducts.filter((op) => op.product.id !== productId);
-            await this.orderRepository.save(order);
+            await this.orderProductRepository.delete(orderProduct.orderId);
         }
-        return { message: 'Producto actualizado correctamente' };
+        return { message: 'Producto eliminado correctamente' };
     }
 };
 exports.OrdersService = OrdersService;
@@ -209,7 +205,9 @@ exports.OrdersService = OrdersService = __decorate([
     __param(3, (0, typeorm_2.InjectRepository)(product_entity_1.Product)),
     __param(4, (0, typeorm_2.InjectRepository)(propina_entity_1.Propina)),
     __param(5, (0, typeorm_2.InjectRepository)(mesa_entity_1.Mesa)),
+    __param(6, (0, typeorm_2.InjectRepository)(products_order_entity_1.ProductsOrders)),
     __metadata("design:paramtypes", [typeorm_1.Repository,
+        typeorm_1.Repository,
         typeorm_1.Repository,
         typeorm_1.Repository,
         typeorm_1.Repository,
