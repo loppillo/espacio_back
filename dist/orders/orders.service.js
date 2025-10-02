@@ -77,37 +77,44 @@ let OrdersService = class OrdersService {
         return await this.orderRepository.save(newOrder);
     }
     async creates(createOrderDto) {
-        const { productIds, customerId, newCustomer } = createOrderDto;
+        const { products, customerId, newCustomer } = createOrderDto;
         let customer = null;
         if (customerId) {
             customer = await this.customerRepository.findOneBy({ id: customerId });
-            if (!customer) {
+            if (!customer)
                 throw new common_1.BadRequestException('El cliente no se encuentra');
-            }
         }
         else if (newCustomer) {
             customer = this.customerRepository.create(newCustomer);
             await this.customerRepository.save(customer);
         }
-        let products = [];
-        if (productIds && productIds.length > 0) {
-            products = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
-            if (products.length !== productIds.length) {
-                throw new common_1.BadRequestException('Uno o más productos no se encuentran');
-            }
+        const productIds = products.map(p => p.id);
+        const foundProducts = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
+        if (foundProducts.length !== productIds.length) {
+            throw new common_1.BadRequestException('Uno o más productos no se encuentran');
         }
         const lastOrder = await this.orderRepository.findOne({
             where: {},
             order: { id: 'DESC' },
         });
         const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+        const orderProducts = products.map(p => {
+            const product = foundProducts.find(fp => fp.id === p.id);
+            const orderProduct = new products_order_entity_1.ProductsOrders();
+            orderProduct.product = product;
+            orderProduct.cantidad = p.cantidad;
+            orderProduct.precioUnitario = product.price;
+            orderProduct.subtotal = product.price * p.cantidad;
+            return orderProduct;
+        });
         const newOrder = this.orderRepository.create({
+            detalle_venta: createOrderDto.detalle_venta,
             total: createOrderDto.total,
             status: createOrderDto.status || 'activo',
-            orderType: createOrderDto.orderType || 'delivery',
+            orderType: createOrderDto.orderType || 'local',
             paymentMethod: createOrderDto.paymentMethod || 'pendiente',
             createdAt: new Date(),
-            orderProducts: products,
+            orderProducts,
             customer,
             propina: createOrderDto.propina ?? 0,
             numeroVenta: nextNumeroVenta,

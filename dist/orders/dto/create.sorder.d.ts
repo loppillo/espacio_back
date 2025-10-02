@@ -1,6 +1,10 @@
+declare class OrderProductDto {
+    id: number;
+    cantidad: number;
+}
 export declare class CreateSOrderDto {
     mesaId?: number;
-    productIds?: number[];
+    products: OrderProductDto[];
     customerId?: number;
     cantidad?: number;
     total?: number;
@@ -8,8 +12,10 @@ export declare class CreateSOrderDto {
     status?: string;
     orderType?: string;
     paymentMethod?: string;
+    detalle_venta?: string;
     newCustomer?: {
         name: string;
         email?: string;
     };
 }
+export {};

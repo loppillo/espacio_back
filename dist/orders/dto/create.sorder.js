@@ -10,7 +10,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSOrderDto = void 0;
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+class OrderProductDto {
+}
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], OrderProductDto.prototype, "id", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], OrderProductDto.prototype, "cantidad", void 0);
 class CreateSOrderDto {
 }
 exports.CreateSOrderDto = CreateSOrderDto;
@@ -20,10 +31,11 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateSOrderDto.prototype, "mesaId", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => OrderProductDto),
     __metadata("design:type", Array)
-], CreateSOrderDto.prototype, "productIds", void 0);
+], CreateSOrderDto.prototype, "products", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
@@ -53,6 +65,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateSOrderDto.prototype, "paymentMethod", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSOrderDto.prototype, "detalle_venta", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
