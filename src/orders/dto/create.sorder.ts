@@ -54,9 +54,11 @@ export class CreateSOrderDto {
 
   @IsOptional()
   newCustomer?: {
-    name: string;
-    email?: string;
-    direccion?: string;
-    telefono?: string;
+    customerName: string;
+    customerEmail?: string;
+    customerAddress?: string;
+    customerPhone?: string;
   };
 }
+
+ 
