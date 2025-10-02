@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, ParseIntPipe } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -76,13 +76,11 @@ async obtenerVentasPorDia(@Query('fecha') fecha: string) {
   async getProductosPorMesa(@Param('mesaId') mesaId: number) {
     return this.ordersService.getProductosPorMesa(+mesaId);
   }
-
-  @Delete(':orderId/productos/:productId')
-  async eliminarProducto(
-    @Param('orderId') orderId: number,
-    @Param('productId') productId: number,
-  ) {
-    return this.ordersService.eliminarProducto(+orderId, +productId);
-  }
-
+@Delete(':orderId/productos/:productId')
+async eliminarProducto(
+  @Param('orderId', ParseIntPipe) orderId: number,
+  @Param('productId', ParseIntPipe) productId: number,
+) {
+  return this.ordersService.eliminarProducto(orderId, productId);
+}
 }
