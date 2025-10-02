@@ -32,8 +32,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrintService = void 0;
 const common_1 = require("@nestjs/common");
 const escpos = __importStar(require("escpos"));
-const USB = __importStar(require("escpos-usb"));
-const Network = __importStar(require("escpos-network"));
+const USB = require('escpos-usb');
+const Network = require('escpos-network');
 let PrintService = class PrintService {
     formatLine(name, qty, price) {
         const subtotal = qty * price;
@@ -58,14 +58,8 @@ let PrintService = class PrintService {
             }
             const printer = new escpos.Printer(device);
             device.open(() => {
-                if (data.header) {
-                    printer.align('CT').style('B').text(data.header);
-                    printer.text('------------------------------');
-                }
-                else {
-                    printer.align('CT').style('B').text('FACTURA / PEDIDO');
-                    printer.text('------------------------------');
-                }
+                printer.align('CT').style('B').text(data.header || 'FACTURA / PEDIDO');
+                printer.text('------------------------------');
                 printer.align('LT');
                 printer.text(`Cliente: ${data.nombre} ${data.apellido}`);
                 printer.text(`Dirección: ${data.direccion}`);
@@ -82,10 +76,7 @@ let PrintService = class PrintService {
                 printer.text('------------------------------');
                 const total = data.carrito.reduce((sum, i) => sum + i.cantidad * i.price, 0);
                 printer.align('RT').style('B').text(`Total: $${total.toFixed(0)}`);
-                if (data.footer)
-                    printer.align('CT').text(data.footer);
-                else
-                    printer.align('CT').text('Gracias por su compra!');
+                printer.align('CT').text(data.footer || 'Gracias por su compra!');
                 printer.cut().close();
             });
             return { success: true };
