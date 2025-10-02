@@ -190,8 +190,17 @@ let OrdersService = class OrdersService {
             where: { orderId },
         });
         const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
-        await this.orderRepository.update(orderId, { total: newTotal });
-        return { message: 'Producto eliminado correctamente', total: newTotal };
+        const updatedOrder = await this.orderRepository.findOne({
+            where: { id: orderId },
+            relations: ['orderProducts'],
+        });
+        updatedOrder.total = newTotal;
+        if (remainingProducts.length === 0) {
+            updatedOrder.status = 'vacío';
+            updatedOrder.propina = 0;
+        }
+        await this.orderRepository.save(updatedOrder);
+        return updatedOrder;
     }
 };
 exports.OrdersService = OrdersService;

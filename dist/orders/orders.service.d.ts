@@ -29,8 +29,5 @@ export declare class OrdersService {
     }>;
     cancelarOrden(id: number): Promise<Order>;
     getProductosPorMesa(mesaId: number): Promise<any[]>;
-    eliminarProducto(orderId: number, productId: number): Promise<{
-        message: string;
-        total: number;
-    }>;
+    eliminarProducto(orderId: number, productId: number): Promise<Order>;
 }
