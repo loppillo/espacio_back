@@ -3,7 +3,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
 import { User } from 'src/users/entities/user.entity';
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Product } from 'src/products/entities/product.entity';
@@ -104,7 +104,7 @@ async create(createOrderDto: CreateOrderDto) {
 async creates(createOrderDto: CreateSOrderDto) {
   const { productIds, customerId, newCustomer } = createOrderDto;
 
-  // Validar o crear cliente
+  // 1️⃣ Validar o crear cliente
   let customer = null;
   if (customerId) {
     customer = await this.customerRepository.findOneBy({ id: customerId });
@@ -112,41 +112,42 @@ async creates(createOrderDto: CreateSOrderDto) {
       throw new BadRequestException('El cliente no se encuentra');
     }
   } else if (newCustomer) {
-    customer = this.customerRepository.create(newCustomer);
+    customer = this.customerRepository.create(newCustomer as DeepPartial<Customer>);
     await this.customerRepository.save(customer);
   }
 
-  // Validar productos
+  // 2️⃣ Validar productos
   let products = [];
   if (productIds && productIds.length > 0) {
-    products = await this.productRepository.findByIds(productIds);
+    products = await this.productRepository.findBy({ id: In(productIds) });
     if (products.length !== productIds.length) {
       throw new BadRequestException('Uno o más productos no se encuentran');
     }
   }
 
+  // 3️⃣ Buscar último numeroVenta
   const lastOrder = await this.orderRepository.findOne({
-    where: {}, // 👈 obligatorio en TypeORM 0.3.x
+    where: {},
     order: { id: 'DESC' },
   });
+  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
- const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-/*
+  // 4️⃣ Crear nueva orden
   const newOrder = this.orderRepository.create({
-    cantidad:createOrderDto.cantidad,
-    tableNumber: createOrderDto.tableNumber,
+    // tableNumber: createOrderDto.tableNumber, // Uncomment if 'tableNumber' exists in Order entity
     total: createOrderDto.total,
-    status: createOrderDto.status,
-    orderType: createOrderDto.orderType,
-    paymentMethod: createOrderDto.paymentMethod,
+    status: createOrderDto.status || 'activo',
+    orderType: createOrderDto.orderType || 'delivery',
+    paymentMethod: createOrderDto.paymentMethod || 'pendiente',
     createdAt: new Date(),
-    products,
+    orderProducts: products, // Use 'orderProducts' if that's the correct relation in Order entity
     customer,
-    propina: createOrderDto.propina,
-    numeroVenta: nextNumeroVenta
+    propina: createOrderDto.propina ?? 0,
+    numeroVenta: nextNumeroVenta,
   });
-*/
 
+  // 5️⃣ Guardar y devolver
+  return await this.orderRepository.save(newOrder);
 }
 
 
