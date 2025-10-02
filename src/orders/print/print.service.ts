@@ -2,7 +2,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 const escpos = require('escpos');
 const USB = require('escpos-usb');
-const Network = require('escpos-network');
+
+const usbDevice = USB.findPrinter();
+if (!usbDevice) throw new Error('No se encontró impresora USB');
 
 @Injectable()
 export class PrintService {
@@ -37,15 +39,12 @@ export class PrintService {
       let device: any;
 
       // Seleccionar impresora
-      if (data.ip) {
-        // Impresora de red
-        device = new Network(data.ip, 9100);
-      } else {
+   
         // Impresora USB
         const usbDevice = USB.findPrinter();
         if (!usbDevice) throw new BadRequestException('No se encontró impresora USB');
         device = new USB(usbDevice);
-      }
+      
 
       // Abrir dispositivo usando Promise
       await new Promise((resolve, reject) => {
