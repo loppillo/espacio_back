@@ -10,7 +10,9 @@ exports.PrintService = void 0;
 const common_1 = require("@nestjs/common");
 const escpos = require('escpos');
 const USB = require('escpos-usb');
-const Network = require('escpos-network');
+const usbDevice = USB.findPrinter();
+if (!usbDevice)
+    throw new Error('No se encontró impresora USB');
 let PrintService = class PrintService {
     formatLine(name, qty, price) {
         const subtotal = qty * price;
@@ -24,15 +26,10 @@ let PrintService = class PrintService {
     async printFactura(data) {
         try {
             let device;
-            if (data.ip) {
-                device = new Network(data.ip, 9100);
-            }
-            else {
-                const usbDevice = USB.findPrinter();
-                if (!usbDevice)
-                    throw new common_1.BadRequestException('No se encontró impresora USB');
-                device = new USB(usbDevice);
-            }
+            const usbDevice = USB.findPrinter();
+            if (!usbDevice)
+                throw new common_1.BadRequestException('No se encontró impresora USB');
+            device = new USB(usbDevice);
             await new Promise((resolve, reject) => {
                 device.open((err) => (err ? reject(err) : resolve(null)));
             });
