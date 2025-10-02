@@ -78,7 +78,6 @@ __decorate([
 ], CreateSOrderDto.prototype, "detalle_venta", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
     __metadata("design:type", Object)
 ], CreateSOrderDto.prototype, "newCustomer", void 0);
 //# sourceMappingURL=create.sorder.js.map
