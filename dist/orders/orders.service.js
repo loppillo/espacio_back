@@ -85,7 +85,15 @@ let OrdersService = class OrdersService {
                 throw new common_1.BadRequestException('El cliente no se encuentra');
         }
         else if (newCustomer) {
-            customer = this.customerRepository.create(newCustomer);
+            if (!newCustomer.customerName) {
+                throw new common_1.BadRequestException('El nombre del cliente es obligatorio');
+            }
+            customer = this.customerRepository.create({
+                customerName: newCustomer.customerName,
+                customerEmail: newCustomer.customerEmail || '',
+                customerAddress: newCustomer.customerAddress || '',
+                customerPhone: newCustomer.customerPhone || '',
+            });
             await this.customerRepository.save(customer);
         }
         const productIds = products.map(p => p.id);
