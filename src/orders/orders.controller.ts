@@ -6,11 +6,14 @@ import { CreateSOrderDto } from './dto/create.sorder';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { Raw, Repository } from 'typeorm';
+import { PrintService } from './print/print.service';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService, @InjectRepository(Order)
-      private readonly orderRepository:Repository<Order>,) {}
+      private readonly orderRepository:Repository<Order>,
+      private readonly printService: PrintService
+    ) {}
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {
@@ -85,5 +88,11 @@ async eliminarProducto(
   return this.ordersService.eliminarProducto(orderId, productId);
 
 }
+
+@Post('imprimir/factura')
+  async print(@Body() body: any) {
+    return this.printService.printFactura(body);
+  }
+
 
 }

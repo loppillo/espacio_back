@@ -9,12 +9,13 @@ import { Product } from 'src/products/entities/product.entity';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { Propina } from 'src/propina/entities/propina.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
+import { PrintService } from './print/print.service';
 
 @Module({
   imports:[TypeOrmModule.forFeature([Order]),TypeOrmModule.forFeature([User]),TypeOrmModule.forFeature([Propina]),TypeOrmModule.forFeature([Customer]),TypeOrmModule.forFeature([Product]),
   TypeOrmModule.forFeature([Mesa]),TypeOrmModule.forFeature([ProductsOrders])
 ],
   controllers: [OrdersController],
-  providers: [OrdersService],
+  providers: [OrdersService, PrintService],
 })
 export class OrdersModule {}
