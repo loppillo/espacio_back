@@ -14,10 +14,10 @@ export declare class CreateSOrderDto {
     paymentMethod?: string;
     detalle_venta?: string;
     newCustomer?: {
-        name: string;
-        email?: string;
-        direccion?: string;
-        telefono?: string;
+        customerName: string;
+        customerEmail?: string;
+        customerAddress?: string;
+        customerPhone?: string;
     };
 }
 export {};
