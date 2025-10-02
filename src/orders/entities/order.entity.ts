@@ -44,9 +44,9 @@ estado: string;
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @ManyToOne(() => Customer, (customer) => customer.id)
-  @JoinColumn({ name: 'customerId' })
-  customer: Customer;
+@ManyToOne(() => Customer, (customer) => customer.id, { nullable: true })
+@JoinColumn({ name: 'customerId' })
+customer: Customer;
 
 @OneToMany(() => ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true })
   orderProducts: ProductsOrders[];
