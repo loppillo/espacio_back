@@ -1,13 +1,14 @@
-// src/orders/print.service.ts
-import { BadRequestException, Injectable } from '@nestjs/common';
-import * as escpos from 'escpos';
-const USB = require('escpos-usb'); // ⚠ recommended para evitar errores de constructor
+// src/print/print.service.ts
+import { Injectable, BadRequestException } from '@nestjs/common';
+const escpos = require('escpos');
+const USB = require('escpos-usb');
 const Network = require('escpos-network');
 
 @Injectable()
 export class PrintService {
   
-  private formatLine(name: string, qty: number, price: number) {
+  // Formatear línea de productos
+  private formatLine(name: string, qty: number, price: number): string {
     const subtotal = qty * price;
     let n = name.length > 16 ? name.substring(0, 16) : name;
     n = n.padEnd(16, ' ');
@@ -19,6 +20,7 @@ export class PrintService {
     return `${n}${q}${p}${s}`;
   }
 
+  // Función para imprimir factura/ticket
   async printFactura(data: {
     header?: string;
     nombre: string;
@@ -29,49 +31,60 @@ export class PrintService {
     pago: string;
     carrito: { name: string; cantidad: number; price: number }[];
     footer?: string;
-    ip?: string;
+    ip?: string; // opcional para impresora de red
   }) {
     try {
       let device: any;
 
+      // Seleccionar impresora
       if (data.ip) {
-        device = new Network(data.ip, 9100); // impresora de red
+        // Impresora de red
+        device = new Network(data.ip, 9100);
       } else {
-        // Buscar impresora USB
-        const usbDevice = USB.findPrinter(); 
+        // Impresora USB
+        const usbDevice = USB.findPrinter();
         if (!usbDevice) throw new BadRequestException('No se encontró impresora USB');
         device = new USB(usbDevice);
       }
 
+      // Abrir dispositivo usando Promise
+      await new Promise((resolve, reject) => {
+        device.open((err: any) => (err ? reject(err) : resolve(null)));
+      });
+
       const printer = new escpos.Printer(device);
 
-      // Abrir conexión
-      device.open(() => {
-        printer.align('CT').style('B').text(data.header || 'FACTURA / PEDIDO');
-        printer.text('------------------------------');
+      // Encabezado
+      printer.align('CT').style('B').text(data.header || 'FACTURA / PEDIDO');
+      printer.text('------------------------------');
 
-        printer.align('LT');
-        printer.text(`Cliente: ${data.nombre} ${data.apellido}`);
-        printer.text(`Dirección: ${data.direccion}`);
-        printer.text(`Teléfono: ${data.telefono}`);
-        printer.text(`Email: ${data.email}`);
-        printer.text(`Método de pago: ${data.pago}`);
-        printer.text(`Fecha: ${new Date().toLocaleString()}`);
-        printer.text('------------------------------');
+      // Datos cliente
+      printer.align('LT');
+      printer.text(`Cliente: ${data.nombre} ${data.apellido}`);
+      printer.text(`Dirección: ${data.direccion}`);
+      printer.text(`Teléfono: ${data.telefono}`);
+      printer.text(`Email: ${data.email}`);
+      printer.text(`Método de pago: ${data.pago}`);
+      printer.text(`Fecha: ${new Date().toLocaleString()}`);
+      printer.text('------------------------------');
 
-        printer.text('Producto         Qty  P.Unit  Total');
-        printer.text('------------------------------');
-        data.carrito.forEach(item => {
-          printer.text(this.formatLine(item.name, item.cantidad, item.price));
-        });
-        printer.text('------------------------------');
-
-        const total = data.carrito.reduce((sum, i) => sum + i.cantidad * i.price, 0);
-        printer.align('RT').style('B').text(`Total: $${total.toFixed(0)}`);
-
-        printer.align('CT').text(data.footer || 'Gracias por su compra!');
-        printer.cut().close();
+      // Tabla de productos
+      printer.text('Producto         Qty  P.Unit  Total');
+      printer.text('------------------------------');
+      data.carrito.forEach(item => {
+        printer.text(this.formatLine(item.name, item.cantidad, item.price));
       });
+      printer.text('------------------------------');
+
+      // Total
+      const total = data.carrito.reduce((sum, i) => sum + i.cantidad * i.price, 0);
+      printer.align('RT').style('B').text(`Total: $${total.toFixed(0)}`);
+
+      // Pie
+      printer.align('CT').text(data.footer || 'Gracias por su compra!');
+
+      // Cortar papel y cerrar
+      printer.cut().close();
 
       return { success: true };
     } catch (err) {
