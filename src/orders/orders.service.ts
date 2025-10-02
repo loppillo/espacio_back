@@ -102,27 +102,23 @@ async create(createOrderDto: CreateOrderDto) {
 
 
 async creates(createOrderDto: CreateSOrderDto) {
-  const { productIds, customerId, newCustomer } = createOrderDto;
+  const { products, customerId, newCustomer } = createOrderDto;
 
   // 1️⃣ Validar o crear cliente
   let customer = null;
   if (customerId) {
     customer = await this.customerRepository.findOneBy({ id: customerId });
-    if (!customer) {
-      throw new BadRequestException('El cliente no se encuentra');
-    }
+    if (!customer) throw new BadRequestException('El cliente no se encuentra');
   } else if (newCustomer) {
     customer = this.customerRepository.create(newCustomer as DeepPartial<Customer>);
     await this.customerRepository.save(customer);
   }
 
   // 2️⃣ Validar productos
-  let products = [];
-  if (productIds && productIds.length > 0) {
-    products = await this.productRepository.findBy({ id: In(productIds) });
-    if (products.length !== productIds.length) {
-      throw new BadRequestException('Uno o más productos no se encuentran');
-    }
+  const productIds = products.map(p => p.id);
+  const foundProducts = await this.productRepository.findBy({ id: In(productIds) });
+  if (foundProducts.length !== productIds.length) {
+    throw new BadRequestException('Uno o más productos no se encuentran');
   }
 
   // 3️⃣ Buscar último numeroVenta
@@ -132,21 +128,32 @@ async creates(createOrderDto: CreateSOrderDto) {
   });
   const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
-  // 4️⃣ Crear nueva orden
+  // 4️⃣ Mapear OrderProducts con cantidades
+  const orderProducts = products.map(p => {
+    const product = foundProducts.find(fp => fp.id === p.id);
+    const orderProduct = new ProductsOrders();
+    orderProduct.product = product;
+    orderProduct.cantidad = p.cantidad;
+    orderProduct.precioUnitario = product.price;
+    orderProduct.subtotal = product.price * p.cantidad;
+    return orderProduct;
+  });
+
+  // 5️⃣ Crear nueva orden
   const newOrder = this.orderRepository.create({
-    // tableNumber: createOrderDto.tableNumber, // Uncomment if 'tableNumber' exists in Order entity
+    detalle_venta: createOrderDto.detalle_venta,
     total: createOrderDto.total,
     status: createOrderDto.status || 'activo',
-    orderType: createOrderDto.orderType || 'delivery',
+    orderType: createOrderDto.orderType || 'local',
     paymentMethod: createOrderDto.paymentMethod || 'pendiente',
     createdAt: new Date(),
-    orderProducts: products, // Use 'orderProducts' if that's the correct relation in Order entity
+    orderProducts,
     customer,
     propina: createOrderDto.propina ?? 0,
     numeroVenta: nextNumeroVenta,
   });
 
-  // 5️⃣ Guardar y devolver
+  // 6️⃣ Guardar y devolver
   return await this.orderRepository.save(newOrder);
 }
 

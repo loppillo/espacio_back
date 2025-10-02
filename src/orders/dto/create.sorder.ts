@@ -1,13 +1,24 @@
-import { IsInt, IsOptional, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsArray, IsString, ValidateNested } from 'class-validator';
+
+class OrderProductDto {
+  @IsInt()
+  id: number; // id del producto
+
+  @IsInt()
+  cantidad: number;
+}
+
 
 export class CreateSOrderDto {
   @IsOptional()
   @IsInt()
   mesaId?: number;
 
-  @IsOptional()
   @IsArray()
-  productIds?: number[];
+  @ValidateNested({ each: true })
+  @Type(() => OrderProductDto)
+  products: OrderProductDto[];
 
   @IsOptional()
   @IsInt()
@@ -30,6 +41,10 @@ export class CreateSOrderDto {
 
   @IsOptional()
   paymentMethod?: string;
+
+    @IsOptional()
+    @IsString()
+    detalle_venta?: string;
 
   // Si se permite crear un nuevo cliente en el mismo DTO
   @IsOptional()
