@@ -177,6 +177,7 @@ let OrdersService = class OrdersService {
         return productos;
     }
     async eliminarProducto(orderId, productId) {
+        console.log('📌 eliminarProducto params =>', { orderId, productId });
         const order = await this.orderRepository.findOne({
             where: { id: orderId },
             relations: ['orderProducts', 'orderProducts.product'],
