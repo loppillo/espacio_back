@@ -8,16 +8,16 @@ export class Customer {
     @PrimaryGeneratedColumn()
     id: number;
     
-    @Column()
+    @Column({ nullable: true })
     customerName: string;
   
-    @Column()
+    @Column({ nullable: true })
     customerPhone: string;
-  
-    @Column()
+
+    @Column({ nullable: true })
     customerEmail: string;
-  
-    @Column()
+
+    @Column({ nullable: true })
     customerAddress: string;
 
     @OneToMany(()=>Order,(order)=>order.customer)

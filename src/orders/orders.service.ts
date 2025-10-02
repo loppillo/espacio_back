@@ -106,11 +106,23 @@ async creates(createOrderDto: CreateSOrderDto) {
 
   // 1️⃣ Validar o crear cliente
   let customer = null;
+
   if (customerId) {
     customer = await this.customerRepository.findOneBy({ id: customerId });
     if (!customer) throw new BadRequestException('El cliente no se encuentra');
-  } else if (newCustomer) {
-    customer = this.customerRepository.create(newCustomer as DeepPartial<Customer>);
+  } 
+  else if (newCustomer) {
+    if (!newCustomer.customerName) {
+      throw new BadRequestException('El nombre del cliente es obligatorio');
+    }
+
+    customer = this.customerRepository.create({
+      customerName: newCustomer.customerName,
+      customerEmail: newCustomer.customerEmail || '',
+      customerAddress: newCustomer.customerAddress || '',
+      customerPhone: newCustomer.customerPhone || '',
+    });
+
     await this.customerRepository.save(customer);
   }
 
