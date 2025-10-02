@@ -53,7 +53,6 @@ export class CreateSOrderDto {
   detalle_venta?: string;
 
   @IsOptional()
-  @IsString()
   newCustomer?: {
     customerName: string;
     customerEmail?: string;
