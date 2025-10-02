@@ -21,10 +21,12 @@ const create_sorder_1 = require("./dto/create.sorder");
 const typeorm_1 = require("@nestjs/typeorm");
 const order_entity_1 = require("./entities/order.entity");
 const typeorm_2 = require("typeorm");
+const print_service_1 = require("./print/print.service");
 let OrdersController = class OrdersController {
-    constructor(ordersService, orderRepository) {
+    constructor(ordersService, orderRepository, printService) {
         this.ordersService = ordersService;
         this.orderRepository = orderRepository;
+        this.printService = printService;
     }
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
@@ -70,6 +72,9 @@ let OrdersController = class OrdersController {
     }
     async eliminarProducto(orderId, productId) {
         return this.ordersService.eliminarProducto(orderId, productId);
+    }
+    async print(body) {
+        return this.printService.printFactura(body);
     }
 };
 exports.OrdersController = OrdersController;
@@ -144,10 +149,18 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "eliminarProducto", null);
+__decorate([
+    (0, common_1.Post)('imprimir/factura'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "print", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
     __metadata("design:paramtypes", [orders_service_1.OrdersService,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        print_service_1.PrintService])
 ], OrdersController);
 //# sourceMappingURL=orders.controller.js.map

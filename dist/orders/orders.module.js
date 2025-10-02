@@ -18,6 +18,7 @@ const product_entity_1 = require("../products/entities/product.entity");
 const mesa_entity_1 = require("../mesas/entities/mesa.entity");
 const propina_entity_1 = require("../propina/entities/propina.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
+const print_service_1 = require("./print/print.service");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -27,7 +28,7 @@ exports.OrdersModule = OrdersModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([mesa_entity_1.Mesa]), typeorm_1.TypeOrmModule.forFeature([products_order_entity_1.ProductsOrders])
         ],
         controllers: [orders_controller_1.OrdersController],
-        providers: [orders_service_1.OrdersService],
+        providers: [orders_service_1.OrdersService, print_service_1.PrintService],
     })
 ], OrdersModule);
 //# sourceMappingURL=orders.module.js.map

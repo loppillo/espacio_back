@@ -4,10 +4,12 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Order } from './entities/order.entity';
 import { Repository } from 'typeorm';
+import { PrintService } from './print/print.service';
 export declare class OrdersController {
     private readonly ordersService;
     private readonly orderRepository;
-    constructor(ordersService: OrdersService, orderRepository: Repository<Order>);
+    private readonly printService;
+    constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
     create(createOrderDto: CreateOrderDto): Promise<Order>;
     creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
@@ -26,4 +28,7 @@ export declare class OrdersController {
     }[]>;
     getProductosPorMesa(mesaId: number): Promise<any[]>;
     eliminarProducto(orderId: number, productId: number): Promise<Order>;
+    print(body: any): Promise<{
+        success: boolean;
+    }>;
 }
