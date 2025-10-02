@@ -43,26 +43,32 @@ __decorate([
 ], CreateSOrderDto.prototype, "customerId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], CreateSOrderDto.prototype, "cantidad", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateSOrderDto.prototype, "total", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateSOrderDto.prototype, "propina", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateSOrderDto.prototype, "status", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateSOrderDto.prototype, "orderType", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateSOrderDto.prototype, "paymentMethod", void 0);
 __decorate([

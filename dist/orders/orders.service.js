@@ -98,31 +98,20 @@ let OrdersService = class OrdersService {
             order: { id: 'DESC' },
         });
         const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-        const orderProducts = products.map(p => {
-            const product = foundProducts.find(fp => fp.id === p.id);
-            const orderProduct = new products_order_entity_1.ProductsOrders();
-            orderProduct.product = product;
-            orderProduct.cantidad = p.cantidad;
-            orderProduct.precioUnitario = product.price;
-            orderProduct.subtotal = product.price * p.cantidad;
-            return orderProduct;
-        });
         const newOrder = this.orderRepository.create({
             detalle_venta: createOrderDto.detalle_venta,
-            total: createOrderDto.total,
             status: createOrderDto.status || 'activo',
             orderType: createOrderDto.orderType || 'local',
             paymentMethod: createOrderDto.paymentMethod || 'pendiente',
             createdAt: new Date(),
-            orderProducts,
             customer,
-            propina,
+            propina: propina ?? 0,
             numeroVenta: nextNumeroVenta,
+            orderProducts: [],
         });
-        newOrder.orderProducts = [];
         let total = 0;
         for (const p of products) {
-            const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+            const productEntity = foundProducts.find(fp => fp.id === p.id);
             if (!productEntity) {
                 throw new common_1.BadRequestException(`Producto con id ${p.id} no encontrado`);
             }
