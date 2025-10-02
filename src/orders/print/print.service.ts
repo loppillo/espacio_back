@@ -1,13 +1,12 @@
 // src/orders/print.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import * as escpos from 'escpos';
-import * as USB from 'escpos-usb';
-import * as Network from 'escpos-network';
+const USB = require('escpos-usb'); // ⚠ recommended para evitar errores de constructor
+const Network = require('escpos-network');
 
 @Injectable()
 export class PrintService {
-
-  // Función auxiliar para alinear columnas de productos
+  
   private formatLine(name: string, qty: number, price: number) {
     const subtotal = qty * price;
     let n = name.length > 16 ? name.substring(0, 16) : name;
@@ -20,7 +19,6 @@ export class PrintService {
     return `${n}${q}${p}${s}`;
   }
 
-  // Función principal para imprimir un ticket/factura
   async printFactura(data: {
     header?: string;
     nombre: string;
@@ -31,33 +29,27 @@ export class PrintService {
     pago: string;
     carrito: { name: string; cantidad: number; price: number }[];
     footer?: string;
-    ip?: string; // opcional para impresora de red
+    ip?: string;
   }) {
     try {
       let device: any;
 
-      // Elegir dispositivo USB o de red
       if (data.ip) {
-        device = new Network(data.ip, 9100); // impresora de red TCP/IP
+        device = new Network(data.ip, 9100); // impresora de red
       } else {
-        const usbDevice = USB.findPrinter();
+        // Buscar impresora USB
+        const usbDevice = USB.findPrinter(); 
         if (!usbDevice) throw new BadRequestException('No se encontró impresora USB');
         device = new USB(usbDevice);
       }
 
       const printer = new escpos.Printer(device);
 
+      // Abrir conexión
       device.open(() => {
-        // ⬆ Encabezado
-        if (data.header) {
-          printer.align('CT').style('B').text(data.header);
-          printer.text('------------------------------');
-        } else {
-          printer.align('CT').style('B').text('FACTURA / PEDIDO');
-          printer.text('------------------------------');
-        }
+        printer.align('CT').style('B').text(data.header || 'FACTURA / PEDIDO');
+        printer.text('------------------------------');
 
-        // ⬆ Datos cliente
         printer.align('LT');
         printer.text(`Cliente: ${data.nombre} ${data.apellido}`);
         printer.text(`Dirección: ${data.direccion}`);
@@ -67,7 +59,6 @@ export class PrintService {
         printer.text(`Fecha: ${new Date().toLocaleString()}`);
         printer.text('------------------------------');
 
-        // ⬆ Tabla de productos
         printer.text('Producto         Qty  P.Unit  Total');
         printer.text('------------------------------');
         data.carrito.forEach(item => {
@@ -75,15 +66,10 @@ export class PrintService {
         });
         printer.text('------------------------------');
 
-        // ⬆ Total
         const total = data.carrito.reduce((sum, i) => sum + i.cantidad * i.price, 0);
         printer.align('RT').style('B').text(`Total: $${total.toFixed(0)}`);
 
-        // ⬆ Pie
-        if (data.footer) printer.align('CT').text(data.footer);
-        else printer.align('CT').text('Gracias por su compra!');
-
-        // ⬆ Cortar papel
+        printer.align('CT').text(data.footer || 'Gracias por su compra!');
         printer.cut().close();
       });
 
