@@ -77,7 +77,7 @@ let OrdersService = class OrdersService {
         return await this.orderRepository.save(newOrder);
     }
     async creates(createOrderDto) {
-        const { products, customerId, newCustomer } = createOrderDto;
+        const { products, customerId, newCustomer, propina } = createOrderDto;
         let customer = null;
         if (customerId) {
             customer = await this.customerRepository.findOneBy({ id: customerId });
@@ -116,9 +116,26 @@ let OrdersService = class OrdersService {
             createdAt: new Date(),
             orderProducts,
             customer,
-            propina: createOrderDto.propina ?? 0,
+            propina,
             numeroVenta: nextNumeroVenta,
         });
+        newOrder.orderProducts = [];
+        let total = 0;
+        for (const p of products) {
+            const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+            if (!productEntity) {
+                throw new common_1.BadRequestException(`Producto con id ${p.id} no encontrado`);
+            }
+            const subtotal = productEntity.price * p.cantidad;
+            total += subtotal;
+            const orderProduct = new products_order_entity_1.ProductsOrders();
+            orderProduct.product = productEntity;
+            orderProduct.cantidad = p.cantidad;
+            orderProduct.precioUnitario = productEntity.price;
+            orderProduct.subtotal = subtotal;
+            newOrder.orderProducts.push(orderProduct);
+        }
+        newOrder.total = total + (propina || 0);
         return await this.orderRepository.save(newOrder);
     }
     async findAll() {
