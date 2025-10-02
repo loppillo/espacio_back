@@ -76,11 +76,14 @@ async obtenerVentasPorDia(@Query('fecha') fecha: string) {
   async getProductosPorMesa(@Param('mesaId') mesaId: number) {
     return this.ordersService.getProductosPorMesa(+mesaId);
   }
-@Delete(':orderId/productos/:productId')
+
+  @Delete(':orderId/productos/:productId')
 async eliminarProducto(
   @Param('orderId', ParseIntPipe) orderId: number,
   @Param('productId', ParseIntPipe) productId: number,
 ) {
   return this.ordersService.eliminarProducto(orderId, productId);
+
 }
+
 }

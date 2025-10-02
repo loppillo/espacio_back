@@ -30,7 +30,7 @@ export class OrdersService {
      @InjectRepository(Mesa)
     private readonly mesaRepository:Repository<Mesa>,
         @InjectRepository(ProductsOrders)
-    private readonly orderProductRepository: Repository<ProductsOrders>,
+    private readonly productsOrdersRepository: Repository<ProductsOrders>,
 
   ){}
 
@@ -243,25 +243,34 @@ async getProductosPorMesa(mesaId: number): Promise<any[]> {
 
   // Eliminar un producto de una orden específica
 async eliminarProducto(orderId: number, productId: number) {
-    const orderProduct = await this.orderProductRepository.findOne({
-      where: { order: { id: orderId }, product: { id: productId } },
-      relations: ['order', 'product'],
-    });
+  // 1️⃣ Buscar la relación producto-orden
+  const orderProduct = await this.productsOrdersRepository.findOne({
+    where: { orderId, productId },
+    relations: ['product', 'order'],
+  });
 
-    if (!orderProduct) {
-      throw new NotFoundException('El producto no está en la orden');
-    }
-
-    if (orderProduct.cantidad > 1) {
-      orderProduct.cantidad -= 1;
-      orderProduct.subtotal = orderProduct.cantidad * orderProduct.product.price;
-      await this.orderProductRepository.save(orderProduct);
-    } else {
-      await this.orderProductRepository.delete(orderProduct.orderId);
-    }
-
-    return { message: 'Producto eliminado correctamente' };
+  if (!orderProduct) {
+    throw new NotFoundException('El producto no está en la orden');
   }
+
+  // 2️⃣ Eliminar el producto de la orden
+  await this.productsOrdersRepository.delete({ orderId, productId });
+
+  // 3️⃣ Actualizar el total de la orden
+  const remainingProducts = await this.productsOrdersRepository.find({
+    where: { orderId },
+  });
+
+  const newTotal = remainingProducts.reduce(
+    (sum, op) => sum + op.subtotal,
+    0,
+  );
+
+  await this.orderRepository.update(orderId, { total: newTotal });
+
+  return { message: 'Producto eliminado correctamente', total: newTotal };
+}
+
 
 
 }
