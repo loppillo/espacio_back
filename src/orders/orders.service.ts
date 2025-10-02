@@ -244,6 +244,8 @@ async getProductosPorMesa(mesaId: number): Promise<any[]> {
   orderId: number,
   productId: number,
 ): Promise<{ message: string }> {
+  console.log('📌 eliminarProducto params =>', { orderId, productId });
+
   const order = await this.orderRepository.findOne({
     where: { id: orderId },
     relations: ['orderProducts', 'orderProducts.product'],
@@ -252,6 +254,7 @@ async getProductosPorMesa(mesaId: number): Promise<any[]> {
   if (!order) {
     throw new NotFoundException('Orden no encontrada');
   }
+  
 
   // Buscar la relación producto-orden
   const productOrder = order.orderProducts.find(
