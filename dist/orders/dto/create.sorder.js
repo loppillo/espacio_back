@@ -10,67 +10,51 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSOrderDto = void 0;
-const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
-const create_customer_dto_1 = require("./create-customer.dto");
 class CreateSOrderDto {
 }
 exports.CreateSOrderDto = CreateSOrderDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
-], CreateSOrderDto.prototype, "tableNumber", void 0);
+], CreateSOrderDto.prototype, "mesaId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateSOrderDto.prototype, "detalle_venta", void 0);
+    (0, class_validator_1.IsArray)(),
+    __metadata("design:type", Array)
+], CreateSOrderDto.prototype, "productIds", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateSOrderDto.prototype, "orderType", void 0);
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], CreateSOrderDto.prototype, "customerId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateSOrderDto.prototype, "cantidad", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateSOrderDto.prototype, "status", void 0);
+    __metadata("design:type", Number)
+], CreateSOrderDto.prototype, "total", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], CreateSOrderDto.prototype, "propina", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
-    __metadata("design:type", Number)
-], CreateSOrderDto.prototype, "total", void 0);
+    __metadata("design:type", String)
+], CreateSOrderDto.prototype, "status", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateSOrderDto.prototype, "orderType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateSOrderDto.prototype, "paymentMethod", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], CreateSOrderDto.prototype, "customerId", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.ValidateNested)(),
-    (0, class_transformer_1.Type)(() => create_customer_dto_1.CustomerDto),
-    __metadata("design:type", create_customer_dto_1.CustomerDto)
+    __metadata("design:type", Object)
 ], CreateSOrderDto.prototype, "newCustomer", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.ArrayNotEmpty)(),
-    __metadata("design:type", Array)
-], CreateSOrderDto.prototype, "productIds", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDate)(),
-    (0, class_transformer_1.Type)(() => Date),
-    __metadata("design:type", Date)
-], CreateSOrderDto.prototype, "createdAt", void 0);
 //# sourceMappingURL=create.sorder.js.map

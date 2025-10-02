@@ -17,7 +17,7 @@ export declare class OrdersService {
     private readonly mesaRepository;
     constructor(orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>);
     create(createOrderDto: CreateOrderDto): Promise<Order>;
-    creates(createOrderDto: CreateSOrderDto): Promise<void>;
+    creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
     findOne(id: number): Promise<Order>;
     update(id: number, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;

@@ -91,7 +91,7 @@ let OrdersService = class OrdersService {
         }
         let products = [];
         if (productIds && productIds.length > 0) {
-            products = await this.productRepository.findByIds(productIds);
+            products = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
             if (products.length !== productIds.length) {
                 throw new common_1.BadRequestException('Uno o más productos no se encuentran');
             }
@@ -101,6 +101,18 @@ let OrdersService = class OrdersService {
             order: { id: 'DESC' },
         });
         const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+        const newOrder = this.orderRepository.create({
+            total: createOrderDto.total,
+            status: createOrderDto.status || 'activo',
+            orderType: createOrderDto.orderType || 'delivery',
+            paymentMethod: createOrderDto.paymentMethod || 'pendiente',
+            createdAt: new Date(),
+            orderProducts: products,
+            customer,
+            propina: createOrderDto.propina ?? 0,
+            numeroVenta: nextNumeroVenta,
+        });
+        return await this.orderRepository.save(newOrder);
     }
     async findAll() {
         return await this.orderRepository.find();

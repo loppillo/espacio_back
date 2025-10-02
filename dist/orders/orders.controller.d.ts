@@ -9,7 +9,7 @@ export declare class OrdersController {
     private readonly orderRepository;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>);
     create(createOrderDto: CreateOrderDto): Promise<Order>;
-    creates(createOrderDto: CreateSOrderDto): Promise<void>;
+    creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
     update(id: string, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;

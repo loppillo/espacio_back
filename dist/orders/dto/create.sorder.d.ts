@@ -1,15 +1,15 @@
-import { CustomerDto } from "./create-customer.dto";
 export declare class CreateSOrderDto {
-    tableNumber: number;
-    detalle_venta: string;
-    orderType: string;
-    cantidad: number;
-    status: string;
-    propina?: number;
-    total: number;
-    paymentMethod: string;
-    customerId?: number;
-    newCustomer?: CustomerDto;
+    mesaId?: number;
     productIds?: number[];
-    createdAt: Date;
+    customerId?: number;
+    cantidad?: number;
+    total?: number;
+    propina?: number;
+    status?: string;
+    orderType?: string;
+    paymentMethod?: string;
+    newCustomer?: {
+        name: string;
+        email?: string;
+    };
 }
