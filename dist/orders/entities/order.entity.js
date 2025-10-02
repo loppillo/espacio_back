@@ -64,7 +64,7 @@ __decorate([
     __metadata("design:type", user_entity_1.User)
 ], Order.prototype, "user", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, (customer) => customer.id),
+    (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, (customer) => customer.id, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'customerId' }),
     __metadata("design:type", customer_entity_1.Customer)
 ], Order.prototype, "customer", void 0);
