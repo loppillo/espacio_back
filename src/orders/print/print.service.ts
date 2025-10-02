@@ -46,7 +46,7 @@ export class PrintService {
         if (!usbDevice) {
           throw new BadRequestException('No se encontró ninguna impresora USB conectada');
         }
-        device = new escpos.USB(usbDevice);
+        device = new USB(usbDevice);
       }
 
       // Abrir dispositivo usando Promise
