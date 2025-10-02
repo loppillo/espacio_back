@@ -69,7 +69,7 @@ let OrdersController = class OrdersController {
         return this.ordersService.getProductosPorMesa(+mesaId);
     }
     async eliminarProducto(orderId, productId) {
-        return this.ordersService.eliminarProducto(+orderId, +productId);
+        return this.ordersService.eliminarProducto(orderId, productId);
     }
 };
 exports.OrdersController = OrdersController;
@@ -138,8 +138,8 @@ __decorate([
 ], OrdersController.prototype, "getProductosPorMesa", null);
 __decorate([
     (0, common_1.Delete)(':orderId/productos/:productId'),
-    __param(0, (0, common_1.Param)('orderId')),
-    __param(1, (0, common_1.Param)('productId')),
+    __param(0, (0, common_1.Param)('orderId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Param)('productId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
