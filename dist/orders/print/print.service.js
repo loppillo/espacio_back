@@ -32,7 +32,7 @@ let PrintService = class PrintService {
                 if (!usbDevice) {
                     throw new common_1.BadRequestException('No se encontró ninguna impresora USB conectada');
                 }
-                device = new escpos.USB(usbDevice);
+                device = new USB(usbDevice);
             }
             await new Promise((resolve, reject) => {
                 device.open((err) => (err ? reject(err) : resolve()));
