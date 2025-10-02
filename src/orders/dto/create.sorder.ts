@@ -46,10 +46,11 @@ export class CreateSOrderDto {
     @IsString()
     detalle_venta?: string;
 
-  // Si se permite crear un nuevo cliente en el mismo DTO
-  @IsOptional()
+ @IsOptional()
   newCustomer?: {
     name: string;
     email?: string;
+    direccion?: string;
+    telefono?: string;
   };
 }
