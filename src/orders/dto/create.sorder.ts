@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsArray, IsString, ValidateNested } from 'class-validator';
+import { IsInt, IsOptional, IsArray, IsString, ValidateNested, IsNumber } from 'class-validator';
 
 class OrderProductDto {
   @IsInt()
@@ -25,28 +25,34 @@ export class CreateSOrderDto {
   customerId?: number;
 
   @IsOptional()
+  @IsInt()
   cantidad?: number;
 
   @IsOptional()
+  @IsNumber()
   total?: number;
 
   @IsOptional()
+  @IsNumber()
   propina?: number;
 
   @IsOptional()
+  @IsString()
   status?: string;
 
   @IsOptional()
+  @IsString()
   orderType?: string;
 
   @IsOptional()
+  @IsString()
   paymentMethod?: string;
 
-    @IsOptional()
-    @IsString()
-    detalle_venta?: string;
+  @IsOptional()
+  @IsString()
+  detalle_venta?: string;
 
- @IsOptional()
+  @IsOptional()
   newCustomer?: {
     name: string;
     email?: string;

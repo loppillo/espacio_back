@@ -102,7 +102,7 @@ async create(createOrderDto: CreateOrderDto) {
 
 
 async creates(createOrderDto: CreateSOrderDto) {
-  const { products, customerId, newCustomer,propina } = createOrderDto;
+  const { products, customerId, newCustomer, propina } = createOrderDto;
 
   // 1️⃣ Validar o crear cliente
   let customer = null;
@@ -128,47 +128,30 @@ async creates(createOrderDto: CreateSOrderDto) {
   });
   const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
-  // 4️⃣ Mapear OrderProducts con cantidades
-  const orderProducts = products.map(p => {
-    const product = foundProducts.find(fp => fp.id === p.id);
-    const orderProduct = new ProductsOrders();
-    orderProduct.product = product;
-    orderProduct.cantidad = p.cantidad;
-    orderProduct.precioUnitario = product.price;
-    orderProduct.subtotal = product.price * p.cantidad;
-    return orderProduct;
-  });
-
-  // 5️⃣ Crear nueva orden
+  // 4️⃣ Crear la orden
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
-    total: createOrderDto.total,
     status: createOrderDto.status || 'activo',
     orderType: createOrderDto.orderType || 'local',
     paymentMethod: createOrderDto.paymentMethod || 'pendiente',
     createdAt: new Date(),
-    orderProducts,
     customer,
-    propina,
+    propina: propina ?? 0,
     numeroVenta: nextNumeroVenta,
+    orderProducts: [], // la llenamos abajo
   });
 
-  newOrder.orderProducts = [];
-
+  // 5️⃣ Mapear productos a la tabla pivote ProductsOrders
   let total = 0;
-
   for (const p of products) {
-    // Buscar producto real en la DB
-    const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+    const productEntity = foundProducts.find(fp => fp.id === p.id);
     if (!productEntity) {
       throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
     }
 
-    // Calcular subtotal
     const subtotal = productEntity.price * p.cantidad;
     total += subtotal;
 
-    // Crear relación pivot
     const orderProduct = new ProductsOrders();
     orderProduct.product = productEntity;
     orderProduct.cantidad = p.cantidad;
@@ -178,9 +161,10 @@ async creates(createOrderDto: CreateSOrderDto) {
     newOrder.orderProducts.push(orderProduct);
   }
 
-  // Actualizar el total de la orden
+  // 6️⃣ Calcular total real (productos + propina)
   newOrder.total = total + (propina || 0);
-  // 6️⃣ Guardar y devolver
+
+  // 7️⃣ Guardar y devolver
   return await this.orderRepository.save(newOrder);
 }
 
