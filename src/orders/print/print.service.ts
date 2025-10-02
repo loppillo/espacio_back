@@ -1,15 +1,14 @@
 // src/print/print.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
+
 const escpos = require('escpos');
 const USB = require('escpos-usb');
-
-const usbDevice = USB.findPrinter();
-if (!usbDevice) throw new Error('No se encontró impresora USB');
+const Network = require('escpos-network');
 
 @Injectable()
 export class PrintService {
-  
-  // Formatear línea de productos
+
+  // Formatear línea de productos para ticket de 80mm
   private formatLine(name: string, qty: number, price: number): string {
     const subtotal = qty * price;
     let n = name.length > 16 ? name.substring(0, 16) : name;
@@ -22,7 +21,7 @@ export class PrintService {
     return `${n}${q}${p}${s}`;
   }
 
-  // Función para imprimir factura/ticket
+  // Función principal para imprimir factura/ticket
   async printFactura(data: {
     header?: string;
     nombre: string;
@@ -38,17 +37,21 @@ export class PrintService {
     try {
       let device: any;
 
-      // Seleccionar impresora
-   
+      if (data.ip) {
+        // Impresora de red TCP/IP
+        device = new Network(data.ip, 9100);
+      } else {
         // Impresora USB
         const usbDevice = USB.findPrinter();
-        if (!usbDevice) throw new BadRequestException('No se encontró impresora USB');
-        device = new USB(usbDevice);
-      
+        if (!usbDevice) {
+          throw new BadRequestException('No se encontró ninguna impresora USB conectada');
+        }
+        device = new escpos.USB(usbDevice);
+      }
 
       // Abrir dispositivo usando Promise
-      await new Promise((resolve, reject) => {
-        device.open((err: any) => (err ? reject(err) : resolve(null)));
+      await new Promise<void>((resolve, reject) => {
+        device.open((err: any) => (err ? reject(err) : resolve()));
       });
 
       const printer = new escpos.Printer(device);
@@ -57,7 +60,7 @@ export class PrintService {
       printer.align('CT').style('B').text(data.header || 'FACTURA / PEDIDO');
       printer.text('------------------------------');
 
-      // Datos cliente
+      // Datos del cliente
       printer.align('LT');
       printer.text(`Cliente: ${data.nombre} ${data.apellido}`);
       printer.text(`Dirección: ${data.direccion}`);
@@ -79,10 +82,10 @@ export class PrintService {
       const total = data.carrito.reduce((sum, i) => sum + i.cantidad * i.price, 0);
       printer.align('RT').style('B').text(`Total: $${total.toFixed(0)}`);
 
-      // Pie
+      // Pie del ticket
       printer.align('CT').text(data.footer || 'Gracias por su compra!');
 
-      // Cortar papel y cerrar
+      // Cortar papel y cerrar conexión
       printer.cut().close();
 
       return { success: true };
