@@ -1,96 +1,72 @@
-// src/print/print.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
-
-const escpos = require('escpos');
-const USB = require('escpos-usb');
-const Network = require('escpos-network');
+import ThermalPrinter from 'node-thermal-printer';
 
 @Injectable()
 export class PrintService {
-
-  // Formatear línea de productos para ticket de 80mm
-  private formatLine(name: string, qty: number, price: number): string {
-    const subtotal = qty * price;
-    let n = name.length > 16 ? name.substring(0, 16) : name;
-    n = n.padEnd(16, ' ');
-
-    const q = qty.toString().padStart(3, ' ');
-    const p = price.toFixed(0).toString().padStart(6, ' ');
-    const s = subtotal.toFixed(0).toString().padStart(6, ' ');
-
-    return `${n}${q}${p}${s}`;
-  }
-
-  // Función principal para imprimir factura/ticket
-  async printFactura(data: {
-    header?: string;
-    nombre: string;
-    apellido: string;
-    direccion: string;
-    telefono: string;
-    email: string;
-    pago: string;
-    carrito: { name: string; cantidad: number; price: number }[];
-    footer?: string;
-    ip?: string; // opcional para impresora de red
-  }) {
+  async printFactura(data: any) {
     try {
-      let device: any;
+      const printer = new ThermalPrinter.printer({
+        type: ThermalPrinter.types.EPSON, // o STAR según tu impresora
+        interface: data.ip ? `tcp://${data.ip}` : 'usb',
+        options: {
+          timeout: 5000,
+        },
+      });
 
-      if (data.ip) {
-        // Impresora de red TCP/IP
-        device = new Network(data.ip, 9100);
-      } else {
-        // Impresora USB
-        const usbDevice = USB.findPrinter();
-        if (!usbDevice) {
-          throw new BadRequestException('No se encontró ninguna impresora USB conectada');
-        }
-        device = new USB(usbDevice);
+      const isConnected = await printer.isPrinterConnected();
+      if (!isConnected) {
+        throw new BadRequestException('No se pudo conectar con la impresora');
       }
 
-      // Abrir dispositivo usando Promise
-      await new Promise<void>((resolve, reject) => {
-        device.open((err: any) => (err ? reject(err) : resolve()));
-      });
-
-      const printer = new escpos.Printer(device);
-
       // Encabezado
-      printer.align('CT').style('B').text(data.header || 'FACTURA / PEDIDO');
-      printer.text('------------------------------');
+      printer.alignCenter();
+      printer.println(data.header || 'FACTURA / PEDIDO');
+      printer.drawLine();
 
-      // Datos del cliente
-      printer.align('LT');
-      printer.text(`Cliente: ${data.nombre} ${data.apellido}`);
-      printer.text(`Dirección: ${data.direccion}`);
-      printer.text(`Teléfono: ${data.telefono}`);
-      printer.text(`Email: ${data.email}`);
-      printer.text(`Método de pago: ${data.pago}`);
-      printer.text(`Fecha: ${new Date().toLocaleString()}`);
-      printer.text('------------------------------');
+      // Datos cliente
+      printer.alignLeft();
+      printer.println(`Cliente: ${data.nombre} ${data.apellido}`);
+      printer.println(`Dirección: ${data.direccion}`);
+      printer.println(`Teléfono: ${data.telefono}`);
+      printer.println(`Email: ${data.email}`);
+      printer.println(`Método de pago: ${data.pago}`);
+      printer.println(`Fecha: ${new Date().toLocaleString()}`);
+      printer.drawLine();
 
-      // Tabla de productos
-      printer.text('Producto         Qty  P.Unit  Total');
-      printer.text('------------------------------');
-      data.carrito.forEach(item => {
-        printer.text(this.formatLine(item.name, item.cantidad, item.price));
+      // Productos
+      printer.println('Producto              Cant  Precio  Total');
+      printer.drawLine();
+      data.carrito.forEach((item: any) => {
+        const total = item.cantidad * item.price;
+        printer.println(
+          `${item.name.padEnd(18)} ${item.cantidad
+            .toString()
+            .padStart(3)} ${item.price.toString().padStart(6)} ${total
+            .toString()
+            .padStart(6)}`
+        );
       });
-      printer.text('------------------------------');
+      printer.drawLine();
 
       // Total
-      const total = data.carrito.reduce((sum, i) => sum + i.cantidad * i.price, 0);
-      printer.align('RT').style('B').text(`Total: $${total.toFixed(0)}`);
+      const total = data.carrito.reduce(
+        (sum: number, i: any) => sum + i.cantidad * i.price,
+        0,
+      );
+      printer.alignRight();
+      printer.println(`TOTAL: $${total}`);
 
-      // Pie del ticket
-      printer.align('CT').text(data.footer || 'Gracias por su compra!');
+      // Pie
+      printer.alignCenter();
+      printer.println(data.footer || 'Gracias por su compra!');
+      printer.cut();
 
-      // Cortar papel y cerrar conexión
-      printer.cut().close();
+      // Enviar a la impresora
+      await printer.execute();
 
       return { success: true };
     } catch (err) {
-      console.error(err);
+      console.error('Error de impresión:', err);
       throw new BadRequestException('Error al imprimir: ' + err.message);
     }
   }
