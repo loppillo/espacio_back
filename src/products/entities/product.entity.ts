@@ -20,8 +20,8 @@ export class Product {
 
   @Column('int')
   price: number;
-
-    @Column('int')
+  
+ @Column({ nullable: true })
   cantidad:number;
   
   @Column({ nullable: true })
