@@ -118,7 +118,7 @@ let ProductsService = class ProductsService {
             description: producto.description,
             price: producto.price,
             imageUrl: producto.imageUrl
-                ? `${baseUrl}${producto.imageUrl.replace(/^\/+/, '')}`
+                ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}`
                 : null,
             categories: producto.categories.map((cat) => ({
                 id: cat.id,
