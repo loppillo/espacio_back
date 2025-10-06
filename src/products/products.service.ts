@@ -135,8 +135,7 @@ async buscarPorNombre(
 
   const query = this.proRepository
     .createQueryBuilder('product')
-    .leftJoinAndSelect('product.categories', 'category')
-    .orderBy('product.id', 'DESC');
+    .leftJoinAndSelect('product.categories', 'category');
 
   // Filtrar por nombre
   if (nombre) {
@@ -145,7 +144,9 @@ async buscarPorNombre(
 
   // Filtrar por categorías múltiples
   if (categoryIds && categoryIds.length > 0) {
-    query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
+    query.innerJoin('product.categories', 'filterCat', 'filterCat.id IN (:...categoryIds)', {
+      categoryIds,
+    });
   }
 
   // Contar total de productos distintos
@@ -155,10 +156,9 @@ async buscarPorNombre(
   const productos = await query
     .skip(skip)
     .take(limit)
-    .distinct(true) // evita duplicados si un producto tiene varias categorías
+    .distinct(true)
     .getMany();
 
-  // Mapear DTO
   const data: ProductDto[] = productos.map((producto) => ({
     id: producto.id,
     name: producto.name,
@@ -180,6 +180,7 @@ async buscarPorNombre(
     currentPage: page,
   };
 }
+
 
 
 
