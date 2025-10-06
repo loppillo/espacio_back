@@ -53,7 +53,6 @@ async updateProduct(
 
 
 
-
 @Get('buscar')
 buscarProductos(
   @Query('nombre') nombre?: string,
@@ -61,14 +60,13 @@ buscarProductos(
   @Query('page') page: string = '1',
   @Query('limit') limit: string = '10',
 ) {
-  // Convertir a array de números si viene la query
   const categoryIds = categorias
     ? categorias.split(',').map((id) => parseInt(id, 10))
     : undefined;
 
   return this.productsService.buscarPorNombre(
     nombre,
-    categoryIds, // ahora es number[]
+    categoryIds,
     parseInt(page, 10),
     parseInt(limit, 10),
   );
