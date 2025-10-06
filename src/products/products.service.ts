@@ -142,11 +142,9 @@ async buscarPorNombre(
     query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
   }
 
-  // Filtrar por categorías múltiples
+  // Filtrar por categorías múltiples usando IN
   if (categoryIds && categoryIds.length > 0) {
-    query.innerJoin('product.categories', 'filterCat', 'filterCat.id IN (:...categoryIds)', {
-      categoryIds,
-    });
+    query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
   }
 
   // Contar total de productos distintos
@@ -180,6 +178,7 @@ async buscarPorNombre(
     currentPage: page,
   };
 }
+
 
 
 
