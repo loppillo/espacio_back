@@ -17,7 +17,7 @@ export declare class ProductsController {
         order: import("../orders/entities/order.entity").Order[];
         orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
     }>;
-    buscarProductos(nombre?: string, categoriaId?: string, page?: string, limit?: string): Promise<{
+    buscarProductos(nombre?: string, categorias?: string, page?: string, limit?: string): Promise<{
         data: ProductDto[];
         total: number;
         currentPage: number;

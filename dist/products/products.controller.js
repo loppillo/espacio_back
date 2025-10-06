@@ -41,8 +41,11 @@ let ProductsController = class ProductsController {
             imageUrl,
         };
     }
-    buscarProductos(nombre, categoriaId, page = '1', limit = '10') {
-        return this.productsService.buscarPorNombre(nombre, categoriaId ? parseInt(categoriaId, 10) : undefined, parseInt(page, 10), parseInt(limit, 10));
+    buscarProductos(nombre, categorias, page = '1', limit = '10') {
+        const categoryIds = categorias
+            ? categorias.split(',').map((id) => parseInt(id, 10))
+            : undefined;
+        return this.productsService.buscarPorNombre(nombre, categoryIds, parseInt(page, 10), parseInt(limit, 10));
     }
     async uploadFile(file, name) {
         const fileUrl = `/uploads/${file.filename}`;
@@ -103,7 +106,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('buscar'),
     __param(0, (0, common_1.Query)('nombre')),
-    __param(1, (0, common_1.Query)('categoria')),
+    __param(1, (0, common_1.Query)('categorias')),
     __param(2, (0, common_1.Query)('page')),
     __param(3, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),

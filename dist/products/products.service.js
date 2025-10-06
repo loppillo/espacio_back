@@ -94,25 +94,24 @@ let ProductsService = class ProductsService {
             }),
         };
     }
-    async buscarPorNombre(nombre, categoryId, page = 1, limit = 10) {
+    async buscarPorNombre(nombre, categoryIds, page = 1, limit = 10) {
         const baseUrl = 'https://espacioboulevard.com';
         page = Math.max(1, page);
         limit = Math.max(1, limit);
         const skip = (page - 1) * limit;
-        const query = this.proRepository.createQueryBuilder('product')
+        const query = this.proRepository
+            .createQueryBuilder('product')
             .leftJoinAndSelect('product.categories', 'category')
-            .orderBy('product.id', 'DESC');
-        if (nombre) {
-            query.andWhere('LOWER(product.name) LIKE LOWER(:nombre)', { nombre: `%${nombre}%` });
-        }
-        if (categoryId) {
-            query.andWhere('category.id = :categoryId', { categoryId });
-        }
-        const total = await query.getCount();
-        const productos = await query
+            .orderBy('product.id', 'DESC')
             .skip(skip)
-            .take(limit)
-            .getMany();
+            .take(limit);
+        if (nombre) {
+            query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
+        }
+        if (categoryIds && categoryIds.length > 0) {
+            query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
+        }
+        const [productos, total] = await query.getManyAndCount();
         const data = productos.map((producto) => ({
             id: producto.id,
             name: producto.name,

@@ -14,7 +14,7 @@ export declare class ProductsService {
     update(id: number, updateProductDto: UpdateProductDto): Promise<Product>;
     updateImage(id: number, updateProductDto: UpdateProductDto, imagePath?: string): Promise<Product>;
     findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
-    buscarPorNombre(nombre?: string, categoryId?: number, page?: number, limit?: number): Promise<{
+    buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number): Promise<{
         data: ProductDto[];
         total: number;
         currentPage: number;
