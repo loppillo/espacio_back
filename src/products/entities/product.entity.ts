@@ -1,16 +1,19 @@
 import { Category } from 'src/categories/entities/category.entity';
 import { Order } from 'src/orders/entities/order.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
-
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToMany,
+  OneToMany,
+  JoinTable,
+} from 'typeorm';
 
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()
   id: number;
-
-  @ManyToOne(() => Category)
-  category: Category;
 
   @Column()
   name: string;
@@ -20,16 +23,25 @@ export class Product {
 
   @Column('int')
   price: number;
-  
- @Column({ nullable: true })
-  cantidad:number;
-  
+
+  @Column({ nullable: true })
+  cantidad: number;
+
   @Column({ nullable: true })
   imageUrl: string;
 
-  @OneToMany(()=>Order,(order)=>order.user)
-  order:Order[];
+  // 👇 Relación muchos a muchos con categorías
+  @ManyToMany(() => Category, { eager: true })
+  @JoinTable({
+    name: 'products_categories', // nombre de la tabla intermedia
+    joinColumn: { name: 'product_id' },
+    inverseJoinColumn: { name: 'category_id' },
+  })
+  categories: Category[];
 
-    @OneToMany(() => ProductsOrders, orderProduct => orderProduct.product)
-  orderProducts: ProductsOrders[];  
+  @OneToMany(() => Order, (order) => order.user)
+  order: Order[];
+
+  @OneToMany(() => ProductsOrders, (orderProduct) => orderProduct.product)
+  orderProducts: ProductsOrders[];
 }

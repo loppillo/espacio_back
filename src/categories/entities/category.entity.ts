@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Product } from 'src/products/entities/product.entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
 
 @Entity('categories')
 export class Category {
@@ -10,4 +11,8 @@ export class Category {
 
   @Column()
   icono: string;
+
+  // 👇 Relación inversa (opcional, pero buena práctica)
+  @ManyToMany(() => Product, (product) => product.categories)
+  products: Product[];
 }

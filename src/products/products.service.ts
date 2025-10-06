@@ -4,7 +4,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from 'src/categories/entities/category.entity';
-import { Like, Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { PaginationDto } from './dto/PaginationDto.dto';
 import { ProductDto } from './dto/productDTO.dto';
 
@@ -28,19 +28,27 @@ export class ProductsService {
 
 
 
+async create(createProductDto: CreateProductDto) {
+  const { categoryIds, ...rest } = createProductDto;
+
+  const categories = await this.categoryRepository.findBy({
+    id: In(categoryIds),
+  });
+
+  if (!categories.length) {
+    throw new NotFoundException('No se encontraron las categorías seleccionadas');
+  }
+
+  const product = this.proRepository.create({
+    ...rest,
+    categories,
+  });
+
+  return await this.proRepository.save(product);
+}
 
  // products.service.ts
-async create(createProductDto: CreateProductDto) {
-    const category = await this.categoryRepository.findOneBy({ id: createProductDto.categoryId });
-    if (!category) throw new NotFoundException('Categoría no encontrada');
 
-    const product = this.proRepository.create({
-      ...createProductDto,
-      category,
-    });
-   
-    return await this.proRepository.save(product);
-  }
 async update(id: number, updateProductDto: UpdateProductDto) {
   const product = await this.proRepository.findOne({ where: { id } });
   if (!product) throw new NotFoundException(`Producto con id ${id} no encontrado`);
@@ -86,8 +94,7 @@ async updateImage( id: number,
       currentPage: page,
       totalPages: Math.max(1, Math.ceil(total / limit)),
       limit,
-      data: products.map(({ id, name, description, price, imageUrl, category }) => {
-       
+      data: products.map(({ id, name, description, price, imageUrl, categories }) => {
         return {
           id,
           name,
@@ -96,7 +103,7 @@ async updateImage( id: number,
           imageUrl: imageUrl
             ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
             : null,
-          category,
+          category: categories && categories.length > 0 ? categories[0] : null,
         };
       }),
     };
@@ -138,7 +145,8 @@ async updateImage( id: number,
     imageUrl: producto.imageUrl
       ? `${baseUrl}${producto.imageUrl.replace(/^products\//, '')}`
       : null,
-    category: producto.category,
+    category: producto.categories && producto.categories.length > 0 ? producto.categories[0] : null,
+    categories: producto.categories,
   }));
 
   return {
