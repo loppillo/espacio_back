@@ -101,13 +101,14 @@ let ProductsService = class ProductsService {
         const skip = (page - 1) * limit;
         const query = this.proRepository
             .createQueryBuilder('product')
-            .leftJoinAndSelect('product.categories', 'category')
-            .orderBy('product.id', 'DESC');
+            .leftJoinAndSelect('product.categories', 'category');
         if (nombre) {
             query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
         }
         if (categoryIds && categoryIds.length > 0) {
-            query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
+            query.innerJoin('product.categories', 'filterCat', 'filterCat.id IN (:...categoryIds)', {
+                categoryIds,
+            });
         }
         const total = await query.getCount();
         const productos = await query
