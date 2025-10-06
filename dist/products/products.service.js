@@ -31,12 +31,16 @@ let ProductsService = class ProductsService {
         return await this.proRepository.save(newProduct);
     }
     async create(createProductDto) {
-        const category = await this.categoryRepository.findOneBy({ id: createProductDto.categoryId });
-        if (!category)
-            throw new common_1.NotFoundException('Categoría no encontrada');
+        const { categoryIds, ...rest } = createProductDto;
+        const categories = await this.categoryRepository.findBy({
+            id: (0, typeorm_2.In)(categoryIds),
+        });
+        if (!categories.length) {
+            throw new common_1.NotFoundException('No se encontraron las categorías seleccionadas');
+        }
         const product = this.proRepository.create({
-            ...createProductDto,
-            category,
+            ...rest,
+            categories,
         });
         return await this.proRepository.save(product);
     }
@@ -72,7 +76,7 @@ let ProductsService = class ProductsService {
             currentPage: page,
             totalPages: Math.max(1, Math.ceil(total / limit)),
             limit,
-            data: products.map(({ id, name, description, price, imageUrl, category }) => {
+            data: products.map(({ id, name, description, price, imageUrl, categories }) => {
                 return {
                     id,
                     name,
@@ -81,7 +85,7 @@ let ProductsService = class ProductsService {
                     imageUrl: imageUrl
                         ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
                         : null,
-                    category,
+                    category: categories && categories.length > 0 ? categories[0] : null,
                 };
             }),
         };
@@ -110,7 +114,8 @@ let ProductsService = class ProductsService {
             imageUrl: producto.imageUrl
                 ? `${baseUrl}${producto.imageUrl.replace(/^products\//, '')}`
                 : null,
-            category: producto.category,
+            category: producto.categories && producto.categories.length > 0 ? producto.categories[0] : null,
+            categories: producto.categories,
         }));
         return {
             data,

@@ -1,10 +1,8 @@
 export declare class CreateProductDto {
-    [x: string]: any;
-    proId: number;
     name: string;
-    description: string;
+    description?: string;
     price: number;
-    cantidad: number;
+    cantidad?: number;
+    categoryIds: number[];
     imageUrl?: string;
-    categoryId?: number;
 }

@@ -9,11 +9,11 @@ export declare class ProductsController {
     updateProduct(id: number, updateProductDto: UpdateProductDto, file?: Express.Multer.File): Promise<{
         imageUrl: string;
         id: number;
-        category: import("../categories/entities/category.entity").Category;
         name: string;
         description: string;
         price: number;
         cantidad: number;
+        categories: import("../categories/entities/category.entity").Category[];
         order: import("../orders/entities/order.entity").Order[];
         orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
     }>;
@@ -32,22 +32,22 @@ export declare class ProductsController {
     create(createProductDto: CreateProductDto, file: Express.Multer.File): Promise<{
         imageUrl: string;
         id: number;
-        category: import("../categories/entities/category.entity").Category;
         name: string;
         description: string;
         price: number;
         cantidad: number;
+        categories: import("../categories/entities/category.entity").Category[];
         order: import("../orders/entities/order.entity").Order[];
         orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
     }>;
     update(id: number, updateProductDto: UpdateProductDto): Promise<{
         imageUrl: string;
         id: number;
-        category: import("../categories/entities/category.entity").Category;
         name: string;
         description: string;
         price: number;
         cantidad: number;
+        categories: import("../categories/entities/category.entity").Category[];
         order: import("../orders/entities/order.entity").Order[];
         orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
     }>;

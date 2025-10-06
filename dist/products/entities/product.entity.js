@@ -22,10 +22,6 @@ __decorate([
     __metadata("design:type", Number)
 ], Product.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => category_entity_1.Category),
-    __metadata("design:type", category_entity_1.Category)
-], Product.prototype, "category", void 0);
-__decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], Product.prototype, "name", void 0);
@@ -46,11 +42,20 @@ __decorate([
     __metadata("design:type", String)
 ], Product.prototype, "imageUrl", void 0);
 __decorate([
+    (0, typeorm_1.ManyToMany)(() => category_entity_1.Category, { eager: true }),
+    (0, typeorm_1.JoinTable)({
+        name: 'products_categories',
+        joinColumn: { name: 'product_id' },
+        inverseJoinColumn: { name: 'category_id' },
+    }),
+    __metadata("design:type", Array)
+], Product.prototype, "categories", void 0);
+__decorate([
     (0, typeorm_1.OneToMany)(() => order_entity_1.Order, (order) => order.user),
     __metadata("design:type", Array)
 ], Product.prototype, "order", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => products_order_entity_1.ProductsOrders, orderProduct => orderProduct.product),
+    (0, typeorm_1.OneToMany)(() => products_order_entity_1.ProductsOrders, (orderProduct) => orderProduct.product),
     __metadata("design:type", Array)
 ], Product.prototype, "orderProducts", void 0);
 exports.Product = Product = __decorate([
