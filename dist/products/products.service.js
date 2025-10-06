@@ -68,7 +68,7 @@ let ProductsService = class ProductsService {
         const [products, total] = await this.proRepository.findAndCount({
             take: limit,
             skip: skip,
-            relations: ['category'],
+            relations: ['categories'],
             order: { id: 'DESC' },
         });
         return {
@@ -85,37 +85,46 @@ let ProductsService = class ProductsService {
                     imageUrl: imageUrl
                         ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
                         : null,
-                    category: categories && categories.length > 0 ? categories[0] : null,
+                    categories: categories.map((cat) => ({
+                        id: cat.id,
+                        nombre: cat.nombre,
+                        icono: cat.icono,
+                    })),
                 };
             }),
         };
     }
     async buscarPorNombre(nombre, categoryId, page = 1, limit = 10) {
         const baseUrl = 'https://espacioboulevard.com';
-        const where = {};
+        page = Math.max(1, page);
+        limit = Math.max(1, limit);
+        const skip = (page - 1) * limit;
+        const query = this.proRepository
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.categories', 'category')
+            .orderBy('product.id', 'DESC')
+            .skip(skip)
+            .take(limit);
         if (nombre) {
-            where.name = (0, typeorm_2.Like)(`%${nombre}%`);
+            query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
         }
         if (categoryId) {
-            where.category = { id: categoryId };
+            query.andWhere('category.id = :categoryId', { categoryId });
         }
-        const [productos, total] = await this.proRepository.findAndCount({
-            where,
-            relations: ['category'],
-            order: { id: 'DESC' },
-            skip: (page - 1) * limit,
-            take: limit,
-        });
+        const [productos, total] = await query.getManyAndCount();
         const data = productos.map((producto) => ({
             id: producto.id,
             name: producto.name,
             description: producto.description,
             price: producto.price,
             imageUrl: producto.imageUrl
-                ? `${baseUrl}${producto.imageUrl.replace(/^products\//, '')}`
+                ? `${baseUrl}${producto.imageUrl.replace(/^\/+/, '')}`
                 : null,
-            category: producto.categories && producto.categories.length > 0 ? producto.categories[0] : null,
-            categories: producto.categories,
+            categories: producto.categories.map((cat) => ({
+                id: cat.id,
+                nombre: cat.nombre,
+                icono: cat.icono,
+            })),
         }));
         return {
             data,
