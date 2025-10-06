@@ -55,6 +55,10 @@ customer: Customer;
   @JoinColumn({ name: 'mesaId' })
   mesa: Mesa;
 
+  @ManyToOne(() => Product, product => product.id)
+  @JoinColumn({ name: 'productId' })
+  product: Product;
+
   @DeleteDateColumn({ nullable: true })
   deletedAt?: Date;
 
