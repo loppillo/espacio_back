@@ -133,22 +133,32 @@ async buscarPorNombre(
   limit = Math.max(1, limit);
   const skip = (page - 1) * limit;
 
-  const query = this.proRepository.createQueryBuilder('product')
+  const query = this.proRepository
+    .createQueryBuilder('product')
     .leftJoinAndSelect('product.categories', 'category')
     .orderBy('product.id', 'DESC');
 
+  // Filtrar por nombre
   if (nombre) {
-    query.andWhere('LOWER(product.name) LIKE LOWER(:nombre)', { nombre: `%${nombre}%` });
+    query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
   }
 
+  // Filtrar por categorías múltiples
   if (categoryIds && categoryIds.length > 0) {
     query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
   }
 
+  // Contar total de productos distintos
   const total = await query.getCount();
 
-  const productos = await query.skip(skip).take(limit).getMany();
+  // Paginación
+  const productos = await query
+    .skip(skip)
+    .take(limit)
+    .distinct(true) // evita duplicados si un producto tiene varias categorías
+    .getMany();
 
+  // Mapear DTO
   const data: ProductDto[] = productos.map((producto) => ({
     id: producto.id,
     name: producto.name,
@@ -170,6 +180,7 @@ async buscarPorNombre(
     currentPage: page,
   };
 }
+
 
 
   
