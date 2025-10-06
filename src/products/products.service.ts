@@ -133,37 +133,44 @@ async updateImage( id: number,
   limit = Math.max(1, limit);
   const skip = (page - 1) * limit;
 
-  const query = this.proRepository
-    .createQueryBuilder('product')
+  const query = this.proRepository.createQueryBuilder('product')
     .leftJoinAndSelect('product.categories', 'category')
-    .orderBy('product.id', 'DESC')
-    .skip(skip)
-    .take(limit);
+    .orderBy('product.id', 'DESC');
 
+  // 🔹 Filtro por nombre (insensible a mayúsculas)
   if (nombre) {
-    query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
+    query.andWhere('LOWER(product.name) LIKE LOWER(:nombre)', { nombre: `%${nombre}%` });
   }
 
+  // 🔹 Filtro por categoría
   if (categoryId) {
     query.andWhere('category.id = :categoryId', { categoryId });
   }
 
-  const [productos, total] = await query.getManyAndCount();
+  // 🔹 Contar total antes de paginar
+  const total = await query.getCount();
 
+  // 🔹 Aplicar paginación
+  const productos = await query
+    .skip(skip)
+    .take(limit)
+    .getMany();
+
+  // 🔹 Formateo de DTO
   const data: ProductDto[] = productos.map((producto) => ({
-  id: producto.id,
-  name: producto.name,
-  description: producto.description,
-  price: producto.price,
-  imageUrl: producto.imageUrl
-    ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}` // ✅ agregamos la barra
-    : null,
-  categories: producto.categories.map((cat) => ({
-    id: cat.id,
-    nombre: cat.nombre,
-    icono: cat.icono,
-  })),
-}));
+    id: producto.id,
+    name: producto.name,
+    description: producto.description,
+    price: producto.price,
+    imageUrl: producto.imageUrl
+      ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}`
+      : null,
+    categories: producto.categories.map((cat) => ({
+      id: cat.id,
+      nombre: cat.nombre,
+      icono: cat.icono,
+    })),
+  }));
 
   return {
     data,
