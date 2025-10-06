@@ -99,17 +99,22 @@ let ProductsService = class ProductsService {
         page = Math.max(1, page);
         limit = Math.max(1, limit);
         const skip = (page - 1) * limit;
-        const query = this.proRepository.createQueryBuilder('product')
+        const query = this.proRepository
+            .createQueryBuilder('product')
             .leftJoinAndSelect('product.categories', 'category')
             .orderBy('product.id', 'DESC');
         if (nombre) {
-            query.andWhere('LOWER(product.name) LIKE LOWER(:nombre)', { nombre: `%${nombre}%` });
+            query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
         }
         if (categoryIds && categoryIds.length > 0) {
             query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
         }
         const total = await query.getCount();
-        const productos = await query.skip(skip).take(limit).getMany();
+        const productos = await query
+            .skip(skip)
+            .take(limit)
+            .distinct(true)
+            .getMany();
         const data = productos.map((producto) => ({
             id: producto.id,
             name: producto.name,
