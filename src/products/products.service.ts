@@ -122,9 +122,8 @@ async updateImage( id: number,
   
   
 
-  async buscarPorNombre(
-  nombre?: string,
-  categoryId?: number,
+async buscarPorNombre(nombre?: string,
+  categoryIds?: number[],
   page = 1,
   limit = 10,
 ): Promise<{ data: ProductDto[]; total: number; currentPage: number }> {
@@ -133,30 +132,25 @@ async updateImage( id: number,
   limit = Math.max(1, limit);
   const skip = (page - 1) * limit;
 
-  const query = this.proRepository.createQueryBuilder('product')
+  const query = this.proRepository
+    .createQueryBuilder('product')
     .leftJoinAndSelect('product.categories', 'category')
-    .orderBy('product.id', 'DESC');
-
-  // 🔹 Filtro por nombre (insensible a mayúsculas)
-  if (nombre) {
-    query.andWhere('LOWER(product.name) LIKE LOWER(:nombre)', { nombre: `%${nombre}%` });
-  }
-
-  // 🔹 Filtro por categoría
-  if (categoryId) {
-    query.andWhere('category.id = :categoryId', { categoryId });
-  }
-
-  // 🔹 Contar total antes de paginar
-  const total = await query.getCount();
-
-  // 🔹 Aplicar paginación
-  const productos = await query
+    .orderBy('product.id', 'DESC')
     .skip(skip)
-    .take(limit)
-    .getMany();
+    .take(limit);
 
-  // 🔹 Formateo de DTO
+  // Filtrar por nombre
+  if (nombre) {
+    query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
+  }
+
+  // Filtrar por múltiples categorías
+  if (categoryIds && categoryIds.length > 0) {
+    query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
+  }
+
+  const [productos, total] = await query.getManyAndCount();
+
   const data: ProductDto[] = productos.map((producto) => ({
     id: producto.id,
     name: producto.name,
@@ -178,6 +172,7 @@ async updateImage( id: number,
     currentPage: page,
   };
 }
+
 
   
 
