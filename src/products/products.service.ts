@@ -133,28 +133,26 @@ async buscarPorNombre(
   limit = Math.max(1, limit);
   const skip = (page - 1) * limit;
 
-  const query = this.proRepository
-    .createQueryBuilder('product')
+  const query = this.proRepository.createQueryBuilder('product')
     .leftJoinAndSelect('product.categories', 'category');
 
-  // Filtrar por nombre
   if (nombre) {
     query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
   }
 
-  // Filtrar por categorías múltiples usando IN
   if (categoryIds && categoryIds.length > 0) {
+    // Filtrar por productos que tengan al menos una categoría dentro de categoryIds
     query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
   }
 
-  // Contar total de productos distintos
+  // Contar total distinto
   const total = await query.getCount();
 
-  // Paginación
+  // Obtener productos con paginación
   const productos = await query
     .skip(skip)
     .take(limit)
-    .distinct(true)
+    .orderBy('product.id', 'DESC')
     .getMany();
 
   const data: ProductDto[] = productos.map((producto) => ({
@@ -178,6 +176,7 @@ async buscarPorNombre(
     currentPage: page,
   };
 }
+
 
 
 
