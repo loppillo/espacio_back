@@ -99,8 +99,7 @@ let ProductsService = class ProductsService {
         page = Math.max(1, page);
         limit = Math.max(1, limit);
         const skip = (page - 1) * limit;
-        const query = this.proRepository
-            .createQueryBuilder('product')
+        const query = this.proRepository.createQueryBuilder('product')
             .leftJoinAndSelect('product.categories', 'category');
         if (nombre) {
             query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
@@ -112,7 +111,7 @@ let ProductsService = class ProductsService {
         const productos = await query
             .skip(skip)
             .take(limit)
-            .distinct(true)
+            .orderBy('product.id', 'DESC')
             .getMany();
         const data = productos.map((producto) => ({
             id: producto.id,
