@@ -106,9 +106,7 @@ let ProductsService = class ProductsService {
             query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
         }
         if (categoryIds && categoryIds.length > 0) {
-            query.innerJoin('product.categories', 'filterCat', 'filterCat.id IN (:...categoryIds)', {
-                categoryIds,
-            });
+            query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
         }
         const total = await query.getCount();
         const productos = await query
