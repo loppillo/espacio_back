@@ -13,6 +13,7 @@ exports.Order = void 0;
 const customer_entity_1 = require("../../customer/entities/customer.entity");
 const mesa_entity_1 = require("../../mesas/entities/mesa.entity");
 const products_order_entity_1 = require("../../products-orders/entities/products-order.entity");
+const product_entity_1 = require("../../products/entities/product.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
 const typeorm_1 = require("typeorm");
 let Order = class Order {
@@ -77,6 +78,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'mesaId' }),
     __metadata("design:type", mesa_entity_1.Mesa)
 ], Order.prototype, "mesa", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.id),
+    (0, typeorm_1.JoinColumn)({ name: 'productId' }),
+    __metadata("design:type", product_entity_1.Product)
+], Order.prototype, "product", void 0);
 __decorate([
     (0, typeorm_1.DeleteDateColumn)({ nullable: true }),
     __metadata("design:type", Date)

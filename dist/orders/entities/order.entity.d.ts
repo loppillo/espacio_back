@@ -1,6 +1,7 @@
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
+import { Product } from 'src/products/entities/product.entity';
 import { User } from 'src/users/entities/user.entity';
 export declare class Order {
     id: number;
@@ -17,6 +18,7 @@ export declare class Order {
     customer: Customer;
     orderProducts: ProductsOrders[];
     mesa: Mesa;
+    product: Product;
     deletedAt?: Date;
     numeroVenta: number;
 }
