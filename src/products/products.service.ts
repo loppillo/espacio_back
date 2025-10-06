@@ -75,26 +75,30 @@ async updateImage( id: number,
   return await this.proRepository.save(product);
 }
 
-  async findAll(page: number = 1, limit: number = 10): Promise<PaginationDto<ProductDto>> {
-    // Validar que page y limit sean números enteros positivos
-    page = Math.max(1, Number(page) || 1);
-    limit = Math.max(1, Number(limit) || 10);
-  
-    const skip = (page - 1) * limit; // Cálculo seguro
-  
-    const [products, total] = await this.proRepository.findAndCount({
-      take: limit,
-      skip: skip, // Garantiza que skip sea un número válido
-      relations: ['category'],
-      order: { id: 'DESC' },
-    });
-  
-    return {
-      total,
-      currentPage: page,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-      limit,
-      data: products.map(({ id, name, description, price, imageUrl, categories }) => {
+  async findAll(
+  page: number = 1,
+  limit: number = 10,
+): Promise<PaginationDto<ProductDto>> {
+  // Validar que page y limit sean números enteros positivos
+  page = Math.max(1, Number(page) || 1);
+  limit = Math.max(1, Number(limit) || 10);
+
+  const skip = (page - 1) * limit;
+
+  const [products, total] = await this.proRepository.findAndCount({
+    take: limit,
+    skip: skip,
+    relations: ['categories'], // 👈 ahora ManyToMany
+    order: { id: 'DESC' },
+  });
+
+  return {
+    total,
+    currentPage: page,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+    limit,
+    data: products.map(
+      ({ id, name, description, price, imageUrl, categories }) => {
         return {
           id,
           name,
@@ -103,50 +107,62 @@ async updateImage( id: number,
           imageUrl: imageUrl
             ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
             : null,
-          category: categories && categories.length > 0 ? categories[0] : null,
+          // 👇 devolver array de categorías en lugar de solo la primera
+          categories: categories.map((cat) => ({
+            id: cat.id,
+            nombre: cat.nombre,
+            icono: cat.icono,
+          })),
         };
-      }),
-    };
-    
-  }
+      },
+    ),
+  };
+}
+
   
   
 
-  async buscarPorNombre(nombre?: string,
+  async buscarPorNombre(
+  nombre?: string,
   categoryId?: number,
   page = 1,
   limit = 10,
 ): Promise<{ data: ProductDto[]; total: number; currentPage: number }> {
   const baseUrl = 'https://espacioboulevard.com';
+  page = Math.max(1, page);
+  limit = Math.max(1, limit);
+  const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const query = this.proRepository
+    .createQueryBuilder('product')
+    .leftJoinAndSelect('product.categories', 'category')
+    .orderBy('product.id', 'DESC')
+    .skip(skip)
+    .take(limit);
 
   if (nombre) {
-    where.name = Like(`%${nombre}%`);
+    query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
   }
 
   if (categoryId) {
-    where.category = { id: categoryId };
+    query.andWhere('category.id = :categoryId', { categoryId });
   }
 
-  const [productos, total] = await this.proRepository.findAndCount({
-    where,
-    relations: ['category'],
-    order: { id: 'DESC' },
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+  const [productos, total] = await query.getManyAndCount();
 
-  const data = productos.map((producto) => ({
+  const data: ProductDto[] = productos.map((producto) => ({
     id: producto.id,
     name: producto.name,
     description: producto.description,
     price: producto.price,
     imageUrl: producto.imageUrl
-      ? `${baseUrl}${producto.imageUrl.replace(/^products\//, '')}`
+      ? `${baseUrl}${producto.imageUrl.replace(/^\/+/, '')}`
       : null,
-    category: producto.categories && producto.categories.length > 0 ? producto.categories[0] : null,
-    categories: producto.categories,
+    categories: producto.categories.map((cat) => ({
+      id: cat.id,
+      nombre: cat.nombre,
+      icono: cat.icono,
+    })),
   }));
 
   return {
@@ -155,7 +171,7 @@ async updateImage( id: number,
     currentPage: page,
   };
 }
-  
+
   
 
 
