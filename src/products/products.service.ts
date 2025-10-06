@@ -151,19 +151,19 @@ async updateImage( id: number,
   const [productos, total] = await query.getManyAndCount();
 
   const data: ProductDto[] = productos.map((producto) => ({
-    id: producto.id,
-    name: producto.name,
-    description: producto.description,
-    price: producto.price,
-    imageUrl: producto.imageUrl
-      ? `${baseUrl}${producto.imageUrl.replace(/^\/+/, '')}`
-      : null,
-    categories: producto.categories.map((cat) => ({
-      id: cat.id,
-      nombre: cat.nombre,
-      icono: cat.icono,
-    })),
-  }));
+  id: producto.id,
+  name: producto.name,
+  description: producto.description,
+  price: producto.price,
+  imageUrl: producto.imageUrl
+    ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}` // ✅ agregamos la barra
+    : null,
+  categories: producto.categories.map((cat) => ({
+    id: cat.id,
+    nombre: cat.nombre,
+    icono: cat.icono,
+  })),
+}));
 
   return {
     data,
