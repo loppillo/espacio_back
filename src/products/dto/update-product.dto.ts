@@ -9,12 +9,14 @@ export class UpdateProductDto {
   @IsString()
   description?: string;
 
+
   @IsOptional()
-  @IsInt()
+  imageUrl?: string;
+
+  @IsOptional()
   price?: number;
 
   @IsOptional()
-  @IsInt()
   cantidad?: number;
 
   @IsOptional()
