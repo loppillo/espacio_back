@@ -154,19 +154,7 @@ buscarProductos(
     };
   }
 
-  @Patch('update/:id')
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateProductDto: UpdateProductDto,
-  ) {
-    const product = await this.productsService.update(id, updateProductDto);
-
-    return {
-      ...product,
-      imageUrl: product.imageUrl ? `https://espacioboulevard.com${product.imageUrl}` : null,
-    };
-  }
-
+  
   
 
 

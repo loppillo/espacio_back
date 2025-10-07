@@ -47,33 +47,43 @@ async create(createProductDto: CreateProductDto) {
   return await this.proRepository.save(product);
 }
 
- // products.service.ts
 
-async update(id: number, updateProductDto: UpdateProductDto) {
-  const product = await this.proRepository.findOne({ where: { id } });
-  if (!product) throw new NotFoundException(`Producto con id ${id} no encontrado`);
 
-  this.proRepository.merge(product, updateProductDto);
-  return await this.proRepository.save(product); // 🔥 aquí devuelve la entidad
-}
-
-async updateImage( id: number,
+async updateImage(
+  id: number,
   updateProductDto: UpdateProductDto,
   imagePath?: string,
 ) {
-  const product = await this.proRepository.findOne({ where: { id } });
-  if (!product) throw new NotFoundException(`Producto con id ${id} no encontrado`);
+  const { categories, ...restData } = updateProductDto;
 
-  // Actualizar campos
-  Object.assign(product, updateProductDto);
+  // Buscar el producto existente
+  const product = await this.proRepository.findOne({
+    where: { id },
+    relations: ['categories'], // importante para que cargue la relación
+  });
 
-  // Actualizar imagen si hay archivo
+  if (!product) {
+    throw new NotFoundException(`Producto con id ${id} no encontrado`);
+  }
+
+  // Actualizar los campos simples
+  Object.assign(product, restData);
+
+  // Si viene una nueva imagen, reemplázala
   if (imagePath) {
     product.imageUrl = imagePath;
   }
 
+  // 🔁 Actualizar categorías si vienen en el DTO
+  if (categories && Array.isArray(categories)) {
+    const foundCategories = await this.categoryRepository.findByIds(categories);
+    product.categories = foundCategories;
+  }
+
+  // Guardar cambios
   return await this.proRepository.save(product);
 }
+
 
   async findAll(
   page: number = 1,
@@ -133,37 +143,26 @@ async buscarPorNombre(
   limit = Math.max(1, limit);
   const skip = (page - 1) * limit;
 
-  const query = this.proRepository
-    .createQueryBuilder('product')
+  const query = this.proRepository.createQueryBuilder('product')
     .leftJoinAndSelect('product.categories', 'category');
 
-  // Filtrar por nombre
   if (nombre) {
     query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
   }
 
-  // Filtrar por categorías múltiples
   if (categoryIds && categoryIds.length > 0) {
-    query.andWhere(
-      'product.id IN ' +
-        query
-          .subQuery()
-          .select('p.id')
-          .from(Product, 'p')
-          .leftJoin('p.categories', 'c')
-          .where('c.id IN (:...categoryIds)', { categoryIds })
-          .getQuery(),
-    );
+    // Filtrar por productos que tengan al menos una categoría dentro de categoryIds
+    query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
   }
 
-  // Contar total de productos
+  // Contar total distinto
   const total = await query.getCount();
 
-  // Traer productos con paginación
+  // Obtener productos con paginación
   const productos = await query
-    .orderBy('product.id', 'DESC')
     .skip(skip)
     .take(limit)
+    .orderBy('product.id', 'DESC')
     .getMany();
 
   const data: ProductDto[] = productos.map((producto) => ({
@@ -187,7 +186,6 @@ async buscarPorNombre(
     currentPage: page,
   };
 }
-
 
 
 
