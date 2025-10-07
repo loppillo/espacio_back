@@ -11,7 +11,6 @@ export declare class ProductsService {
     constructor(categoryRepository: Repository<Category>, proRepository: Repository<Product>);
     createProductWithImage(name: string, imageUrl: string): Promise<Product>;
     create(createProductDto: CreateProductDto): Promise<Product>;
-    update(id: number, updateProductDto: UpdateProductDto): Promise<Product>;
     updateImage(id: number, updateProductDto: UpdateProductDto, imagePath?: string): Promise<Product>;
     findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
     buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number): Promise<{

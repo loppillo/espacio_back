@@ -76,13 +76,6 @@ let ProductsController = class ProductsController {
             imageUrl: product.imageUrl ? `https://espacioboulevard.com${product.imageUrl}` : null,
         };
     }
-    async update(id, updateProductDto) {
-        const product = await this.productsService.update(id, updateProductDto);
-        return {
-            ...product,
-            imageUrl: product.imageUrl ? `https://espacioboulevard.com${product.imageUrl}` : null,
-        };
-    }
 };
 exports.ProductsController = ProductsController;
 __decorate([
@@ -170,14 +163,6 @@ __decorate([
     __metadata("design:paramtypes", [create_product_dto_1.CreateProductDto, Object]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "create", null);
-__decorate([
-    (0, common_1.Patch)('update/:id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, update_product_dto_1.UpdateProductDto]),
-    __metadata("design:returntype", Promise)
-], ProductsController.prototype, "update", null);
 exports.ProductsController = ProductsController = __decorate([
     (0, common_1.Controller)('products'),
     __metadata("design:paramtypes", [products_service_1.ProductsService])

@@ -44,20 +44,22 @@ let ProductsService = class ProductsService {
         });
         return await this.proRepository.save(product);
     }
-    async update(id, updateProductDto) {
-        const product = await this.proRepository.findOne({ where: { id } });
-        if (!product)
-            throw new common_1.NotFoundException(`Producto con id ${id} no encontrado`);
-        this.proRepository.merge(product, updateProductDto);
-        return await this.proRepository.save(product);
-    }
     async updateImage(id, updateProductDto, imagePath) {
-        const product = await this.proRepository.findOne({ where: { id } });
-        if (!product)
+        const { categories, ...restData } = updateProductDto;
+        const product = await this.proRepository.findOne({
+            where: { id },
+            relations: ['categories'],
+        });
+        if (!product) {
             throw new common_1.NotFoundException(`Producto con id ${id} no encontrado`);
-        Object.assign(product, updateProductDto);
+        }
+        Object.assign(product, restData);
         if (imagePath) {
             product.imageUrl = imagePath;
+        }
+        if (categories && Array.isArray(categories)) {
+            const foundCategories = await this.categoryRepository.findByIds(categories);
+            product.categories = foundCategories;
         }
         return await this.proRepository.save(product);
     }
@@ -99,27 +101,19 @@ let ProductsService = class ProductsService {
         page = Math.max(1, page);
         limit = Math.max(1, limit);
         const skip = (page - 1) * limit;
-        const query = this.proRepository
-            .createQueryBuilder('product')
+        const query = this.proRepository.createQueryBuilder('product')
             .leftJoinAndSelect('product.categories', 'category');
         if (nombre) {
             query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
         }
         if (categoryIds && categoryIds.length > 0) {
-            query.andWhere('product.id IN ' +
-                query
-                    .subQuery()
-                    .select('p.id')
-                    .from(product_entity_1.Product, 'p')
-                    .leftJoin('p.categories', 'c')
-                    .where('c.id IN (:...categoryIds)', { categoryIds })
-                    .getQuery());
+            query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
         }
         const total = await query.getCount();
         const productos = await query
-            .orderBy('product.id', 'DESC')
             .skip(skip)
             .take(limit)
+            .orderBy('product.id', 'DESC')
             .getMany();
         const data = productos.map((producto) => ({
             id: producto.id,

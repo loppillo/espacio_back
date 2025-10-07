@@ -40,15 +40,4 @@ export declare class ProductsController {
         order: import("../orders/entities/order.entity").Order[];
         orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
     }>;
-    update(id: number, updateProductDto: UpdateProductDto): Promise<{
-        imageUrl: string;
-        id: number;
-        name: string;
-        description: string;
-        price: number;
-        cantidad: number;
-        categories: import("../categories/entities/category.entity").Category[];
-        order: import("../orders/entities/order.entity").Order[];
-        orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
-    }>;
 }
