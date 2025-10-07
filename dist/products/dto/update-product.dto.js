@@ -26,12 +26,14 @@ __decorate([
 ], UpdateProductDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", String)
+], UpdateProductDto.prototype, "imageUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], UpdateProductDto.prototype, "price", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], UpdateProductDto.prototype, "cantidad", void 0);
 __decorate([
