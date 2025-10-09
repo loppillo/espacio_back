@@ -63,38 +63,25 @@ let ProductsService = class ProductsService {
         }
         return await this.proRepository.save(product);
     }
-    async findAll(page = 1, limit = 10) {
-        page = Math.max(1, Number(page) || 1);
-        limit = Math.max(1, Number(limit) || 10);
-        const skip = (page - 1) * limit;
-        const [products, total] = await this.proRepository.findAndCount({
-            take: limit,
-            skip: skip,
+    async findAll() {
+        const products = await this.proRepository.find({
             relations: ['categories'],
             order: { id: 'DESC' },
         });
-        return {
-            total,
-            currentPage: page,
-            totalPages: Math.max(1, Math.ceil(total / limit)),
-            limit,
-            data: products.map(({ id, name, description, price, imageUrl, categories }) => {
-                return {
-                    id,
-                    name,
-                    description,
-                    price,
-                    imageUrl: imageUrl
-                        ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
-                        : null,
-                    categories: categories.map((cat) => ({
-                        id: cat.id,
-                        nombre: cat.nombre,
-                        icono: cat.icono,
-                    })),
-                };
-            }),
-        };
+        return products.map(({ id, name, description, price, imageUrl, categories }) => ({
+            id,
+            name,
+            description,
+            price,
+            imageUrl: imageUrl
+                ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
+                : null,
+            categories: categories.map((cat) => ({
+                id: cat.id,
+                nombre: cat.nombre,
+                icono: cat.icono,
+            })),
+        }));
     }
     async buscarPorNombre(nombre, categoryIds, page = 1, limit = 10) {
         const baseUrl = 'https://espacioboulevard.com';

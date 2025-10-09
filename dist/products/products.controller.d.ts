@@ -1,7 +1,6 @@
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { PaginationDto } from './dto/PaginationDto.dto';
 import { ProductDto } from './dto/productDTO.dto';
 export declare class ProductsController {
     private readonly productsService;
@@ -26,7 +25,7 @@ export declare class ProductsController {
         message: string;
         product: import("./entities/product.entity").Product;
     }>;
-    findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
+    findAll(): Promise<ProductDto[]>;
     findOne(id: string): Promise<import("./entities/product.entity").Product>;
     remove(id: string): Promise<import("typeorm").DeleteResult>;
     create(createProductDto: CreateProductDto, file: Express.Multer.File): Promise<{
