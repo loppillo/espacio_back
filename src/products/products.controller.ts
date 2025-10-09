@@ -83,6 +83,12 @@ buscarProductos(
   }
   
 
+  @Get('finds')
+async findAlls(): Promise<ProductDto[]> {
+  return this.productsService.findAlls();
+}
+
+
   @Get('find')
   async findAll(
     @Query('page') page: number = 1,

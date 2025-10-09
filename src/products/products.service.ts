@@ -131,7 +131,28 @@ if (categories && Array.isArray(categories)) {
   };
 }
 
-  
+  async findAlls(): Promise<ProductDto[]> {
+  const products = await this.proRepository.find({
+    relations: ['categories'], // ManyToMany
+    order: { id: 'DESC' },
+  });
+
+  return products.map(({ id, name, description, price, imageUrl, categories }) => ({
+    id,
+    name,
+    description,
+    price,
+    imageUrl: imageUrl
+      ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
+      : null,
+    categories: categories.map((cat) => ({
+      id: cat.id,
+      nombre: cat.nombre,
+      icono: cat.icono,
+    })),
+  }));
+}
+
 
 async buscarPorNombre(
   nombre?: string,
