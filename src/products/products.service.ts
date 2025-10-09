@@ -74,12 +74,21 @@ async updateImage(
     product.imageUrl = imagePath;
   }
 
-  // 🔁 Actualizar categorías si vienen en el DTO
-if (categories && Array.isArray(categories)) {
-  const foundCategories = await this.categoryRepository.find({
-    where: { id: In(categories) },
-  });
-  product.categories = foundCategories;
+if (categories) {
+  // Si viene como string JSON, convertirlo a array
+  const categoryIds = typeof categories === 'string'
+    ? JSON.parse(categories)
+    : categories;
+
+  if (Array.isArray(categoryIds) && categoryIds.length > 0) {
+    const foundCategories = await this.categoryRepository.find({
+      where: { id: In(categoryIds) },
+    });
+    product.categories = foundCategories;
+  } else {
+    // Si no hay categorías, limpiar la relación
+    product.categories = [];
+  }
 }
 
   // Guardar cambios
