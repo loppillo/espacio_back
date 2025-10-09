@@ -52,6 +52,17 @@ buscarProductos(
   );
 }
 
+@Get('buscars')
+buscarProducto(
+  @Query('nombre') nombre?: string,
+  @Query('categorias') categorias?: string // puede ser "1,2,3"
+) {
+  const categoryIds = categorias
+    ? categorias.split(',').map((id) => parseInt(id, 10))
+    : undefined;
+
+  return this.productsService.buscarPorNombre(nombre, categoryIds);
+}
 
 
 

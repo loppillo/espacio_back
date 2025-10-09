@@ -210,7 +210,43 @@ async buscarPorNombre(
 }
 
 
+async buscarPorNombres(
+  nombre?: string,
+  categoryIds?: number[]
+): Promise<ProductDto[]> {
+  const baseUrl = 'https://espacioboulevard.com';
 
+  const query = this.proRepository.createQueryBuilder('product')
+    .leftJoinAndSelect('product.categories', 'category');
+
+  if (nombre) {
+    query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
+  }
+
+  if (categoryIds && categoryIds.length > 0) {
+    query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
+  }
+
+  // Obtener todos los productos filtrados, sin paginación
+  const productos = await query
+    .orderBy('product.id', 'DESC')
+    .getMany();
+
+  return productos.map((producto) => ({
+    id: producto.id,
+    name: producto.name,
+    description: producto.description,
+    price: producto.price,
+    imageUrl: producto.imageUrl
+      ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}`
+      : null,
+    categories: producto.categories.map((cat) => ({
+      id: cat.id,
+      nombre: cat.nombre,
+      icono: cat.icono,
+    })),
+  }));
+}
 
 
 
