@@ -57,11 +57,19 @@ let ProductsService = class ProductsService {
         if (imagePath) {
             product.imageUrl = imagePath;
         }
-        if (categories && Array.isArray(categories)) {
-            const foundCategories = await this.categoryRepository.find({
-                where: { id: (0, typeorm_2.In)(categories) },
-            });
-            product.categories = foundCategories;
+        if (categories) {
+            const categoryIds = typeof categories === 'string'
+                ? JSON.parse(categories)
+                : categories;
+            if (Array.isArray(categoryIds) && categoryIds.length > 0) {
+                const foundCategories = await this.categoryRepository.find({
+                    where: { id: (0, typeorm_2.In)(categoryIds) },
+                });
+                product.categories = foundCategories;
+            }
+            else {
+                product.categories = [];
+            }
         }
         return await this.proRepository.save(product);
     }
