@@ -13,42 +13,22 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
 @Put(':id')
-@UseInterceptors(
-  FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
-      },
-    }),
-  }),
-)
+@UseInterceptors(FileInterceptor('image'))
 async updateProduct(
   @Param('id', ParseIntPipe) id: number,
-  @Body() updateProductDto: UpdateProductDto,
+  @Body() body: any,
   @UploadedFile() file?: Express.Multer.File,
 ) {
-  let imagePath: string | undefined;
-
-  if (file) {
-    // Guardamos solo la ruta relativa
-    imagePath = `/uploads/${file.filename}`;
+  // 🔹 Parsear categories si viene como string
+  if (body.categories && typeof body.categories === 'string') {
+    try {
+      body.categories = JSON.parse(body.categories);
+    } catch {
+      body.categories = [];
+    }
   }
 
-  const product = await this.productsService.updateImage(id, updateProductDto, imagePath);
-
-  // Evitar errores si no hay imagen
-  const imageUrl = product.imageUrl
-    ? product.imageUrl.startsWith('http')
-      ? product.imageUrl + `?t=${Date.now()}`
-      : `https://espacioboulevard.com${product.imageUrl}?t=${Date.now()}`
-    : 'https://espacioboulevard.com/uploads/default-image.png';
-
-  return {
-    ...product,
-    imageUrl,
-  };
+  return this.productsService.updateImage(id, body, file ? `/uploads/${file.filename}` : undefined);
 }
 
 
