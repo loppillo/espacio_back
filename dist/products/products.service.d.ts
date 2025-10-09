@@ -3,6 +3,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { Category } from 'src/categories/entities/category.entity';
 import { Repository } from 'typeorm';
+import { PaginationDto } from './dto/PaginationDto.dto';
 import { ProductDto } from './dto/productDTO.dto';
 export declare class ProductsService {
     private readonly categoryRepository;
@@ -11,7 +12,7 @@ export declare class ProductsService {
     createProductWithImage(name: string, imageUrl: string): Promise<Product>;
     create(createProductDto: CreateProductDto): Promise<Product>;
     updateImage(id: number, updateProductDto: UpdateProductDto, imagePath?: string): Promise<Product>;
-    findAll(): Promise<ProductDto[]>;
+    findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
     buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number): Promise<{
         data: ProductDto[];
         total: number;
