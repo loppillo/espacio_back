@@ -85,29 +85,50 @@ async updateImage(
 }
 
 
- async findAll(): Promise<ProductDto[]> {
-  const products = await this.proRepository.find({
-    relations: ['categories'], // ManyToMany
+ async findAll(
+  page: number = 1,
+  limit: number = 10,
+): Promise<PaginationDto<ProductDto>> {
+  // Validar que page y limit sean números enteros positivos
+  page = Math.max(1, Number(page) || 1);
+  limit = Math.max(1, Number(limit) || 10);
+
+  const skip = (page - 1) * limit;
+
+  const [products, total] = await this.proRepository.findAndCount({
+    take: limit,
+    skip: skip,
+    relations: ['categories'], // 👈 ahora ManyToMany
     order: { id: 'DESC' },
   });
 
-  return products.map(({ id, name, description, price, imageUrl, categories }) => ({
-    id,
-    name,
-    description,
-    price,
-    imageUrl: imageUrl
-      ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
-      : null,
-    categories: categories.map((cat) => ({
-      id: cat.id,
-      nombre: cat.nombre,
-      icono: cat.icono,
-    })),
-  }));
+  return {
+    total,
+    currentPage: page,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+    limit,
+    data: products.map(
+      ({ id, name, description, price, imageUrl, categories }) => {
+        return {
+          id,
+          name,
+          description,
+          price,
+          imageUrl: imageUrl
+            ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
+            : null,
+          // 👇 devolver array de categorías en lugar de solo la primera
+          categories: categories.map((cat) => ({
+            id: cat.id,
+            nombre: cat.nombre,
+            icono: cat.icono,
+          })),
+        };
+      },
+    ),
+  };
 }
 
-  
   
 
 async buscarPorNombre(
