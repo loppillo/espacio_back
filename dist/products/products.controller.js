@@ -45,7 +45,7 @@ let ProductsController = class ProductsController {
         const categoryIds = categorias
             ? categorias.split(',').map((id) => parseInt(id, 10))
             : undefined;
-        return this.productsService.buscarPorNombre(nombre, categoryIds);
+        return this.productsService.buscarPorNombres(nombre, categoryIds);
     }
     async uploadFile(file, name) {
         const fileUrl = `/uploads/${file.filename}`;
