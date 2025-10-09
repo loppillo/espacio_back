@@ -13,6 +13,7 @@ export declare class ProductsService {
     create(createProductDto: CreateProductDto): Promise<Product>;
     updateImage(id: number, updateProductDto: UpdateProductDto, imagePath?: string): Promise<Product>;
     findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
+    findAlls(): Promise<ProductDto[]>;
     buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number): Promise<{
         data: ProductDto[];
         total: number;

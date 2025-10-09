@@ -49,6 +49,9 @@ let ProductsController = class ProductsController {
             product,
         };
     }
+    async findAlls() {
+        return this.productsService.findAlls();
+    }
     async findAll(page = 1, limit = 10) {
         const validPage = Math.max(1, Number(page) || 1);
         const validLimit = Math.max(1, Number(limit) || 10);
@@ -110,6 +113,12 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "uploadFile", null);
+__decorate([
+    (0, common_1.Get)('finds'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ProductsController.prototype, "findAlls", null);
 __decorate([
     (0, common_1.Get)('find'),
     __param(0, (0, common_1.Query)('page')),

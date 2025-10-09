@@ -98,6 +98,26 @@ let ProductsService = class ProductsService {
             }),
         };
     }
+    async findAlls() {
+        const products = await this.proRepository.find({
+            relations: ['categories'],
+            order: { id: 'DESC' },
+        });
+        return products.map(({ id, name, description, price, imageUrl, categories }) => ({
+            id,
+            name,
+            description,
+            price,
+            imageUrl: imageUrl
+                ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
+                : null,
+            categories: categories.map((cat) => ({
+                id: cat.id,
+                nombre: cat.nombre,
+                icono: cat.icono,
+            })),
+        }));
+    }
     async buscarPorNombre(nombre, categoryIds, page = 1, limit = 10) {
         const baseUrl = 'https://espacioboulevard.com';
         page = Math.max(1, page);

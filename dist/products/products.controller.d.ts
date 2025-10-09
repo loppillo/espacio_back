@@ -15,6 +15,7 @@ export declare class ProductsController {
         message: string;
         product: import("./entities/product.entity").Product;
     }>;
+    findAlls(): Promise<ProductDto[]>;
     findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
     findOne(id: string): Promise<import("./entities/product.entity").Product>;
     remove(id: string): Promise<import("typeorm").DeleteResult>;
