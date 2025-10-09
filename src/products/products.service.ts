@@ -75,10 +75,12 @@ async updateImage(
   }
 
   // 🔁 Actualizar categorías si vienen en el DTO
-  if (categories && Array.isArray(categories)) {
-    const foundCategories = await this.categoryRepository.findByIds(categories);
-    product.categories = foundCategories;
-  }
+if (categories && Array.isArray(categories)) {
+  const foundCategories = await this.categoryRepository.find({
+    where: { id: In(categories) },
+  });
+  product.categories = foundCategories;
+}
 
   // Guardar cambios
   return await this.proRepository.save(product);
