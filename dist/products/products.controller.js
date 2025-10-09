@@ -16,7 +16,6 @@ exports.ProductsController = void 0;
 const common_1 = require("@nestjs/common");
 const products_service_1 = require("./products.service");
 const create_product_dto_1 = require("./dto/create-product.dto");
-const update_product_dto_1 = require("./dto/update-product.dto");
 const platform_express_1 = require("@nestjs/platform-express");
 const path_1 = require("path");
 const uuid_1 = require("uuid");
@@ -25,21 +24,16 @@ let ProductsController = class ProductsController {
     constructor(productsService) {
         this.productsService = productsService;
     }
-    async updateProduct(id, updateProductDto, file) {
-        let imagePath;
-        if (file) {
-            imagePath = `/uploads/${file.filename}`;
+    async updateProduct(id, body, file) {
+        if (body.categories && typeof body.categories === 'string') {
+            try {
+                body.categories = JSON.parse(body.categories);
+            }
+            catch {
+                body.categories = [];
+            }
         }
-        const product = await this.productsService.updateImage(id, updateProductDto, imagePath);
-        const imageUrl = product.imageUrl
-            ? product.imageUrl.startsWith('http')
-                ? product.imageUrl + `?t=${Date.now()}`
-                : `https://espacioboulevard.com${product.imageUrl}?t=${Date.now()}`
-            : 'https://espacioboulevard.com/uploads/default-image.png';
-        return {
-            ...product,
-            imageUrl,
-        };
+        return this.productsService.updateImage(id, body, file ? `/uploads/${file.filename}` : undefined);
     }
     buscarProductos(nombre, categorias, page = '1', limit = '10') {
         const categoryIds = categorias
@@ -80,20 +74,12 @@ let ProductsController = class ProductsController {
 exports.ProductsController = ProductsController;
 __decorate([
     (0, common_1.Put)(':id'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', {
-        storage: (0, multer_1.diskStorage)({
-            destination: './uploads',
-            filename: (req, file, callback) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                callback(null, file.fieldname + '-' + uniqueSuffix + (0, path_1.extname)(file.originalname));
-            },
-        }),
-    })),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image')),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, update_product_dto_1.UpdateProductDto, Object]),
+    __metadata("design:paramtypes", [Number, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "updateProduct", null);
 __decorate([

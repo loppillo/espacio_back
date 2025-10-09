@@ -1,22 +1,11 @@
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationDto } from './dto/PaginationDto.dto';
 import { ProductDto } from './dto/productDTO.dto';
 export declare class ProductsController {
     private readonly productsService;
     constructor(productsService: ProductsService);
-    updateProduct(id: number, updateProductDto: UpdateProductDto, file?: Express.Multer.File): Promise<{
-        imageUrl: string;
-        id: number;
-        name: string;
-        description: string;
-        price: number;
-        cantidad: number;
-        categories: import("../categories/entities/category.entity").Category[];
-        order: import("../orders/entities/order.entity").Order[];
-        orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
-    }>;
+    updateProduct(id: number, body: any, file?: Express.Multer.File): Promise<import("./entities/product.entity").Product>;
     buscarProductos(nombre?: string, categorias?: string, page?: string, limit?: string): Promise<{
         data: ProductDto[];
         total: number;
