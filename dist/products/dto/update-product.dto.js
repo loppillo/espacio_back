@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateProductDto = void 0;
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class UpdateProductDto {
 }
@@ -38,7 +39,9 @@ __decorate([
 ], UpdateProductDto.prototype, "cantidad", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsArray)({ message: 'categories must be an array' }),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsInt)({ each: true, message: 'Cada categoría debe ser un número' }),
     __metadata("design:type", Array)
 ], UpdateProductDto.prototype, "categories", void 0);
 //# sourceMappingURL=update-product.dto.js.map

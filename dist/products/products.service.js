@@ -58,7 +58,9 @@ let ProductsService = class ProductsService {
             product.imageUrl = imagePath;
         }
         if (categories && Array.isArray(categories)) {
-            const foundCategories = await this.categoryRepository.findByIds(categories);
+            const foundCategories = await this.categoryRepository.find({
+                where: { id: (0, typeorm_2.In)(categories) },
+            });
             product.categories = foundCategories;
         }
         return await this.proRepository.save(product);
