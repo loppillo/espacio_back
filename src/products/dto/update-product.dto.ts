@@ -19,7 +19,7 @@ export class UpdateProductDto {
   @IsOptional()
   cantidad?: number;
 
-  @IsOptional()
+   @IsOptional()
   @IsArray()
   categories?: number[];
 }

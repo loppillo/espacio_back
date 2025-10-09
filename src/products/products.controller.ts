@@ -104,14 +104,9 @@ buscarProductos(
   
 
 
-  @Get('find')
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
-  ): Promise<PaginationDto<ProductDto>> {
-    const validPage = Math.max(1, Number(page) || 1);
-    const validLimit = Math.max(1, Number(limit) || 10);
-    return this.productsService.findAll(validPage, validLimit);
+   @Get('find')
+  async findAll(): Promise<ProductDto[]> {
+    return this.productsService.findAll();
   }
 
   @Get(':id')
