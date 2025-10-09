@@ -41,6 +41,12 @@ let ProductsController = class ProductsController {
             : undefined;
         return this.productsService.buscarPorNombre(nombre, categoryIds, parseInt(page, 10), parseInt(limit, 10));
     }
+    buscarProducto(nombre, categorias) {
+        const categoryIds = categorias
+            ? categorias.split(',').map((id) => parseInt(id, 10))
+            : undefined;
+        return this.productsService.buscarPorNombre(nombre, categoryIds);
+    }
     async uploadFile(file, name) {
         const fileUrl = `/uploads/${file.filename}`;
         const product = await this.productsService.createProductWithImage(name, fileUrl);
@@ -95,6 +101,14 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "buscarProductos", null);
+__decorate([
+    (0, common_1.Get)('buscars'),
+    __param(0, (0, common_1.Query)('nombre')),
+    __param(1, (0, common_1.Query)('categorias')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "buscarProducto", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', {

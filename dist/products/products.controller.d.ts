@@ -11,6 +11,11 @@ export declare class ProductsController {
         total: number;
         currentPage: number;
     }>;
+    buscarProducto(nombre?: string, categorias?: string): Promise<{
+        data: ProductDto[];
+        total: number;
+        currentPage: number;
+    }>;
     uploadFile(file: Express.Multer.File, name: string): Promise<{
         message: string;
         product: import("./entities/product.entity").Product;

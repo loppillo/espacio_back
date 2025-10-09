@@ -19,6 +19,7 @@ export declare class ProductsService {
         total: number;
         currentPage: number;
     }>;
+    buscarPorNombres(nombre?: string, categoryIds?: number[]): Promise<ProductDto[]>;
     findOne(id: number): Promise<Product>;
     remove(id: number): Promise<import("typeorm").DeleteResult>;
 }
