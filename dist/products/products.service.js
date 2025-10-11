@@ -65,8 +65,8 @@ let ProductsService = class ProductsService {
         if (imagePath && !imagePath.includes('undefined')) {
             product.imageUrl = imagePath;
         }
-        if (product.imageUrl?.startsWith('https://espacioboulevard.com/https://')) {
-            product.imageUrl = product.imageUrl.replace('https://espacioboulevard.com/https://', 'https://');
+        if (product.imageUrl?.startsWith('https://espacioboulevard.com')) {
+            product.imageUrl = product.imageUrl.replace('https://espacioboulevard.com', 'https://');
         }
         Object.assign(product, {
             ...updatedData,
