@@ -5,7 +5,17 @@ import { ProductDto } from './dto/productDTO.dto';
 export declare class ProductsController {
     private readonly productsService;
     constructor(productsService: ProductsService);
-    updateProduct(id: number, body: any, file?: Express.Multer.File): Promise<import("./entities/product.entity").Product>;
+    updateProduct(id: number, body: any, file?: Express.Multer.File): Promise<{
+        imageUrl: string;
+        id: number;
+        name: string;
+        description: string;
+        price: number;
+        cantidad: number;
+        categories: import("../categories/entities/category.entity").Category[];
+        order: import("../orders/entities/order.entity").Order[];
+        orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
+    }>;
     buscarProductos(nombre?: string, categorias?: string, page?: string, limit?: string): Promise<{
         data: ProductDto[];
         total: number;

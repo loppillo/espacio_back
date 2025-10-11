@@ -33,7 +33,8 @@ let ProductsController = class ProductsController {
                 body.categories = [];
             }
         }
-        return this.productsService.updateImage(id, body, file ? `/uploads/${file.filename}` : undefined);
+        const imagePath = file ? `/uploads/${file.filename}` : body.imageUrl;
+        return this.productsService.updateImage(id, body, imagePath);
     }
     buscarProductos(nombre, categorias, page = '1', limit = '10') {
         const categoryIds = categorias

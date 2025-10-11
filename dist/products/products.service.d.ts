@@ -10,7 +10,17 @@ export declare class ProductsService {
     constructor(categoryRepository: Repository<Category>, proRepository: Repository<Product>);
     createProductWithImage(name: string, imageUrl: string): Promise<Product>;
     create(createProductDto: CreateProductDto): Promise<Product>;
-    updateImage(id: number, body: any, imagePath?: string): Promise<Product>;
+    updateImage(id: number, body: any, imagePath?: string): Promise<{
+        imageUrl: string;
+        id: number;
+        name: string;
+        description: string;
+        price: number;
+        cantidad: number;
+        categories: Category[];
+        order: import("../orders/entities/order.entity").Order[];
+        orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
+    }>;
     findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
     findAlls(): Promise<ProductDto[]>;
     buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number): Promise<{

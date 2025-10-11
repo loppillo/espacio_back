@@ -56,21 +56,29 @@ let ProductsService = class ProductsService {
         if (updatedData.price) {
             updatedData.price = Number(updatedData.price);
         }
-        if (updatedData.cantidad === null || updatedData.cantidad === undefined) {
-            updatedData.cantidad = product.cantidad ?? 0;
-        }
+        updatedData.cantidad =
+            updatedData.cantidad ?? product.cantidad ?? 0;
         if (updatedData.categories && Array.isArray(updatedData.categories)) {
             const categorias = await this.categoryRepository.findByIds(updatedData.categories);
             product.categories = categorias;
         }
-        if (imagePath) {
+        if (imagePath && !imagePath.includes('undefined')) {
             product.imageUrl = imagePath;
+        }
+        if (product.imageUrl?.startsWith('https://espacioboulevard.com/https://')) {
+            product.imageUrl = product.imageUrl.replace('https://espacioboulevard.com/https://', 'https://');
         }
         Object.assign(product, {
             ...updatedData,
             categories: product.categories,
         });
-        return await this.proRepository.save(product);
+        const saved = await this.proRepository.save(product);
+        return {
+            ...saved,
+            imageUrl: saved.imageUrl
+                ? `https://espacioboulevard.com${saved.imageUrl}`
+                : null,
+        };
     }
     async findAll(page = 1, limit = 10) {
         page = Math.max(1, Number(page) || 1);
