@@ -84,12 +84,7 @@ async updateImage(id: number, body: any, imagePath?: string) {
   }
 
   // 5️⃣ Evitar duplicar dominio si el backend ya guarda rutas relativas
-  if (product.imageUrl?.startsWith('https://espacioboulevard.com')) {
-    product.imageUrl = product.imageUrl.replace(
-      'https://espacioboulevard.com',
-      'https://'
-    );
-  }
+  
 
   // 6️⃣ Asignar campos actualizados
   Object.assign(product, {
