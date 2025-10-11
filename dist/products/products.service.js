@@ -44,33 +44,32 @@ let ProductsService = class ProductsService {
         });
         return await this.proRepository.save(product);
     }
-    async updateImage(id, updateProductDto, imagePath) {
-        const { categories, ...restData } = updateProductDto;
+    async updateImage(id, body, imagePath) {
         const product = await this.proRepository.findOne({
             where: { id },
             relations: ['categories'],
         });
         if (!product) {
-            throw new common_1.NotFoundException(`Producto con id ${id} no encontrado`);
+            throw new common_1.NotFoundException('Producto no encontrado');
         }
-        Object.assign(product, restData);
+        const updatedData = { ...body };
+        if (updatedData.price) {
+            updatedData.price = Number(updatedData.price);
+        }
+        if (updatedData.cantidad === null || updatedData.cantidad === undefined) {
+            updatedData.cantidad = product.cantidad ?? 0;
+        }
+        if (updatedData.categories && Array.isArray(updatedData.categories)) {
+            const categorias = await this.categoryRepository.findByIds(updatedData.categories);
+            product.categories = categorias;
+        }
         if (imagePath) {
             product.imageUrl = imagePath;
         }
-        if (categories) {
-            const categoryIds = typeof categories === 'string'
-                ? JSON.parse(categories)
-                : categories;
-            if (Array.isArray(categoryIds) && categoryIds.length > 0) {
-                const foundCategories = await this.categoryRepository.find({
-                    where: { id: (0, typeorm_2.In)(categoryIds) },
-                });
-                product.categories = foundCategories;
-            }
-            else {
-                product.categories = [];
-            }
-        }
+        Object.assign(product, {
+            ...updatedData,
+            categories: product.categories,
+        });
         return await this.proRepository.save(product);
     }
     async findAll(page = 1, limit = 10) {
