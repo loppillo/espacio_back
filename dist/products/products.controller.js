@@ -33,7 +33,7 @@ let ProductsController = class ProductsController {
                 body.categories = [];
             }
         }
-        const imagePath = file ? `/uploads/${file.filename}` : body.imageUrl;
+        const imagePath = file ? `/uploads/${file.filename}` : undefined;
         return this.productsService.updateImage(id, body, imagePath);
     }
     buscarProductos(nombre, categorias, page = '1', limit = '10') {
