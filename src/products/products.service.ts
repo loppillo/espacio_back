@@ -49,51 +49,51 @@ async create(createProductDto: CreateProductDto) {
 
 
 
-async updateImage(
-  id: number,
-  updateProductDto: UpdateProductDto,
-  imagePath?: string,
-) {
-  const { categories, ...restData } = updateProductDto;
-
-  // Buscar el producto existente
+async updateImage(id: number, body: any, imagePath?: string) {
+  // 1️⃣ Buscar el producto existente
   const product = await this.proRepository.findOne({
     where: { id },
-    relations: ['categories'], // importante para que cargue la relación
+    relations: ['categories'], // Incluye relaciones si las necesitas
   });
 
   if (!product) {
-    throw new NotFoundException(`Producto con id ${id} no encontrado`);
+    throw new NotFoundException('Producto no encontrado');
   }
 
-  // Actualizar los campos simples
-  Object.assign(product, restData);
+  // 2️⃣ Parsear tipos y limpiar valores
+  const updatedData: any = { ...body };
 
-  // Si viene una nueva imagen, reemplázala
+  // Convertir precio a número si viene como string
+  if (updatedData.price) {
+    updatedData.price = Number(updatedData.price);
+  }
+
+  // Si no se envió cantidad, dejar el valor anterior o asignar 0
+  if (updatedData.cantidad === null || updatedData.cantidad === undefined) {
+    updatedData.cantidad = product.cantidad ?? 0;
+  }
+
+  // 3️⃣ Manejar categorías si vienen como array de IDs
+  if (updatedData.categories && Array.isArray(updatedData.categories)) {
+    const categorias = await this.categoryRepository.findByIds(updatedData.categories);
+    product.categories = categorias;
+  }
+
+  // 4️⃣ Solo actualizar la imagen si se envió una nueva
   if (imagePath) {
     product.imageUrl = imagePath;
   }
 
-if (categories) {
-  // Si viene como string JSON, convertirlo a array
-  const categoryIds = typeof categories === 'string'
-    ? JSON.parse(categories)
-    : categories;
+  // 5️⃣ Asignar otros campos (sin sobrescribir relaciones)
+  Object.assign(product, {
+    ...updatedData,
+    categories: product.categories, // mantiene las relaciones existentes
+  });
 
-  if (Array.isArray(categoryIds) && categoryIds.length > 0) {
-    const foundCategories = await this.categoryRepository.find({
-      where: { id: In(categoryIds) },
-    });
-    product.categories = foundCategories;
-  } else {
-    // Si no hay categorías, limpiar la relación
-    product.categories = [];
-  }
-}
-
-  // Guardar cambios
+  // 6️⃣ Guardar cambios
   return await this.proRepository.save(product);
 }
+
 
 
  async findAll(

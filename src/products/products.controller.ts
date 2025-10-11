@@ -28,7 +28,12 @@ async updateProduct(
     }
   }
 
-  return this.productsService.updateImage(id, body, file ? `/uploads/${file.filename}` : undefined);
+  // 🔹 Enviar a servicio con o sin imagen
+  return this.productsService.updateImage(
+    id,
+    body,
+    file ? `/uploads/${file.filename}` : undefined,
+  );
 }
 
 
