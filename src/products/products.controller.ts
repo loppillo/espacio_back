@@ -19,7 +19,6 @@ async updateProduct(
   @Body() body: any,
   @UploadedFile() file?: Express.Multer.File,
 ) {
-  // 🔹 Parsear categories si viene como string
   if (body.categories && typeof body.categories === 'string') {
     try {
       body.categories = JSON.parse(body.categories);
@@ -28,12 +27,9 @@ async updateProduct(
     }
   }
 
-  // 🔹 Enviar a servicio con o sin imagen
-  return this.productsService.updateImage(
-    id,
-    body,
-    file ? `/uploads/${file.filename}` : undefined,
-  );
+  const imagePath = file ? `/uploads/${file.filename}` : body.imageUrl;
+
+  return this.productsService.updateImage(id, body, imagePath);
 }
 
 

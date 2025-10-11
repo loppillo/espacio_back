@@ -53,46 +53,62 @@ async updateImage(id: number, body: any, imagePath?: string) {
   // 1️⃣ Buscar el producto existente
   const product = await this.proRepository.findOne({
     where: { id },
-    relations: ['categories'], // Incluye relaciones si las necesitas
+    relations: ['categories'],
   });
 
   if (!product) {
     throw new NotFoundException('Producto no encontrado');
   }
 
-  // 2️⃣ Parsear tipos y limpiar valores
+  // 2️⃣ Preparar datos actualizados
   const updatedData: any = { ...body };
 
-  // Convertir precio a número si viene como string
+  // 🔹 Convertir precio a número
   if (updatedData.price) {
     updatedData.price = Number(updatedData.price);
   }
 
-  // Si no se envió cantidad, dejar el valor anterior o asignar 0
-  if (updatedData.cantidad === null || updatedData.cantidad === undefined) {
-    updatedData.cantidad = product.cantidad ?? 0;
-  }
+  // 🔹 Mantener o inicializar cantidad
+  updatedData.cantidad =
+    updatedData.cantidad ?? product.cantidad ?? 0;
 
-  // 3️⃣ Manejar categorías si vienen como array de IDs
+  // 3️⃣ Manejar categorías (si son IDs)
   if (updatedData.categories && Array.isArray(updatedData.categories)) {
     const categorias = await this.categoryRepository.findByIds(updatedData.categories);
     product.categories = categorias;
   }
 
-  // 4️⃣ Solo actualizar la imagen si se envió una nueva
-  if (imagePath) {
+  // 4️⃣ Manejar imagen (solo si se subió una nueva)
+  if (imagePath && !imagePath.includes('undefined')) {
     product.imageUrl = imagePath;
   }
 
-  // 5️⃣ Asignar otros campos (sin sobrescribir relaciones)
+  // 5️⃣ Evitar duplicar dominio si el backend ya guarda rutas relativas
+  if (product.imageUrl?.startsWith('https://espacioboulevard.com/https://')) {
+    product.imageUrl = product.imageUrl.replace(
+      'https://espacioboulevard.com/https://',
+      'https://'
+    );
+  }
+
+  // 6️⃣ Asignar campos actualizados
   Object.assign(product, {
     ...updatedData,
-    categories: product.categories, // mantiene las relaciones existentes
+    categories: product.categories,
   });
 
-  // 6️⃣ Guardar cambios
-  return await this.proRepository.save(product);
+  // 7️⃣ Guardar producto
+  const saved = await this.proRepository.save(product);
+
+  // 🔹 Normalizar salida (si quieres devolver URL completa)
+  return {
+    ...saved,
+    imageUrl: saved.imageUrl
+      ? `https://espacioboulevard.com${saved.imageUrl}`
+      : null,
+  };
 }
+
 
 
 
