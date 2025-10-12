@@ -30,7 +30,9 @@ __decorate([
     __metadata("design:type", order_entity_1.Order)
 ], ProductsOrders.prototype, "order", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.orderProducts, { eager: true }),
+    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.orderProducts, {
+        onDelete: 'CASCADE',
+    }),
     (0, typeorm_1.JoinColumn)({ name: 'productId' }),
     __metadata("design:type", product_entity_1.Product)
 ], ProductsOrders.prototype, "product", void 0);
