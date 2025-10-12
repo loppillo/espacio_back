@@ -96,12 +96,13 @@ async updateImage(id: number, body: any, imagePath?: string) {
   const saved = await this.proRepository.save(product);
 
   // 🔹 Normalizar salida (si quieres devolver URL completa)
-  return {
-    ...saved,
-    imageUrl: saved.imageUrl
+ return {
+  ...saved,
+  imageUrl:
+    saved.imageUrl && !saved.imageUrl.startsWith('http')
       ? `https://espacioboulevard.com${saved.imageUrl}`
-      : null,
-  };
+      : saved.imageUrl || null,
+};
 }
 
 
