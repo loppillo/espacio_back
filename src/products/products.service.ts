@@ -96,12 +96,14 @@ async updateImage(id: number, body: any, imagePath?: string) {
   const saved = await this.proRepository.save(product);
 
   // 🔹 Normalizar salida (si quieres devolver URL completa)
- return {
+return {
   ...saved,
   imageUrl:
-    saved.imageUrl && !saved.imageUrl.startsWith('http')
-      ? `https://espacioboulevard.com${saved.imageUrl}`
-      : saved.imageUrl || null,
+    saved.imageUrl && saved.imageUrl.includes('/uploads/')
+      ? saved.imageUrl.startsWith('http')
+        ? saved.imageUrl // ya tiene dominio
+        : `https://espacioboulevard.com${saved.imageUrl}` // agregar dominio
+      : null,
 };
 }
 
