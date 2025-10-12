@@ -63,7 +63,7 @@ async updateImage(id: number, body: any, imagePath?: string) {
   // 2️⃣ Preparar datos actualizados
   const updatedData: any = { ...body };
 
-  // 🔹 Convertir precio a número
+  // 🔹 Convertir precio a número si corresponde
   if (updatedData.price) {
     updatedData.price = Number(updatedData.price);
   }
@@ -72,19 +72,21 @@ async updateImage(id: number, body: any, imagePath?: string) {
   updatedData.cantidad =
     updatedData.cantidad ?? product.cantidad ?? 0;
 
-  // 3️⃣ Manejar categorías (si son IDs)
+  // 3️⃣ Manejar categorías
   if (updatedData.categories && Array.isArray(updatedData.categories)) {
     const categorias = await this.categoryRepository.findByIds(updatedData.categories);
     product.categories = categorias;
   }
 
-  // 4️⃣ Manejar imagen (solo si se subió una nueva)
+  // 4️⃣ Limpiar cualquier dominio previo en imageUrl (por si vino en body)
+  if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
+    updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
+  }
+
+  // 5️⃣ Manejar imagen subida (solo si es válida)
   if (imagePath && !imagePath.includes('undefined')) {
     product.imageUrl = imagePath;
   }
-
-  // 5️⃣ Evitar duplicar dominio si el backend ya guarda rutas relativas
-  
 
   // 6️⃣ Asignar campos actualizados
   Object.assign(product, {
@@ -95,17 +97,18 @@ async updateImage(id: number, body: any, imagePath?: string) {
   // 7️⃣ Guardar producto
   const saved = await this.proRepository.save(product);
 
-  // 🔹 Normalizar salida (si quieres devolver URL completa)
-return {
-  ...saved,
-  imageUrl:
-    saved.imageUrl && saved.imageUrl.includes('/uploads/')
-      ? saved.imageUrl.startsWith('http')
-        ? saved.imageUrl // ya tiene dominio
-        : `https://espacioboulevard.com${saved.imageUrl}` // agregar dominio
-      : null,
-};
+  // 8️⃣ Normalizar salida (devolver URL completa si existe)
+  return {
+    ...saved,
+    imageUrl:
+      saved.imageUrl && saved.imageUrl.includes('/uploads/')
+        ? saved.imageUrl.startsWith('http')
+          ? saved.imageUrl
+          : `https://espacioboulevard.com${saved.imageUrl}`
+        : null,
+  };
 }
+
 
 
 
