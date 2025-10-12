@@ -42,6 +42,6 @@ export class Product {
   @OneToMany(() => Order, (order) => order.user)
   order: Order[];
 
-  @OneToMany(() => ProductsOrders, (orderProduct) => orderProduct.product)
+  @OneToMany(() => ProductsOrders, (orderProduct) => orderProduct.product, { cascade: true })
   orderProducts: ProductsOrders[];
 }

@@ -14,7 +14,9 @@ export class ProductsOrders {
   @JoinColumn({ name: 'orderId' })
   order: Order;
 
-  @ManyToOne(() => Product, product => product.orderProducts, { eager: true })
+  @ManyToOne(() => Product, product => product.orderProducts, {
+  onDelete: 'CASCADE', // 🔹 Esta línea hace la magia
+})
   @JoinColumn({ name: 'productId' })
   product: Product;
 
