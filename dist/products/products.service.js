@@ -72,9 +72,11 @@ let ProductsService = class ProductsService {
         const saved = await this.proRepository.save(product);
         return {
             ...saved,
-            imageUrl: saved.imageUrl && !saved.imageUrl.startsWith('http')
-                ? `https://espacioboulevard.com${saved.imageUrl}`
-                : saved.imageUrl || null,
+            imageUrl: saved.imageUrl && saved.imageUrl.includes('/uploads/')
+                ? saved.imageUrl.startsWith('http')
+                    ? saved.imageUrl
+                    : `https://espacioboulevard.com${saved.imageUrl}`
+                : null,
         };
     }
     async findAll(page = 1, limit = 10) {
