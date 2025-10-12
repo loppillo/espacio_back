@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateProductDto = void 0;
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class CreateProductDto {
 }
@@ -34,7 +35,17 @@ __decorate([
 ], CreateProductDto.prototype, "cantidad", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (typeof value === 'string') {
+            try {
+                return JSON.parse(value);
+            }
+            catch {
+                return value.split(',').map((v) => parseInt(v, 10));
+            }
+        }
+        return value;
+    }),
     __metadata("design:type", Array)
 ], CreateProductDto.prototype, "categoryIds", void 0);
 __decorate([

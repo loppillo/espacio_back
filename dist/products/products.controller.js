@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductsController = void 0;
 const common_1 = require("@nestjs/common");
 const products_service_1 = require("./products.service");
-const create_product_dto_1 = require("./dto/create-product.dto");
 const platform_express_1 = require("@nestjs/platform-express");
 const path_1 = require("path");
 const uuid_1 = require("uuid");
@@ -70,14 +69,32 @@ let ProductsController = class ProductsController {
     remove(id) {
         return this.productsService.remove(+id);
     }
-    async create(createProductDto, file) {
-        if (file) {
-            createProductDto.imageUrl = `/uploads/${file.filename}`;
+    async create(body, file) {
+        let categoryIds = [];
+        if (body.categoryIds) {
+            if (typeof body.categoryIds === 'string') {
+                try {
+                    categoryIds = JSON.parse(body.categoryIds);
+                }
+                catch {
+                    categoryIds = body.categoryIds.split(',').map((id) => parseInt(id, 10));
+                }
+            }
+            else {
+                categoryIds = body.categoryIds;
+            }
         }
-        const product = await this.productsService.create(createProductDto);
+        const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+        const product = await this.productsService.create({
+            ...body,
+            categoryIds,
+            imageUrl,
+        });
         return {
             ...product,
-            imageUrl: product.imageUrl ? `https://espacioboulevard.com${product.imageUrl}` : null,
+            imageUrl: product.imageUrl
+                ? `https://espacioboulevard.com${product.imageUrl}`
+                : null,
         };
     }
 };
@@ -170,7 +187,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_product_dto_1.CreateProductDto, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "create", null);
 exports.ProductsController = ProductsController = __decorate([
