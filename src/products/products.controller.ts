@@ -127,33 +127,55 @@ async findAlls(): Promise<ProductDto[]> {
 
 
  @Post('crear')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
-        },
-      }),
+@UseInterceptors(
+  FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
+      },
     }),
-  )
-  async create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
-    if (file) {
-      // Guardar solo ruta relativa
-      createProductDto.imageUrl = `/uploads/${file.filename}`;
+  }),
+)
+async create(
+  @Body() body: any,
+  @UploadedFile() file?: Express.Multer.File,
+) {
+  // ✅ Parsear categoryIds si viene como string
+  let categoryIds: number[] = [];
+  if (body.categoryIds) {
+    if (typeof body.categoryIds === 'string') {
+      try {
+        categoryIds = JSON.parse(body.categoryIds);
+      } catch {
+        // En caso de que llegue como "1,2,3"
+        categoryIds = body.categoryIds.split(',').map((id: string) => parseInt(id, 10));
+      }
+    } else {
+      categoryIds = body.categoryIds;
     }
-
-    const product = await this.productsService.create(createProductDto);
-
-    // Devolver URL completa al frontend
-    return {
-      ...product,
-      imageUrl: product.imageUrl ? `https://espacioboulevard.com${product.imageUrl}` : null,
-    };
   }
 
-  
+  // ✅ Manejar imagen
+  const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+
+  // ✅ Crear producto usando el servicio
+  const product = await this.productsService.create({
+    ...body,
+    categoryIds,
+    imageUrl,
+  });
+
+  // ✅ Devolver URL completa
+  return {
+    ...product,
+    imageUrl: product.imageUrl
+      ? `https://espacioboulevard.com${product.imageUrl}`
+      : null,
+  };
+}
+
   
 
 

@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateProductDto {
@@ -17,7 +18,16 @@ export class CreateProductDto {
   cantidad?: number;
 
   @IsArray()
-  @IsNotEmpty()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value.split(',').map((v: string) => parseInt(v, 10));
+      }
+    }
+    return value;
+  })
   categoryIds: number[];
 
   @IsOptional()
