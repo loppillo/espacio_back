@@ -62,6 +62,9 @@ let ProductsService = class ProductsService {
             const categorias = await this.categoryRepository.findByIds(updatedData.categories);
             product.categories = categorias;
         }
+        if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
+            updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
+        }
         if (imagePath && !imagePath.includes('undefined')) {
             product.imageUrl = imagePath;
         }
