@@ -76,6 +76,27 @@ let OrdersController = class OrdersController {
     async print(body) {
         return this.printService.printFactura(body);
     }
+    async getHistorialPorMesaYDia(mesaId, fecha) {
+        let inicioDia;
+        let finDia;
+        if (fecha) {
+            inicioDia = new Date(`${fecha}T00:00:00`);
+            finDia = new Date(`${fecha}T23:59:59`);
+        }
+        else {
+            const hoy = new Date();
+            inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
+            finDia = new Date(hoy.setHours(23, 59, 59, 999));
+        }
+        return this.orderRepository.find({
+            where: {
+                mesa: { id: mesaId },
+                createdAt: (0, typeorm_2.Between)(inicioDia, finDia),
+            },
+            relations: ['orderProducts', 'mesa', 'customer', 'user'],
+            order: { createdAt: 'DESC' },
+        });
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -156,6 +177,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "print", null);
+__decorate([
+    (0, common_1.Get)('historial'),
+    __param(0, (0, common_1.Query)('mesaId')),
+    __param(1, (0, common_1.Query)('fecha')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getHistorialPorMesaYDia", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),

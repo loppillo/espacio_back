@@ -202,6 +202,19 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(updatedOrder);
         return updatedOrder;
     }
+    async getHistorialPorMesaYDia(mesaId) {
+        const hoy = new Date();
+        const inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
+        const finDia = new Date(hoy.setHours(23, 59, 59, 999));
+        return this.orderRepository.find({
+            where: {
+                mesa: { id: mesaId },
+                createdAt: (0, typeorm_1.Between)(inicioDia, finDia),
+            },
+            relations: ['orderProducts', 'mesa', 'customer', 'user'],
+            order: { createdAt: 'DESC' },
+        });
+    }
 };
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([

@@ -31,4 +31,5 @@ export declare class OrdersController {
     print(body: any): Promise<{
         success: boolean;
     }>;
+    getHistorialPorMesaYDia(mesaId: number, fecha?: string): Promise<Order[]>;
 }
