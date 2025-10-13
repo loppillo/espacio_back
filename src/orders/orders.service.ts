@@ -295,18 +295,18 @@ async getPedidosPorMesa(mesaId: number) {
     .getMany();
 
   return pedidos.map(pedido => ({
-    numeroVenta: pedido.numeroVenta,
-    status: pedido.status,
-    createdAt: pedido.createdAt,
-    totalProductos: pedido.orderProducts.reduce((sum, op) => sum + (op.subtotal || 0), 0),
-    products: pedido.orderProducts.map(op => ({
-      id: op.product.id,
-      nombre: op.product.name,
-      cantidad: op.cantidad,
-      precio: op.precioUnitario,
-      subtotal: op.subtotal,
-    })),
-  }));
+  numeroVenta: pedido.numeroVenta,
+  status: pedido.status,
+  createdAt: pedido.createdAt,
+  totalProductos: pedido.orderProducts.reduce((sum, op) => sum + (op.subtotal || 0), 0),
+  products: pedido.orderProducts.map(op => ({
+    id: op.product.id,
+    nombre: op.product.name,
+    cantidad: op.cantidad,
+    precio: op.precioUnitario,
+    subtotal: op.subtotal,
+  })),
+}));
 }
 
 
