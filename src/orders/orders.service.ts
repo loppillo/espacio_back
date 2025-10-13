@@ -303,10 +303,10 @@ if (fecha) {
 
 
   return this.orderRepository.find({
-    where: {
-      mesa: { id: mesaId },
-      createdAt: Between(inicioDia, finDia),
-    },
+   where: {
+  id: mesaId,  // usa la columna real
+  createdAt: Between(inicioDia, finDia),
+},
     relations: ['orderProducts', 'mesa', 'customer', 'user'],
     order: { createdAt: 'DESC' },
   });
