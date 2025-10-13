@@ -282,50 +282,56 @@ async eliminarProducto(orderId: number, productId: number) {
   return updatedOrder;
 }
 
-  async getHistorialPorMesaYDia(mesaId: number, fecha?: string): Promise<any[]> {
-  // Determinar el rango de fechas
- let inicioDia: Date;
-let finDia: Date;
+  async getHistorialPorMesaYDia(mesaId: number, fecha?: string) {
+  let inicioDia: Date;
+  let finDia: Date;
 
-if (fecha) {
-  const parts = fecha.split('-'); // ej: "2025-10-13"
-  const year = Number(parts[0]);
-  const month = Number(parts[1]) - 1; // meses 0-11
-  const day = Number(parts[2]);
-  
-  inicioDia = new Date(year, month, day, 0, 0, 0, 0);
-  finDia    = new Date(year, month, day, 23, 59, 59, 999);
-} else {
-  const hoy = new Date();
-  inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-  finDia    = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
-}
+  if (fecha) {
+    const parts = fecha.split('-');
+    const year = Number(parts[0]);
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
 
-const orders = await this.orderRepository.find({
-    where: { mesa: { id: mesaId }, createdAt: Between(inicioDia, finDia) },
-    relations: ['orderProducts', 'orderProducts.product'],
-  });
-
-  if (!orders.length) {
-    throw new NotFoundException('No se encontraron órdenes para esta mesa');
+    inicioDia = new Date(year, month, day, 0, 0, 0, 0);
+    finDia    = new Date(year, month, day, 23, 59, 59, 999);
+  } else {
+    const hoy = new Date();
+    inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+    finDia    = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
   }
 
-  // Combinar productos de todas las órdenes, incluyendo orderId para luego eliminarlos si hace falta
-  const productos = orders.flatMap(order =>
-    order.orderProducts.map(op => ({
-      orderId: order.id,
-      productoId: op.product.id,
-      nombre: op.product.name,
-      precio: op.product.price,
-      cantidad: op.cantidad,
-    })),
-  );
+  // Traer los pedidos con sus productos
+  const pedidos = await this.orderRepository.find({
+    where: {
+      mesa: { id: mesaId },
+      createdAt: Between(inicioDia, finDia),
+    },
+    relations: ['orderProducts', 'orderProducts.product', 'mesa', 'customer', 'user'],
+    order: { createdAt: 'DESC' },
+  });
 
-  return productos;
-
-
-
-
+  // Mapear para calcular total por pedido
+  return pedidos.map(pedido => {
+    const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
+    return {
+      numeroVenta: pedido.numeroVenta,
+      mesa: pedido.mesa,
+      customer: pedido.customer,
+      user: pedido.user,
+      detalle_venta: pedido.detalle_venta,
+      propina: pedido.propina,
+      status: pedido.status,
+      createdAt: pedido.createdAt,
+      totalProductos,      // TOTAL SUMADO DE LOS PRODUCTOS
+      products: pedido.orderProducts.map(op => ({
+        id: op.product.id,
+        nombre: op.product.name,
+        cantidad: op.cantidad,
+        precio: op.precioUnitario,
+        subtotal: op.subtotal,
+      })),
+    };
+  });
 }
 
 
