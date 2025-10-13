@@ -282,21 +282,30 @@ async eliminarProducto(orderId: number, productId: number) {
   return updatedOrder;
 }
 
-  async getHistorialPorMesaYDia(mesaId: number): Promise<Order[]> {
-    // Fecha actual (día completo)
-    const hoy = new Date();
-    const inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
-    const finDia = new Date(hoy.setHours(23, 59, 59, 999));
+  async getHistorialPorMesaYDia(mesaId: number, fecha?: string): Promise<Order[]> {
+  // Determinar el rango de fechas
+  let inicioDia: Date;
+  let finDia: Date;
 
-    return this.orderRepository.find({
-      where: {
-        mesa: { id: mesaId },
-        createdAt: Between(inicioDia, finDia),
-      },
-      relations: ['orderProducts', 'mesa', 'customer', 'user'],
-      order: { createdAt: 'DESC' },
-    });
+  if (fecha) {
+    inicioDia = new Date(`${fecha}T00:00:00`);
+    finDia = new Date(`${fecha}T23:59:59`);
+  } else {
+    const hoy = new Date();
+    inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
+    finDia = new Date(hoy.setHours(23, 59, 59, 999));
   }
+
+  return this.orderRepository.find({
+    where: {
+      mesa: { id: mesaId },
+      createdAt: Between(inicioDia, finDia),
+    },
+    relations: ['orderProducts', 'mesa', 'customer', 'user'],
+    order: { createdAt: 'DESC' },
+  });
+}
+
 
 
 

@@ -99,33 +99,11 @@ async getHistorialPorMesaYDia(
   @Query('mesaId') mesaId: string,  // siempre string desde query
   @Query('fecha') fecha?: string,   // opcional
 ) {
-  // Convertir mesaId a número
   const mesaIdNum = Number(mesaId);
   if (isNaN(mesaIdNum)) {
     throw new BadRequestException('mesaId inválido');
   }
 
-  // Fechas del día
-  let inicioDia: Date;
-  let finDia: Date;
-
-  if (fecha) {
-    inicioDia = new Date(`${fecha}T00:00:00`);
-    finDia = new Date(`${fecha}T23:59:59`);
-  } else {
-    const hoy = new Date();
-    inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
-    finDia = new Date(hoy.setHours(23, 59, 59, 999));
-  }
-
-  return this.orderRepository.find({
-    where: {
-      mesa: { id: mesaIdNum },
-      createdAt: Between(inicioDia, finDia),
-    },
-    relations: ['orderProducts', 'mesa', 'customer', 'user'],
-    order: { createdAt: 'DESC' },
-  });
+  return this.ordersService.getHistorialPorMesaYDia(mesaIdNum, fecha);
 }
-
 }
