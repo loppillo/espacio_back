@@ -32,11 +32,6 @@ export declare class OrdersService {
     eliminarProducto(orderId: number, productId: number): Promise<Order>;
     getPedidosPorMesa(mesaId: number): Promise<{
         numeroVenta: number;
-        mesa: Mesa;
-        customer: Customer;
-        user: User;
-        detalle_venta: string;
-        propina: number;
         status: string;
         createdAt: Date;
         totalProductos: number;

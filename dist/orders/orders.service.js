@@ -213,27 +213,19 @@ let OrdersService = class OrdersService {
             .where('mesa.id = :mesaId', { mesaId })
             .orderBy('order.createdAt', 'DESC')
             .getMany();
-        return pedidos.map(pedido => {
-            const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + (op.subtotal || 0), 0);
-            return {
-                numeroVenta: pedido.numeroVenta,
-                mesa: pedido.mesa,
-                customer: pedido.customer,
-                user: pedido.user,
-                detalle_venta: pedido.detalle_venta,
-                propina: pedido.propina,
-                status: pedido.status,
-                createdAt: pedido.createdAt,
-                totalProductos,
-                products: pedido.orderProducts.map(op => ({
-                    id: op.product.id,
-                    nombre: op.product.name,
-                    cantidad: op.cantidad,
-                    precio: op.precioUnitario,
-                    subtotal: op.subtotal,
-                })),
-            };
-        });
+        return pedidos.map(pedido => ({
+            numeroVenta: pedido.numeroVenta,
+            status: pedido.status,
+            createdAt: pedido.createdAt,
+            totalProductos: pedido.orderProducts.reduce((sum, op) => sum + (op.subtotal || 0), 0),
+            products: pedido.orderProducts.map(op => ({
+                id: op.product.id,
+                nombre: op.product.name,
+                cantidad: op.cantidad,
+                precio: op.precioUnitario,
+                subtotal: op.subtotal,
+            })),
+        }));
     }
 };
 exports.OrdersService = OrdersService;
