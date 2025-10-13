@@ -15,6 +15,17 @@ export class OrdersController {
       private readonly printService: PrintService
     ) {}
 
+    @Get('historial')
+async getHistorialPorMesaYDia(
+  @Query('mesaId', ParseIntPipe) mesaId: number,  // NestJS convierte automáticamente
+  @Query('fecha') fecha?: string,
+) {
+  console.log('mesaId:', mesaId, 'fecha:', fecha);
+  return this.ordersService.getHistorialPorMesaYDia(mesaId, fecha);
+}
+
+
+
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(createOrderDto);
@@ -94,13 +105,6 @@ async eliminarProducto(
     return this.printService.printFactura(body);
   }
 
-@Get('historial')
-async getHistorialPorMesaYDia(
-  @Query('mesaId', ParseIntPipe) mesaId: number,  // NestJS convierte automáticamente
- 
-) {
-  console.log('mesaId:', mesaId);
-  return this.ordersService.getHistorialPorMesaYDia(+mesaId);
-}
+
 
 }
