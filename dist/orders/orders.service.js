@@ -220,7 +220,7 @@ let OrdersService = class OrdersService {
         }
         return this.orderRepository.find({
             where: {
-                mesa: { id: mesaId },
+                id: mesaId,
                 createdAt: (0, typeorm_1.Between)(inicioDia, finDia),
             },
             relations: ['orderProducts', 'mesa', 'customer', 'user'],
