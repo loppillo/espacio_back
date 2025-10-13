@@ -309,9 +309,9 @@ return this.orderRepository
   .leftJoinAndSelect('order.user', 'user')
   .where('mesa.id = :mesaId', { mesaId })
   .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio: inicioDia, fin: finDia })
+  .andWhere('order.status = :status', { status: 'pagado' })
   .orderBy('order.createdAt', 'DESC')
   .getMany();
-}
 
 
 
