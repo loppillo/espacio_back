@@ -210,7 +210,6 @@ let OrdersService = class OrdersService {
             .leftJoinAndSelect('op.product', 'product')
             .where('mesa.id = :mesaId', { mesaId })
             .orderBy('order.numeroVenta', 'ASC')
-            .addOrderBy('order.createdAt', 'ASC')
             .getMany();
         const agrupados = {};
         pedidos.forEach(pedido => {
