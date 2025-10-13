@@ -204,7 +204,7 @@ let OrdersService = class OrdersService {
     }
     async getHistorialPorMesaYDia(mesaId) {
         const orders = await this.orderRepository.find({
-            where: { mesa: { id: mesaId } },
+            where: { mesa: { id: mesaId }, estado: 'activo' },
             relations: ['orderProducts', 'orderProducts.product'],
         });
         if (!orders.length) {

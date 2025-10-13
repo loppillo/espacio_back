@@ -78,7 +78,7 @@ let OrdersController = class OrdersController {
     }
     async getHistorialPorMesaYDia(mesaId) {
         console.log('mesaId:', mesaId);
-        return this.ordersService.getHistorialPorMesaYDia(mesaId);
+        return this.ordersService.getHistorialPorMesaYDia(+mesaId);
     }
 };
 exports.OrdersController = OrdersController;
