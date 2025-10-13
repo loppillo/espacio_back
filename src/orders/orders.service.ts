@@ -283,10 +283,8 @@ async eliminarProducto(orderId: number, productId: number) {
 }
 
   async getHistorialPorMesaYDia(mesaId: number): Promise<any[]> {
-  // Determinar el rango de fechas
-
-const orders = await this.orderRepository.find({
-    where: { mesa: { id: mesaId } },
+  const orders = await this.orderRepository.find({
+    where: { mesa: { id: mesaId }, estado: 'activo' },
     relations: ['orderProducts', 'orderProducts.product'],
   });
 
@@ -306,7 +304,6 @@ const orders = await this.orderRepository.find({
   );
 
   return productos;
-
 
 
 
