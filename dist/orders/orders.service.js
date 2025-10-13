@@ -206,13 +206,17 @@ let OrdersService = class OrdersService {
         let inicioDia;
         let finDia;
         if (fecha) {
-            inicioDia = new Date(`${fecha}T00:00:00`);
-            finDia = new Date(`${fecha}T23:59:59`);
+            const parts = fecha.split('-');
+            const year = Number(parts[0]);
+            const month = Number(parts[1]) - 1;
+            const day = Number(parts[2]);
+            inicioDia = new Date(year, month, day, 0, 0, 0, 0);
+            finDia = new Date(year, month, day, 23, 59, 59, 999);
         }
         else {
             const hoy = new Date();
-            inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
-            finDia = new Date(hoy.setHours(23, 59, 59, 999));
+            inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+            finDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
         }
         return this.orderRepository.find({
             where: {
