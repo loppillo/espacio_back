@@ -282,31 +282,49 @@ async eliminarProducto(orderId: number, productId: number) {
   return updatedOrder;
 }
 
-async getPedidosPorMesa(mesaId: number) {
+async getHistorialPorMesa(mesaId: number) {
   const pedidos = await this.orderRepository
     .createQueryBuilder('order')
     .leftJoinAndSelect('order.mesa', 'mesa')
     .leftJoinAndSelect('order.orderProducts', 'op')
     .leftJoinAndSelect('op.product', 'product')
-    .leftJoinAndSelect('order.customer', 'customer')
-    .leftJoinAndSelect('order.user', 'user')
     .where('mesa.id = :mesaId', { mesaId })
-    .orderBy('order.createdAt', 'DESC')
+    .orderBy('order.numeroVenta', 'ASC')
+    .addOrderBy('order.createdAt', 'ASC')
     .getMany();
 
-  return pedidos.map(pedido => ({
-  numeroVenta: pedido.numeroVenta,
-  status: pedido.status,
-  createdAt: pedido.createdAt,
-  totalProductos: pedido.orderProducts.reduce((sum, op) => sum + (op.subtotal || 0), 0),
-  products: pedido.orderProducts.map(op => ({
-    id: op.product.id,
-    nombre: op.product.name,
-    cantidad: op.cantidad,
-    precio: op.precioUnitario,
-    subtotal: op.subtotal,
-  })),
-}));
+  // Agrupar por numeroVenta
+  const agrupados: any = {};
+  pedidos.forEach(pedido => {
+    if (!agrupados[pedido.numeroVenta]) {
+      agrupados[pedido.numeroVenta] = {
+        numeroVenta: pedido.numeroVenta,
+        status: pedido.status,
+        createdAt: pedido.createdAt,
+        propina: pedido.propina,
+        totalProductos: 0,
+        totalPedido: 0,
+        products: [],
+      };
+    }
+
+    pedido.orderProducts.forEach(op => {
+      agrupados[pedido.numeroVenta].products.push({
+        id: op.product.id,
+        nombre: op.product.name,
+        cantidad: op.cantidad,
+        precio: op.precioUnitario,
+        subtotal: op.subtotal,
+      });
+      agrupados[pedido.numeroVenta].totalProductos += op.subtotal || 0;
+    });
+
+    // Total pedido = productos + propina
+    agrupados[pedido.numeroVenta].totalPedido = agrupados[pedido.numeroVenta].totalProductos + (pedido.propina || 0);
+  });
+
+  // Devolver como array
+  return Object.values(agrupados);
 }
 
 

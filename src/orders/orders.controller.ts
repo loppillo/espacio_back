@@ -21,7 +21,7 @@ async getHistorialPorMesaYDia(
   @Query('fecha') fecha?: string,
 ) {
 
-  return this.ordersService.getPedidosPorMesa(mesaId);
+  return this.ordersService.getHistorialPorMesa(mesaId);
 }
 
 
