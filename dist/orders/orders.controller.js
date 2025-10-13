@@ -28,6 +28,10 @@ let OrdersController = class OrdersController {
         this.orderRepository = orderRepository;
         this.printService = printService;
     }
+    async getHistorialPorMesaYDia(mesaId, fecha) {
+        console.log('mesaId:', mesaId, 'fecha:', fecha);
+        return this.ordersService.getHistorialPorMesaYDia(mesaId, fecha);
+    }
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
     }
@@ -76,12 +80,16 @@ let OrdersController = class OrdersController {
     async print(body) {
         return this.printService.printFactura(body);
     }
-    async getHistorialPorMesaYDia(mesaId) {
-        console.log('mesaId:', mesaId);
-        return this.ordersService.getHistorialPorMesaYDia(+mesaId);
-    }
 };
 exports.OrdersController = OrdersController;
+__decorate([
+    (0, common_1.Get)('historial'),
+    __param(0, (0, common_1.Query)('mesaId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Query)('fecha')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getHistorialPorMesaYDia", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -160,13 +168,6 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "print", null);
-__decorate([
-    (0, common_1.Get)('historial'),
-    __param(0, (0, common_1.Query)('mesaId', common_1.ParseIntPipe)),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], OrdersController.prototype, "getHistorialPorMesaYDia", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),

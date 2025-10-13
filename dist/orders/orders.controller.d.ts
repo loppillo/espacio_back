@@ -10,6 +10,7 @@ export declare class OrdersController {
     private readonly orderRepository;
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
+    getHistorialPorMesaYDia(mesaId: number, fecha?: string): Promise<any[]>;
     create(createOrderDto: CreateOrderDto): Promise<Order>;
     creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
@@ -31,5 +32,4 @@ export declare class OrdersController {
     print(body: any): Promise<{
         success: boolean;
     }>;
-    getHistorialPorMesaYDia(mesaId: number): Promise<any[]>;
 }
