@@ -77,6 +77,7 @@ let OrdersController = class OrdersController {
         return this.printService.printFactura(body);
     }
     async getHistorialPorMesaYDia(mesaId, fecha) {
+        console.log('mesaId:', mesaId, 'fecha:', fecha);
         return this.ordersService.getHistorialPorMesaYDia(mesaId, fecha);
     }
 };
