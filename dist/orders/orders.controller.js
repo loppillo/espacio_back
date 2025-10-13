@@ -77,11 +77,7 @@ let OrdersController = class OrdersController {
         return this.printService.printFactura(body);
     }
     async getHistorialPorMesaYDia(mesaId, fecha) {
-        const mesaIdNum = Number(mesaId);
-        if (isNaN(mesaIdNum)) {
-            throw new common_1.BadRequestException('mesaId inválido');
-        }
-        return this.ordersService.getHistorialPorMesaYDia(mesaIdNum, fecha);
+        return this.ordersService.getHistorialPorMesaYDia(mesaId, fecha);
     }
 };
 exports.OrdersController = OrdersController;
@@ -165,10 +161,10 @@ __decorate([
 ], OrdersController.prototype, "print", null);
 __decorate([
     (0, common_1.Get)('historial'),
-    __param(0, (0, common_1.Query)('mesaId')),
+    __param(0, (0, common_1.Query)('mesaId', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Query)('fecha')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [Number, String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getHistorialPorMesaYDia", null);
 exports.OrdersController = OrdersController = __decorate([
