@@ -202,10 +202,18 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(updatedOrder);
         return updatedOrder;
     }
-    async getHistorialPorMesaYDia(mesaId) {
-        const hoy = new Date();
-        const inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
-        const finDia = new Date(hoy.setHours(23, 59, 59, 999));
+    async getHistorialPorMesaYDia(mesaId, fecha) {
+        let inicioDia;
+        let finDia;
+        if (fecha) {
+            inicioDia = new Date(`${fecha}T00:00:00`);
+            finDia = new Date(`${fecha}T23:59:59`);
+        }
+        else {
+            const hoy = new Date();
+            inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
+            finDia = new Date(hoy.setHours(23, 59, 59, 999));
+        }
         return this.orderRepository.find({
             where: {
                 mesa: { id: mesaId },

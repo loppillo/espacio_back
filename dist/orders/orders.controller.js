@@ -81,25 +81,7 @@ let OrdersController = class OrdersController {
         if (isNaN(mesaIdNum)) {
             throw new common_1.BadRequestException('mesaId inválido');
         }
-        let inicioDia;
-        let finDia;
-        if (fecha) {
-            inicioDia = new Date(`${fecha}T00:00:00`);
-            finDia = new Date(`${fecha}T23:59:59`);
-        }
-        else {
-            const hoy = new Date();
-            inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
-            finDia = new Date(hoy.setHours(23, 59, 59, 999));
-        }
-        return this.orderRepository.find({
-            where: {
-                mesa: { id: mesaIdNum },
-                createdAt: (0, typeorm_2.Between)(inicioDia, finDia),
-            },
-            relations: ['orderProducts', 'mesa', 'customer', 'user'],
-            order: { createdAt: 'DESC' },
-        });
+        return this.ordersService.getHistorialPorMesaYDia(mesaIdNum, fecha);
     }
 };
 exports.OrdersController = OrdersController;
