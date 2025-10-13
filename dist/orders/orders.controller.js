@@ -77,6 +77,10 @@ let OrdersController = class OrdersController {
         return this.printService.printFactura(body);
     }
     async getHistorialPorMesaYDia(mesaId, fecha) {
+        const mesaIdNum = Number(mesaId);
+        if (isNaN(mesaIdNum)) {
+            throw new common_1.BadRequestException('mesaId inválido');
+        }
         let inicioDia;
         let finDia;
         if (fecha) {
@@ -90,7 +94,7 @@ let OrdersController = class OrdersController {
         }
         return this.orderRepository.find({
             where: {
-                mesa: { id: mesaId },
+                mesa: { id: mesaIdNum },
                 createdAt: (0, typeorm_2.Between)(inicioDia, finDia),
             },
             relations: ['orderProducts', 'mesa', 'customer', 'user'],
@@ -182,7 +186,7 @@ __decorate([
     __param(0, (0, common_1.Query)('mesaId')),
     __param(1, (0, common_1.Query)('fecha')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getHistorialPorMesaYDia", null);
 exports.OrdersController = OrdersController = __decorate([
