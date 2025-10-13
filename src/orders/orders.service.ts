@@ -282,7 +282,7 @@ async eliminarProducto(orderId: number, productId: number) {
   return updatedOrder;
 }
 
-  async getHistorialPorMesaYDia(mesaId: number, fecha?: string): Promise<Order[]> {
+  async getHistorialPorMesaYDia(mesaId: number, fecha?: string): Promise<any[]> {
   // Determinar el rango de fechas
  let inicioDia: Date;
 let finDia: Date;
@@ -301,17 +301,27 @@ if (fecha) {
   finDia    = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
 }
 
-return this.orderRepository
-  .createQueryBuilder('order')
-  .leftJoinAndSelect('order.mesa', 'mesa')
-  .leftJoinAndSelect('order.orderProducts', 'orderProducts')
-  .leftJoinAndSelect('order.customer', 'customer')
-  .leftJoinAndSelect('order.user', 'user')
-  .where('mesa.id = :mesaId', { mesaId })
-  .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio: inicioDia, fin: finDia })
-  .andWhere('order.status = :status', { status: 'pagado' })
-  .orderBy('order.createdAt', 'DESC')
-  .getMany();
+const orders = await this.orderRepository.find({
+    where: { mesa: { id: mesaId }, createdAt: Between(inicioDia, finDia) },
+    relations: ['orderProducts', 'orderProducts.product'],
+  });
+
+  if (!orders.length) {
+    throw new NotFoundException('No se encontraron órdenes para esta mesa');
+  }
+
+  // Combinar productos de todas las órdenes, incluyendo orderId para luego eliminarlos si hace falta
+  const productos = orders.flatMap(order =>
+    order.orderProducts.map(op => ({
+      orderId: order.id,
+      productoId: op.product.id,
+      nombre: op.product.name,
+      precio: op.product.price,
+      cantidad: op.cantidad,
+    })),
+  );
+
+  return productos;
 
 
 
@@ -319,3 +329,4 @@ return this.orderRepository
 }
 
 
+}
