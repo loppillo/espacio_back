@@ -94,20 +94,25 @@ async eliminarProducto(
     return this.printService.printFactura(body);
   }
 
-  @Get('historial')
+ @Get('historial')
 async getHistorialPorMesaYDia(
-  @Query('mesaId') mesaId: number,
-  @Query('fecha') fecha?: string, // opcional
+  @Query('mesaId') mesaId: string,  // siempre string desde query
+  @Query('fecha') fecha?: string,   // opcional
 ) {
+  // Convertir mesaId a número
+  const mesaIdNum = Number(mesaId);
+  if (isNaN(mesaIdNum)) {
+    throw new BadRequestException('mesaId inválido');
+  }
+
+  // Fechas del día
   let inicioDia: Date;
   let finDia: Date;
 
   if (fecha) {
-    // Si viene fecha desde el frontend (ej: 2025-10-13)
     inicioDia = new Date(`${fecha}T00:00:00`);
     finDia = new Date(`${fecha}T23:59:59`);
   } else {
-    // Si no viene fecha, usar el día actual
     const hoy = new Date();
     inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
     finDia = new Date(hoy.setHours(23, 59, 59, 999));
@@ -115,7 +120,7 @@ async getHistorialPorMesaYDia(
 
   return this.orderRepository.find({
     where: {
-      mesa: { id: mesaId },
+      mesa: { id: mesaIdNum },
       createdAt: Between(inicioDia, finDia),
     },
     relations: ['orderProducts', 'mesa', 'customer', 'user'],
