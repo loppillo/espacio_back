@@ -20,8 +20,8 @@ async getHistorialPorMesaYDia(
   @Query('mesaId', ParseIntPipe) mesaId: number,  // NestJS convierte automáticamente
   @Query('fecha') fecha?: string,
 ) {
-  console.log('mesaId:', mesaId, 'fecha:', fecha);
-  return this.ordersService.getHistorialPorMesaYDia(mesaId, fecha);
+
+  return this.ordersService.getPedidosPorMesa(mesaId);
 }
 
 

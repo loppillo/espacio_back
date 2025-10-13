@@ -202,22 +202,7 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(updatedOrder);
         return updatedOrder;
     }
-    async getHistorialPorMesaYDia(mesaId, fecha) {
-        let inicioDia;
-        let finDia;
-        if (fecha) {
-            const parts = fecha.split('-');
-            const year = Number(parts[0]);
-            const month = Number(parts[1]) - 1;
-            const day = Number(parts[2]);
-            inicioDia = new Date(year, month, day, 0, 0, 0, 0);
-            finDia = new Date(year, month, day, 23, 59, 59, 999);
-        }
-        else {
-            const hoy = new Date();
-            inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-            finDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
-        }
+    async getPedidosPorMesa(mesaId) {
         const pedidos = await this.orderRepository
             .createQueryBuilder('order')
             .leftJoinAndSelect('order.mesa', 'mesa')
@@ -226,7 +211,6 @@ let OrdersService = class OrdersService {
             .leftJoinAndSelect('order.customer', 'customer')
             .leftJoinAndSelect('order.user', 'user')
             .where('mesa.id = :mesaId', { mesaId })
-            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio: inicioDia, fin: finDia })
             .orderBy('order.createdAt', 'DESC')
             .getMany();
         return pedidos.map(pedido => {
