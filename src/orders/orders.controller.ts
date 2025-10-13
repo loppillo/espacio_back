@@ -94,10 +94,10 @@ async eliminarProducto(
     return this.printService.printFactura(body);
   }
 
- @Get('historial')
+@Get('historial')
 async getHistorialPorMesaYDia(
-  @Query('mesaId') mesaId: string,  // siempre string desde query
-  @Query('fecha') fecha?: string,   // opcional
+  @Query('mesaId') mesaId: string,
+  @Query('fecha') fecha?: string,
 ) {
   const mesaIdNum = Number(mesaId);
   if (isNaN(mesaIdNum)) {
