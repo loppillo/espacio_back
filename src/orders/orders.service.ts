@@ -284,14 +284,13 @@ async eliminarProducto(orderId: number, productId: number) {
 
 async getHistorialPorMesa(mesaId: number) {
   const pedidos = await this.orderRepository
-    .createQueryBuilder('order')
-    .leftJoinAndSelect('order.mesa', 'mesa')
-    .leftJoinAndSelect('order.orderProducts', 'op')
-    .leftJoinAndSelect('op.product', 'product')
-    .where('mesa.id = :mesaId', { mesaId })
-    .orderBy('order.numeroVenta', 'ASC')
-    .addOrderBy('order.createdAt', 'ASC')
-    .getMany();
+  .createQueryBuilder('order')
+  .leftJoinAndSelect('order.mesa', 'mesa')
+  .leftJoinAndSelect('order.orderProducts', 'op')
+  .leftJoinAndSelect('op.product', 'product')
+  .where('mesa.id = :mesaId', { mesaId })
+  .orderBy('order.numeroVenta', 'ASC')  // solo por número de venta
+  .getMany();
 
   // Agrupar por numeroVenta
   const agrupados: any = {};
