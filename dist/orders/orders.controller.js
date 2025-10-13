@@ -29,8 +29,7 @@ let OrdersController = class OrdersController {
         this.printService = printService;
     }
     async getHistorialPorMesaYDia(mesaId, fecha) {
-        console.log('mesaId:', mesaId, 'fecha:', fecha);
-        return this.ordersService.getHistorialPorMesaYDia(mesaId, fecha);
+        return this.ordersService.getPedidosPorMesa(mesaId);
     }
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
