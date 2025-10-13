@@ -96,14 +96,10 @@ async eliminarProducto(
 
 @Get('historial')
 async getHistorialPorMesaYDia(
-  @Query('mesaId') mesaId: string,
+  @Query('mesaId', ParseIntPipe) mesaId: number,  // NestJS convierte automáticamente
   @Query('fecha') fecha?: string,
 ) {
-  const mesaIdNum = Number(mesaId);
-  if (isNaN(mesaIdNum)) {
-    throw new BadRequestException('mesaId inválido');
-  }
-
-  return this.ordersService.getHistorialPorMesaYDia(mesaIdNum, fecha);
+  return this.ordersService.getHistorialPorMesaYDia(mesaId, fecha);
 }
+
 }
