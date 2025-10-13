@@ -218,14 +218,16 @@ let OrdersService = class OrdersService {
             inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
             finDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
         }
-        return this.orderRepository.find({
-            where: {
-                id: mesaId,
-                createdAt: (0, typeorm_1.Between)(inicioDia, finDia),
-            },
-            relations: ['orderProducts', 'mesa', 'customer', 'user'],
-            order: { createdAt: 'DESC' },
-        });
+        return this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.mesa', 'mesa')
+            .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+            .leftJoinAndSelect('order.customer', 'customer')
+            .leftJoinAndSelect('order.user', 'user')
+            .where('mesa.id = :mesaId', { mesaId })
+            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio: inicioDia, fin: finDia })
+            .orderBy('order.createdAt', 'DESC')
+            .getMany();
     }
 };
 exports.OrdersService = OrdersService;
