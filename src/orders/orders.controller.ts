@@ -5,7 +5,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
-import { Raw, Repository } from 'typeorm';
+import { Between, Raw, Repository } from 'typeorm';
 import { PrintService } from './print/print.service';
 
 @Controller('orders')
@@ -94,5 +94,33 @@ async eliminarProducto(
     return this.printService.printFactura(body);
   }
 
+  @Get('historial')
+async getHistorialPorMesaYDia(
+  @Query('mesaId') mesaId: number,
+  @Query('fecha') fecha?: string, // opcional
+) {
+  let inicioDia: Date;
+  let finDia: Date;
+
+  if (fecha) {
+    // Si viene fecha desde el frontend (ej: 2025-10-13)
+    inicioDia = new Date(`${fecha}T00:00:00`);
+    finDia = new Date(`${fecha}T23:59:59`);
+  } else {
+    // Si no viene fecha, usar el día actual
+    const hoy = new Date();
+    inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
+    finDia = new Date(hoy.setHours(23, 59, 59, 999));
+  }
+
+  return this.orderRepository.find({
+    where: {
+      mesa: { id: mesaId },
+      createdAt: Between(inicioDia, finDia),
+    },
+    relations: ['orderProducts', 'mesa', 'customer', 'user'],
+    order: { createdAt: 'DESC' },
+  });
+}
 
 }

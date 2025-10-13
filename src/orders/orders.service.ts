@@ -3,7 +3,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
 import { User } from 'src/users/entities/user.entity';
-import { DeepPartial, In, Repository } from 'typeorm';
+import { Between, DeepPartial, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Product } from 'src/products/entities/product.entity';
@@ -281,6 +281,23 @@ async eliminarProducto(orderId: number, productId: number) {
   // 6️⃣ Devolver la orden actualizada completa
   return updatedOrder;
 }
+
+  async getHistorialPorMesaYDia(mesaId: number): Promise<Order[]> {
+    // Fecha actual (día completo)
+    const hoy = new Date();
+    const inicioDia = new Date(hoy.setHours(0, 0, 0, 0));
+    const finDia = new Date(hoy.setHours(23, 59, 59, 999));
+
+    return this.orderRepository.find({
+      where: {
+        mesa: { id: mesaId },
+        createdAt: Between(inicioDia, finDia),
+      },
+      relations: ['orderProducts', 'mesa', 'customer', 'user'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
 
 
 }
