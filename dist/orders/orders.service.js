@@ -218,21 +218,35 @@ let OrdersService = class OrdersService {
             inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
             finDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
         }
-        const orders = await this.orderRepository.find({
-            where: { mesa: { id: mesaId }, createdAt: (0, typeorm_1.Between)(inicioDia, finDia) },
-            relations: ['orderProducts', 'orderProducts.product'],
+        const pedidos = await this.orderRepository.find({
+            where: {
+                mesa: { id: mesaId },
+                createdAt: (0, typeorm_1.Between)(inicioDia, finDia),
+            },
+            relations: ['orderProducts', 'orderProducts.product', 'mesa', 'customer', 'user'],
+            order: { createdAt: 'DESC' },
         });
-        if (!orders.length) {
-            throw new common_1.NotFoundException('No se encontraron órdenes para esta mesa');
-        }
-        const productos = orders.flatMap(order => order.orderProducts.map(op => ({
-            orderId: order.id,
-            productoId: op.product.id,
-            nombre: op.product.name,
-            precio: op.product.price,
-            cantidad: op.cantidad,
-        })));
-        return productos;
+        return pedidos.map(pedido => {
+            const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
+            return {
+                numeroVenta: pedido.numeroVenta,
+                mesa: pedido.mesa,
+                customer: pedido.customer,
+                user: pedido.user,
+                detalle_venta: pedido.detalle_venta,
+                propina: pedido.propina,
+                status: pedido.status,
+                createdAt: pedido.createdAt,
+                totalProductos,
+                products: pedido.orderProducts.map(op => ({
+                    id: op.product.id,
+                    nombre: op.product.name,
+                    cantidad: op.cantidad,
+                    precio: op.precioUnitario,
+                    subtotal: op.subtotal,
+                })),
+            };
+        });
     }
 };
 exports.OrdersService = OrdersService;
