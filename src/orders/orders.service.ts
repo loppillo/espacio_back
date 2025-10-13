@@ -282,7 +282,10 @@ async eliminarProducto(orderId: number, productId: number) {
   return updatedOrder;
 }
 
-  async getHistorialPorMesaYDia(mesaId: number, fecha?: string) {
+  async getHistorialPorMesaYDia(
+  mesaId: number,
+  fecha?: string, // opcional
+) {
   let inicioDia: Date;
   let finDia: Date;
 
@@ -300,7 +303,6 @@ async eliminarProducto(orderId: number, productId: number) {
     finDia    = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
   }
 
-  // Traer los pedidos con sus productos
   const pedidos = await this.orderRepository.find({
     where: {
       mesa: { id: mesaId },
@@ -310,7 +312,6 @@ async eliminarProducto(orderId: number, productId: number) {
     order: { createdAt: 'DESC' },
   });
 
-  // Mapear para calcular total por pedido
   return pedidos.map(pedido => {
     const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
     return {
@@ -322,7 +323,7 @@ async eliminarProducto(orderId: number, productId: number) {
       propina: pedido.propina,
       status: pedido.status,
       createdAt: pedido.createdAt,
-      totalProductos,      // TOTAL SUMADO DE LOS PRODUCTOS
+      totalProductos,
       products: pedido.orderProducts.map(op => ({
         id: op.product.id,
         nombre: op.product.name,
