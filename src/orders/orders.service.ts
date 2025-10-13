@@ -282,24 +282,7 @@ async eliminarProducto(orderId: number, productId: number) {
   return updatedOrder;
 }
 
-async getHistorialPorMesaYDia(mesaId: number, fecha?: string) {
-  let inicioDia: Date;
-  let finDia: Date;
-
-  if (fecha) {
-    const parts = fecha.split('-');
-    const year = Number(parts[0]);
-    const month = Number(parts[1]) - 1;
-    const day = Number(parts[2]);
-
-    inicioDia = new Date(year, month, day, 0, 0, 0, 0);
-    finDia    = new Date(year, month, day, 23, 59, 59, 999);
-  } else {
-    const hoy = new Date();
-    inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-    finDia    = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
-  }
-
+async getPedidosPorMesa(mesaId: number) {
   const pedidos = await this.orderRepository
     .createQueryBuilder('order')
     .leftJoinAndSelect('order.mesa', 'mesa')
@@ -308,11 +291,9 @@ async getHistorialPorMesaYDia(mesaId: number, fecha?: string) {
     .leftJoinAndSelect('order.customer', 'customer')
     .leftJoinAndSelect('order.user', 'user')
     .where('mesa.id = :mesaId', { mesaId })
-    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio: inicioDia, fin: finDia })
     .orderBy('order.createdAt', 'DESC')
     .getMany();
 
-  // Mapear los totales
   return pedidos.map(pedido => {
     const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + (op.subtotal || 0), 0);
     return {
@@ -335,6 +316,7 @@ async getHistorialPorMesaYDia(mesaId: number, fecha?: string) {
     };
   });
 }
+
 
 
 
