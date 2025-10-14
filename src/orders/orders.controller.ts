@@ -17,8 +17,7 @@ export class OrdersController {
 
     @Get('historial')
 async getHistorialPorMesaYDia(
-  @Query('mesaId', ParseIntPipe) mesaId: number,  // NestJS convierte automáticamente
-  @Query('fecha') fecha?: string,
+  @Query('mesaId', ParseIntPipe) mesaId: number
 ) {
 
   return this.ordersService.getHistorialPorMesa(mesaId);

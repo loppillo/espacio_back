@@ -18,169 +18,169 @@ export class OrdersService {
 
   constructor(
     @InjectRepository(Order)
-    private readonly orderRepository:Repository<Order>,
+    private readonly orderRepository: Repository<Order>,
     @InjectRepository(User)
-    private readonly userRepository:Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Customer)
-    private readonly customerRepository:Repository<Customer>,
-   @InjectRepository(Product)
-    private readonly productRepository:Repository<Product>,
-     @InjectRepository(Propina)
-    private readonly propinaRepository:Repository<Propina>,
-     @InjectRepository(Mesa)
-    private readonly mesaRepository:Repository<Mesa>,
-        @InjectRepository(ProductsOrders)
+    private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+    @InjectRepository(Propina)
+    private readonly propinaRepository: Repository<Propina>,
+    @InjectRepository(Mesa)
+    private readonly mesaRepository: Repository<Mesa>,
+    @InjectRepository(ProductsOrders)
     private readonly productsOrdersRepository: Repository<ProductsOrders>,
 
-  ){}
+  ) { }
 
 
-async create(createOrderDto: CreateOrderDto) {
-  const { products, propina, mesaId } = createOrderDto;
+  async create(createOrderDto: CreateOrderDto) {
+    const { products, propina, mesaId } = createOrderDto;
 
-  // Validar mesa (si viene)
-  let mesa = null;
-  if (mesaId) {
-    mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
-    if (!mesa) {
-      throw new BadRequestException('La mesa no se encuentra');
-    }
-  }
-
-  // Obtener el último numeroVenta
-  const lastOrder = await this.orderRepository.findOne({
-    where: {},
-    order: { id: 'DESC' },
-  });
-  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-
-  // Crear la orden base (sin productos todavía)
-  const newOrder = this.orderRepository.create({
-    detalle_venta: createOrderDto.detalle_venta,
-    tableNumber: createOrderDto.tableNumber,
-    propina,
-    status: createOrderDto.status,
-    orderType: createOrderDto.orderType,
-    paymentMethod: createOrderDto.paymentMethod,
-    mesa,
-    numeroVenta: nextNumeroVenta,
-    total: 0, // se recalcula más abajo
-  });
-
-  // Inicializar la lista de productos de la orden
-  newOrder.orderProducts = [];
-
-  let total = 0;
-
-  for (const p of products) {
-    // Buscar producto real en la DB
-    const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
-    if (!productEntity) {
-      throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+    // Validar mesa (si viene)
+    let mesa = null;
+    if (mesaId) {
+      mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+      if (!mesa) {
+        throw new BadRequestException('La mesa no se encuentra');
+      }
     }
 
-    // Calcular subtotal
-    const subtotal = productEntity.price * p.cantidad;
-    total += subtotal;
+    // Obtener el último numeroVenta
+    const lastOrder = await this.orderRepository.findOne({
+      where: {},
+      order: { id: 'DESC' },
+    });
+    const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
-    // Crear relación pivot
-    const orderProduct = new ProductsOrders();
-    orderProduct.product = productEntity;
-    orderProduct.cantidad = p.cantidad;
-    orderProduct.precioUnitario = productEntity.price;
-    orderProduct.subtotal = subtotal;
-
-    newOrder.orderProducts.push(orderProduct);
-  }
-
-  // Actualizar el total de la orden
-  newOrder.total = total + (propina || 0);
-
-  // Guardar la orden con cascade → también guarda orderProducts
-  return await this.orderRepository.save(newOrder);
-}
-
-
-
-
-async creates(createOrderDto: CreateSOrderDto) {
-  const { products, customerId, newCustomer, propina } = createOrderDto;
-
-  // 1️⃣ Validar o crear cliente
-  let customer = null;
-
-  if (customerId) {
-    customer = await this.customerRepository.findOneBy({ id: customerId });
-    if (!customer) throw new BadRequestException('El cliente no se encuentra');
-  } 
-  else if (newCustomer) {
-    if (!newCustomer.customerName) {
-      throw new BadRequestException('El nombre del cliente es obligatorio');
-    }
-
-    customer = this.customerRepository.create({
-      customerName: newCustomer.customerName,
-      customerEmail: newCustomer.customerEmail || '',
-      customerAddress: newCustomer.customerAddress || '',
-      customerPhone: newCustomer.customerPhone || '',
+    // Crear la orden base (sin productos todavía)
+    const newOrder = this.orderRepository.create({
+      detalle_venta: createOrderDto.detalle_venta,
+      tableNumber: createOrderDto.tableNumber,
+      propina,
+      status: createOrderDto.status,
+      orderType: createOrderDto.orderType,
+      paymentMethod: createOrderDto.paymentMethod,
+      mesa,
+      numeroVenta: nextNumeroVenta,
+      total: 0, // se recalcula más abajo
     });
 
-    await this.customerRepository.save(customer);
-  }
+    // Inicializar la lista de productos de la orden
+    newOrder.orderProducts = [];
 
-  // 2️⃣ Validar productos
-  const productIds = products.map(p => p.id);
-  const foundProducts = await this.productRepository.findBy({ id: In(productIds) });
-  if (foundProducts.length !== productIds.length) {
-    throw new BadRequestException('Uno o más productos no se encuentran');
-  }
+    let total = 0;
 
-  // 3️⃣ Buscar último numeroVenta
-  const lastOrder = await this.orderRepository.findOne({
-    where: {},
-    order: { id: 'DESC' },
-  });
-  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+    for (const p of products) {
+      // Buscar producto real en la DB
+      const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+      if (!productEntity) {
+        throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+      }
 
-  // 4️⃣ Crear la orden
-  const newOrder = this.orderRepository.create({
-    detalle_venta: createOrderDto.detalle_venta,
-    status: createOrderDto.status || 'activo',
-    orderType: createOrderDto.orderType || 'local',
-    paymentMethod: createOrderDto.paymentMethod || 'pendiente',
-    createdAt: new Date(),
-    customer,
-    propina: propina ?? 0,
-    numeroVenta: nextNumeroVenta,
-    orderProducts: [], // la llenamos abajo
-  });
+      // Calcular subtotal
+      const subtotal = productEntity.price * p.cantidad;
+      total += subtotal;
 
-  // 5️⃣ Mapear productos a la tabla pivote ProductsOrders
-  let total = 0;
-  for (const p of products) {
-    const productEntity = foundProducts.find(fp => fp.id === p.id);
-    if (!productEntity) {
-      throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+      // Crear relación pivot
+      const orderProduct = new ProductsOrders();
+      orderProduct.product = productEntity;
+      orderProduct.cantidad = p.cantidad;
+      orderProduct.precioUnitario = productEntity.price;
+      orderProduct.subtotal = subtotal;
+
+      newOrder.orderProducts.push(orderProduct);
     }
 
-    const subtotal = productEntity.price * p.cantidad;
-    total += subtotal;
+    // Actualizar el total de la orden
+    newOrder.total = total + (propina || 0);
 
-    const orderProduct = new ProductsOrders();
-    orderProduct.product = productEntity;
-    orderProduct.cantidad = p.cantidad;
-    orderProduct.precioUnitario = productEntity.price;
-    orderProduct.subtotal = subtotal;
-
-    newOrder.orderProducts.push(orderProduct);
+    // Guardar la orden con cascade → también guarda orderProducts
+    return await this.orderRepository.save(newOrder);
   }
 
-  // 6️⃣ Calcular total real (productos + propina)
-  newOrder.total = total + (propina || 0);
 
-  // 7️⃣ Guardar y devolver
-  return await this.orderRepository.save(newOrder);
-}
+
+
+  async creates(createOrderDto: CreateSOrderDto) {
+    const { products, customerId, newCustomer, propina } = createOrderDto;
+
+    // 1️⃣ Validar o crear cliente
+    let customer = null;
+
+    if (customerId) {
+      customer = await this.customerRepository.findOneBy({ id: customerId });
+      if (!customer) throw new BadRequestException('El cliente no se encuentra');
+    }
+    else if (newCustomer) {
+      if (!newCustomer.customerName) {
+        throw new BadRequestException('El nombre del cliente es obligatorio');
+      }
+
+      customer = this.customerRepository.create({
+        customerName: newCustomer.customerName,
+        customerEmail: newCustomer.customerEmail || '',
+        customerAddress: newCustomer.customerAddress || '',
+        customerPhone: newCustomer.customerPhone || '',
+      });
+
+      await this.customerRepository.save(customer);
+    }
+
+    // 2️⃣ Validar productos
+    const productIds = products.map(p => p.id);
+    const foundProducts = await this.productRepository.findBy({ id: In(productIds) });
+    if (foundProducts.length !== productIds.length) {
+      throw new BadRequestException('Uno o más productos no se encuentran');
+    }
+
+    // 3️⃣ Buscar último numeroVenta
+    const lastOrder = await this.orderRepository.findOne({
+      where: {},
+      order: { id: 'DESC' },
+    });
+    const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+
+    // 4️⃣ Crear la orden
+    const newOrder = this.orderRepository.create({
+      detalle_venta: createOrderDto.detalle_venta,
+      status: createOrderDto.status || 'activo',
+      orderType: createOrderDto.orderType || 'local',
+      paymentMethod: createOrderDto.paymentMethod || 'pendiente',
+      createdAt: new Date(),
+      customer,
+      propina: propina ?? 0,
+      numeroVenta: nextNumeroVenta,
+      orderProducts: [], // la llenamos abajo
+    });
+
+    // 5️⃣ Mapear productos a la tabla pivote ProductsOrders
+    let total = 0;
+    for (const p of products) {
+      const productEntity = foundProducts.find(fp => fp.id === p.id);
+      if (!productEntity) {
+        throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+      }
+
+      const subtotal = productEntity.price * p.cantidad;
+      total += subtotal;
+
+      const orderProduct = new ProductsOrders();
+      orderProduct.product = productEntity;
+      orderProduct.cantidad = p.cantidad;
+      orderProduct.precioUnitario = productEntity.price;
+      orderProduct.subtotal = subtotal;
+
+      newOrder.orderProducts.push(orderProduct);
+    }
+
+    // 6️⃣ Calcular total real (productos + propina)
+    newOrder.total = total + (propina || 0);
+
+    // 7️⃣ Guardar y devolver
+    return await this.orderRepository.save(newOrder);
+  }
 
 
   async findAll() {
@@ -188,143 +188,161 @@ async creates(createOrderDto: CreateSOrderDto) {
   }
 
   async findOne(id: number) {
-    return await this.orderRepository.findOneBy({id});
+    return await this.orderRepository.findOneBy({ id });
   }
 
   async update(id: number, updateOrderDto: UpdateOrderDto) {
-    return await this.orderRepository.update(id,updateOrderDto)
+    return await this.orderRepository.update(id, updateOrderDto)
   }
 
-async remove(id: number) {
-  const order = await this.orderRepository.findOne({ where: { id } });
+  async remove(id: number) {
+    const order = await this.orderRepository.findOne({ where: { id } });
 
-  if (!order) {
-    throw new NotFoundException(`La orden con ID ${id} no existe`);
-  }
-
-  // Soft delete (marcar como eliminado en deletedAt)
-  await this.orderRepository.softRemove(order);
-
-  return { message: 'Orden eliminada correctamente', id };
-}
-
-  async cancelarOrden(id: number) {
-  const orden = await this.orderRepository.findOneBy({ id });
-  if (!orden) throw new NotFoundException('Orden no encontrada');
-
-  orden.status = 'cancelado';
-  return this.orderRepository.save(orden);
-}
-
-async getProductosPorMesa(mesaId: number): Promise<any[]> {
-  // Traer todas las órdenes activas de la mesa con sus productos
-  const orders = await this.orderRepository.find({
-    where: { mesa: { id: mesaId }, estado: 'activo' },
-    relations: ['orderProducts', 'orderProducts.product'],
-  });
-
-  if (!orders.length) {
-    throw new NotFoundException('No se encontraron órdenes para esta mesa');
-  }
-
-  // Combinar productos de todas las órdenes, incluyendo orderId para luego eliminarlos si hace falta
-  const productos = orders.flatMap(order =>
-    order.orderProducts.map(op => ({
-      orderId: order.id,
-      productoId: op.product.id,
-      nombre: op.product.name,
-      precio: op.product.price,
-      cantidad: op.cantidad,
-    })),
-  );
-
-  return productos;
-}
-
-  // Eliminar un producto de una orden específica
-async eliminarProducto(orderId: number, productId: number) {
-  // 1️⃣ Buscar la relación producto-orden
-  const orderProduct = await this.productsOrdersRepository.findOne({
-    where: { orderId, productId },
-    relations: ['product', 'order'],
-  });
-
-  if (!orderProduct) {
-    throw new NotFoundException('El producto no está en la orden');
-  }
-
-  // 2️⃣ Eliminar el producto de la orden
-  await this.productsOrdersRepository.delete({ orderId, productId });
-
-  // 3️⃣ Obtener productos restantes
-  const remainingProducts = await this.productsOrdersRepository.find({
-    where: { orderId },
-  });
-
-  // 4️⃣ Recalcular total
-  const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
-
-  // 5️⃣ Opcional: actualizar status o propina si no quedan productos
-  const updatedOrder = await this.orderRepository.findOne({ 
-    where: { id: orderId },
-    relations: ['orderProducts'],
-  });
-
-  updatedOrder.total = newTotal;
-  if (remainingProducts.length === 0) {
-    updatedOrder.status = 'vacío'; // o 'cancelado', según tu lógica
-    updatedOrder.propina = 0;
-  }
-
-  await this.orderRepository.save(updatedOrder);
-
-  // 6️⃣ Devolver la orden actualizada completa
-  return updatedOrder;
-}
-
-async getHistorialPorMesa(mesaId: number) {
-  const pedidos = await this.orderRepository
-  .createQueryBuilder('order')
-  .leftJoinAndSelect('order.mesa', 'mesa')
-  .leftJoinAndSelect('order.orderProducts', 'op')
-  .leftJoinAndSelect('op.product', 'product')
-  .where('mesa.id = :mesaId', { mesaId })
-  .orderBy('order.numeroVenta', 'ASC')  // solo por número de venta
-  .getMany();
-
-  // Agrupar por numeroVenta
-  const agrupados: any = {};
-  pedidos.forEach(pedido => {
-    if (!agrupados[pedido.numeroVenta]) {
-      agrupados[pedido.numeroVenta] = {
-        numeroVenta: pedido.numeroVenta,
-        status: pedido.status,
-        createdAt: pedido.createdAt,
-        propina: pedido.propina,
-        totalProductos: 0,
-        totalPedido: 0,
-        products: [],
-      };
+    if (!order) {
+      throw new NotFoundException(`La orden con ID ${id} no existe`);
     }
 
-    pedido.orderProducts.forEach(op => {
-      agrupados[pedido.numeroVenta].products.push({
+    // Soft delete (marcar como eliminado en deletedAt)
+    await this.orderRepository.softRemove(order);
+
+    return { message: 'Orden eliminada correctamente', id };
+  }
+
+  async cancelarOrden(id: number) {
+    const orden = await this.orderRepository.findOneBy({ id });
+    if (!orden) throw new NotFoundException('Orden no encontrada');
+
+    orden.status = 'cancelado';
+    return this.orderRepository.save(orden);
+  }
+
+  async getProductosPorMesa(mesaId: number): Promise<any[]> {
+    // Traer todas las órdenes activas de la mesa con sus productos
+    const orders = await this.orderRepository.find({
+      where: { mesa: { id: mesaId }, estado: 'activo' },
+      relations: ['orderProducts', 'orderProducts.product'],
+    });
+
+    if (!orders.length) {
+      throw new NotFoundException('No se encontraron órdenes para esta mesa');
+    }
+
+    // Combinar productos de todas las órdenes, incluyendo orderId para luego eliminarlos si hace falta
+    const productos = orders.flatMap(order =>
+      order.orderProducts.map(op => ({
+        orderId: order.id,
+        productoId: op.product.id,
+        nombre: op.product.name,
+        precio: op.product.price,
+        cantidad: op.cantidad,
+      })),
+    );
+
+    return productos;
+  }
+
+  // Eliminar un producto de una orden específica
+  async eliminarProducto(orderId: number, productId: number) {
+    // 1️⃣ Buscar la relación producto-orden
+    const orderProduct = await this.productsOrdersRepository.findOne({
+      where: { orderId, productId },
+      relations: ['product', 'order'],
+    });
+
+    if (!orderProduct) {
+      throw new NotFoundException('El producto no está en la orden');
+    }
+
+    // 2️⃣ Eliminar el producto de la orden
+    await this.productsOrdersRepository.delete({ orderId, productId });
+
+    // 3️⃣ Obtener productos restantes
+    const remainingProducts = await this.productsOrdersRepository.find({
+      where: { orderId },
+    });
+
+    // 4️⃣ Recalcular total
+    const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
+
+    // 5️⃣ Opcional: actualizar status o propina si no quedan productos
+    const updatedOrder = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['orderProducts'],
+    });
+
+    updatedOrder.total = newTotal;
+    if (remainingProducts.length === 0) {
+      updatedOrder.status = 'vacío'; // o 'cancelado', según tu lógica
+      updatedOrder.propina = 0;
+    }
+
+    await this.orderRepository.save(updatedOrder);
+
+    // 6️⃣ Devolver la orden actualizada completa
+    return updatedOrder;
+  }
+
+  async getHistorialPorMesa(mesaId: number) {
+  // Traer todas las órdenes relacionadas a la mesa
+  const pedidos = await this.orderRepository
+    .createQueryBuilder('order')
+    .leftJoinAndSelect('order.mesa', 'mesa')
+    .leftJoinAndSelect('order.orderProducts', 'op')
+    .leftJoinAndSelect('op.product', 'product')
+    .leftJoinAndSelect('order.customer', 'customer')
+    .leftJoinAndSelect('order.user', 'user')
+    .where('mesa.id = :mesaId', { mesaId })
+    .orderBy('order.numeroVenta', 'ASC')
+    .addOrderBy('order.createdAt', 'ASC')
+    .getMany();
+
+  if (!pedidos.length) return [];
+
+  // Agrupar por numeroVenta
+  const pedidosAgrupados: Record<number, any[]> = {};
+  for (const pedido of pedidos) {
+    if (!pedidosAgrupados[pedido.numeroVenta]) pedidosAgrupados[pedido.numeroVenta] = [];
+    pedidosAgrupados[pedido.numeroVenta].push(pedido);
+  }
+
+  // Mapear el resultado agrupado
+  return Object.keys(pedidosAgrupados).map(numeroVenta => {
+    const pedidosDeVenta = pedidosAgrupados[+numeroVenta];
+
+    // Combinar productos y totales
+    const todosLosProductos = pedidosDeVenta.flatMap(p =>
+      p.orderProducts.map(op => ({
         id: op.product.id,
         nombre: op.product.name,
         cantidad: op.cantidad,
         precio: op.precioUnitario,
         subtotal: op.subtotal,
-      });
-      agrupados[pedido.numeroVenta].totalProductos += op.subtotal || 0;
-    });
+      }))
+    );
 
-    // Total pedido = productos + propina
-    agrupados[pedido.numeroVenta].totalPedido = agrupados[pedido.numeroVenta].totalProductos + (pedido.propina || 0);
+    const totalProductos = todosLosProductos.reduce((sum, p) => sum + p.subtotal, 0);
+    const propinaTotal = pedidosDeVenta.reduce((sum, p) => sum + (p.propina || 0), 0);
+    const totalPedido = totalProductos + propinaTotal;
+
+    // Tomar datos comunes del primer pedido del grupo
+    const primerPedido = pedidosDeVenta[0];
+
+    return {
+      numeroVenta: +numeroVenta,
+      mesa: primerPedido.mesa,
+      customer: primerPedido.customer,
+      user: primerPedido.user,
+      detalle_venta: primerPedido.detalle_venta,
+      status: primerPedido.status,
+      createdAt: primerPedido.createdAt,
+      propina: propinaTotal,
+      totalProductos,
+      totalPedido,
+      products: todosLosProductos,
+    };
   });
-
-  // Devolver como array
-  return Object.values(agrupados);
 }
+
 
 
 
