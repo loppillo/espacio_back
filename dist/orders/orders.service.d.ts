@@ -32,15 +32,19 @@ export declare class OrdersService {
     eliminarProducto(orderId: number, productId: number): Promise<Order>;
     getHistorialPorMesa(mesaId: number): Promise<{
         numeroVenta: number;
-        mesa: any;
-        customer: any;
-        user: any;
-        detalle_venta: any;
-        status: any;
-        createdAt: any;
-        propina: any;
-        totalProductos: any;
-        totalPedido: any;
-        products: any[];
+        mesa: Mesa;
+        status: string;
+        estado: string;
+        createdAt: Date;
+        propina: number;
+        totalProductos: number;
+        totalPedido: number;
+        products: {
+            id: number;
+            nombre: string;
+            cantidad: number;
+            precio: number;
+            subtotal: number;
+        }[];
     }[]>;
 }
