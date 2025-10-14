@@ -10,24 +10,8 @@ export declare class OrdersController {
     private readonly orderRepository;
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
-    getHistorialPorMesaYDia(mesaId: number): Promise<{
-        numeroVenta: number;
-        mesa: import("../mesas/entities/mesa.entity").Mesa;
-        status: string;
-        estado: string;
-        createdAt: Date;
-        propina: number;
-        totalProductos: number;
-        totalPedido: number;
-        products: {
-            id: number;
-            nombre: string;
-            cantidad: number;
-            precio: number;
-            subtotal: number;
-        }[];
-    }[]>;
     create(createOrderDto: CreateOrderDto): Promise<Order>;
+    getHistorialPorMesaYDia(mesaId: number): Promise<any[]>;
     creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;

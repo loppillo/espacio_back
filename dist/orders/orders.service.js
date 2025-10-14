@@ -203,39 +203,48 @@ let OrdersService = class OrdersService {
         return updatedOrder;
     }
     async getHistorialPorMesa(mesaId) {
-        const pedidos = await this.orderRepository
-            .createQueryBuilder('order')
-            .leftJoinAndSelect('order.mesa', 'mesa')
-            .leftJoinAndSelect('order.orderProducts', 'op')
-            .leftJoinAndSelect('op.product', 'product')
-            .leftJoinAndSelect('order.customer', 'customer')
-            .leftJoinAndSelect('order.user', 'user')
-            .where('order.mesaId = :mesaId', { mesaId })
-            .orderBy('order.createdAt', 'DESC')
-            .getMany();
-        if (!pedidos.length) {
-            console.log('⚠️ No se encontraron pedidos para la mesa:', mesaId);
-        }
-        return pedidos.map(pedido => {
-            const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
-            return {
-                numeroVenta: pedido.numeroVenta,
-                mesa: pedido.mesa,
-                status: pedido.status,
-                estado: pedido.estado,
-                createdAt: pedido.createdAt,
-                propina: pedido.propina,
-                totalProductos,
-                totalPedido: totalProductos + (pedido.propina || 0),
-                products: pedido.orderProducts.map(op => ({
+        const pedidos = await this.orderRepository.find({
+            where: { mesa: { id: mesaId } },
+            relations: [
+                'orderProducts',
+                'orderProducts.product',
+                'mesa',
+                'customer',
+                'user',
+            ],
+            order: { createdAt: 'DESC' },
+        });
+        const historialMap = new Map();
+        for (const pedido of pedidos) {
+            const numeroVenta = pedido.numeroVenta;
+            if (!historialMap.has(numeroVenta)) {
+                historialMap.set(numeroVenta, {
+                    numeroVenta,
+                    mesa: pedido.mesa ? pedido.mesa.numero_mesa : null,
+                    estado: pedido.estado,
+                    status: pedido.status,
+                    createdAt: pedido.createdAt,
+                    propina: pedido.propina || 0,
+                    productos: [],
+                    totalProductos: 0,
+                    totalPedido: 0,
+                });
+            }
+            const grupo = historialMap.get(numeroVenta);
+            for (const op of pedido.orderProducts) {
+                grupo.productos.push({
                     id: op.product.id,
                     nombre: op.product.name,
                     cantidad: op.cantidad,
                     precio: op.precioUnitario,
                     subtotal: op.subtotal,
-                })),
-            };
-        });
+                });
+                grupo.totalProductos += op.subtotal;
+            }
+            grupo.totalPedido = grupo.totalProductos + grupo.propina;
+        }
+        const historial = Array.from(historialMap.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return historial;
     }
 };
 exports.OrdersService = OrdersService;
