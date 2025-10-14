@@ -203,13 +203,19 @@ let OrdersService = class OrdersService {
         return updatedOrder;
     }
     async getHistorialPorMesa(mesaId) {
-        const pedidos = await this.orderRepository.find({
-            where: {
-                mesa: { id: mesaId },
-            },
-            relations: ['orderProducts', 'orderProducts.product', 'mesa', 'customer', 'user'],
-            order: { createdAt: 'DESC' },
-        });
+        const pedidos = await this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.mesa', 'mesa')
+            .leftJoinAndSelect('order.orderProducts', 'op')
+            .leftJoinAndSelect('op.product', 'product')
+            .leftJoinAndSelect('order.customer', 'customer')
+            .leftJoinAndSelect('order.user', 'user')
+            .where('order.mesaId = :mesaId', { mesaId })
+            .orderBy('order.createdAt', 'DESC')
+            .getMany();
+        if (!pedidos.length) {
+            console.log('⚠️ No se encontraron pedidos para la mesa:', mesaId);
+        }
         return pedidos.map(pedido => {
             const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
             return {
