@@ -51,9 +51,9 @@ customer: Customer;
 @OneToMany(() => ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true })
   orderProducts: ProductsOrders[];
 
-  @ManyToOne(() => Mesa, (mesa) => mesa.id)
-  @JoinColumn({ name: 'mesaId' })
-  mesa: Mesa;
+ @ManyToOne(() => Mesa, (mesa) => mesa.orders)
+@JoinColumn({ name: 'mesaId' })
+mesa: Mesa;
 
   @ManyToOne(() => Product, product => product.id)
   @JoinColumn({ name: 'productId' })

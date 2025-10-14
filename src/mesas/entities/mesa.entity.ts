@@ -13,7 +13,7 @@ export class Mesa {
   status: string;
 
   @OneToMany(() => Order, (order) => order.mesa)
-  orders: Order[];
+orders: Order[];
 
 }
   
