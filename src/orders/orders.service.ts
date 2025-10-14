@@ -219,7 +219,7 @@ export class OrdersService {
   async getProductosPorMesa(mesaId: number): Promise<any[]> {
     // Traer todas las órdenes activas de la mesa con sus productos
     const orders = await this.orderRepository.find({
-      where: { mesa: { id: mesaId }, estado: 'activo' },
+      where: { mesa: { id: mesaId } },
       relations: ['orderProducts', 'orderProducts.product'],
     });
 
