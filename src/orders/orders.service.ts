@@ -282,7 +282,7 @@ export class OrdersService {
     return updatedOrder;
   }
 
-  async getHistorialPorMesa(mesaId: number) {
+  async getHistorialPorMesas(mesaId: number) {
   const pedidos = await this.orderRepository.find({
     where: { mesa: { id: mesaId } },
     relations: [
