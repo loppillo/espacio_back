@@ -217,25 +217,30 @@ export class OrdersService {
   }
 
  async getProductosPorMesa(mesaId: number): Promise<any[]> {
-  const orders = await this.orderRepository.find({
-    where: { mesa: { id: mesaId }, estado: In(['activo', 'cerrada', 'pagada']) }, // ❗ trae todas las órdenes, activas o no
-    relations: ['orderProducts', 'orderProducts.product'],
-    withDeleted: true, // <-- Incluye las eliminadas lógicamente si usas soft delete
-    order: { numeroVenta: 'ASC' },
-  });
+ const orders = await this.orderRepository
+    .createQueryBuilder('order')
+    .leftJoinAndSelect('order.mesa', 'mesa')
+    .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+    .leftJoinAndSelect('orderProducts.product', 'product')
+    .where('order.mesaId = :mesaId', { mesaId })
+    .withDeleted() // incluye eliminadas si usas soft delete
+    .orderBy('order.numeroVenta', 'ASC')
+    .getMany();
 
   if (!orders.length) {
-    throw new NotFoundException('No se encontraron órdenes para esta mesa');
+    return [];
   }
 
-  const productos = orders.map(order => ({
+  // Formatear respuesta
+  return orders.map((order) => ({
     numeroVenta: order.numeroVenta,
     estado: order.estado,
+    status: order.status,
     fecha: order.createdAt,
-    total: order.total,
     propina: order.propina,
-    totalPedido: order.total + order.propina,
-    products: order.orderProducts.map(op => ({
+    totalProductos: order.total,
+    totalPedido: order.total + (order.propina || 0),
+    products: order.orderProducts.map((op) => ({
       id: op.product.id,
       nombre: op.product.name,
       cantidad: op.cantidad,
@@ -243,8 +248,6 @@ export class OrdersService {
       subtotal: op.subtotal,
     })),
   }));
-
-  return productos;
 }
   // Eliminar un producto de una orden específica
   async eliminarProducto(orderId: number, productId: number) {

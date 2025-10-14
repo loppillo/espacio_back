@@ -85,10 +85,10 @@ async obtenerVentasPorDia(@Query('fecha') fecha: string) {
 }
 
 
-@Get('mesas/:mesaId/productos')
-  async getProductosPorMesa(@Param('mesaId') mesaId: number) {
-    return this.ordersService.getProductosPorMesa(+mesaId);
-  }
+@Get('historial')
+async getHistorial(@Query('mesaId') mesaId: number) {
+  return this.ordersService.getProductosPorMesa(+mesaId);
+}
 
   @Delete(':orderId/productos/:productId')
 async eliminarProducto(
