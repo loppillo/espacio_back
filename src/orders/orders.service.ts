@@ -216,31 +216,36 @@ export class OrdersService {
     return this.orderRepository.save(orden);
   }
 
-  async getProductosPorMesa(mesaId: number): Promise<any[]> {
-    // Traer todas las órdenes activas de la mesa con sus productos
-    const orders = await this.orderRepository.find({
-      where: { mesa: { id: mesaId } },
-      relations: ['orderProducts', 'orderProducts.product'],
-    });
+ async getProductosPorMesa(mesaId: number): Promise<any[]> {
+  const orders = await this.orderRepository.find({
+    where: { mesa: { id: mesaId }, estado: In(['activo', 'cerrada', 'pagada']) }, // ❗ trae todas las órdenes, activas o no
+    relations: ['orderProducts', 'orderProducts.product'],
+    withDeleted: true, // <-- Incluye las eliminadas lógicamente si usas soft delete
+    order: { numeroVenta: 'ASC' },
+  });
 
-    if (!orders.length) {
-      throw new NotFoundException('No se encontraron órdenes para esta mesa');
-    }
-
-    // Combinar productos de todas las órdenes, incluyendo orderId para luego eliminarlos si hace falta
-    const productos = orders.flatMap(order =>
-      order.orderProducts.map(op => ({
-        orderId: order.id,
-        productoId: op.product.id,
-        nombre: op.product.name,
-        precio: op.product.price,
-        cantidad: op.cantidad,
-      })),
-    );
-
-    return productos;
+  if (!orders.length) {
+    throw new NotFoundException('No se encontraron órdenes para esta mesa');
   }
 
+  const productos = orders.map(order => ({
+    numeroVenta: order.numeroVenta,
+    estado: order.estado,
+    fecha: order.createdAt,
+    total: order.total,
+    propina: order.propina,
+    totalPedido: order.total + order.propina,
+    products: order.orderProducts.map(op => ({
+      id: op.product.id,
+      nombre: op.product.name,
+      cantidad: op.cantidad,
+      precio: op.precioUnitario,
+      subtotal: op.subtotal,
+    })),
+  }));
+
+  return productos;
+}
   // Eliminar un producto de una orden específica
   async eliminarProducto(orderId: number, productId: number) {
     // 1️⃣ Buscar la relación producto-orden
