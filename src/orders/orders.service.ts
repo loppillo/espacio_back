@@ -216,39 +216,31 @@ export class OrdersService {
     return this.orderRepository.save(orden);
   }
 
- async getProductosPorMesa(mesaId: number): Promise<any[]> {
- const orders = await this.orderRepository
-    .createQueryBuilder('order')
-    .leftJoinAndSelect('order.mesa', 'mesa')
-    .leftJoinAndSelect('order.orderProducts', 'orderProducts')
-    .leftJoinAndSelect('orderProducts.product', 'product')
-    .where('order.mesaId = :mesaId', { mesaId })
-    .withDeleted() // incluye eliminadas si usas soft delete
-    .orderBy('order.numeroVenta', 'ASC')
-    .getMany();
+  async getProductosPorMesa(mesaId: number): Promise<any[]> {
+    // Traer todas las órdenes activas de la mesa con sus productos
+    const orders = await this.orderRepository.find({
+      where: { mesa: { id: mesaId }, estado: 'activo' },
+      relations: ['orderProducts', 'orderProducts.product'],
+    });
 
-  if (!orders.length) {
-    return [];
+    if (!orders.length) {
+      throw new NotFoundException('No se encontraron órdenes para esta mesa');
+    }
+
+    // Combinar productos de todas las órdenes, incluyendo orderId para luego eliminarlos si hace falta
+    const productos = orders.flatMap(order =>
+      order.orderProducts.map(op => ({
+        orderId: order.id,
+        productoId: op.product.id,
+        nombre: op.product.name,
+        precio: op.product.price,
+        cantidad: op.cantidad,
+      })),
+    );
+
+    return productos;
   }
 
-  // Formatear respuesta
-  return orders.map((order) => ({
-    numeroVenta: order.numeroVenta,
-    estado: order.estado,
-    status: order.status,
-    fecha: order.createdAt,
-    propina: order.propina,
-    totalProductos: order.total,
-    totalPedido: order.total + (order.propina || 0),
-    products: order.orderProducts.map((op) => ({
-      id: op.product.id,
-      nombre: op.product.name,
-      cantidad: op.cantidad,
-      precio: op.precioUnitario,
-      subtotal: op.subtotal,
-    })),
-  }));
-}
   // Eliminar un producto de una orden específica
   async eliminarProducto(orderId: number, productId: number) {
     // 1️⃣ Buscar la relación producto-orden
@@ -292,63 +284,35 @@ export class OrdersService {
 
   async getHistorialPorMesa(mesaId: number) {
   // Traer todas las órdenes relacionadas a la mesa
-  const pedidos = await this.orderRepository
-    .createQueryBuilder('order')
-    .leftJoinAndSelect('order.mesa', 'mesa')
-    .leftJoinAndSelect('order.orderProducts', 'op')
-    .leftJoinAndSelect('op.product', 'product')
-    .leftJoinAndSelect('order.customer', 'customer')
-    .leftJoinAndSelect('order.user', 'user')
-    .where('mesa.id = :mesaId', { mesaId })
-    .orderBy('order.numeroVenta', 'ASC')
-    .getMany();
+  const pedidos = await this.orderRepository.find({
+    where: {
+      mesa: { id: mesaId },
+    },
+    relations: ['orderProducts', 'orderProducts.product', 'mesa', 'customer', 'user'],
+    order: { createdAt: 'DESC' },
+  });
 
-  if (!pedidos.length) return [];
-
-  // Agrupar por numeroVenta
-  const pedidosAgrupados: Record<number, any[]> = {};
-  for (const pedido of pedidos) {
-    if (!pedidosAgrupados[pedido.numeroVenta]) pedidosAgrupados[pedido.numeroVenta] = [];
-    pedidosAgrupados[pedido.numeroVenta].push(pedido);
-  }
-
-  // Mapear el resultado agrupado
-  return Object.keys(pedidosAgrupados).map(numeroVenta => {
-    const pedidosDeVenta = pedidosAgrupados[+numeroVenta];
-
-    // Combinar productos y totales
-    const todosLosProductos = pedidosDeVenta.flatMap(p =>
-      p.orderProducts.map(op => ({
+  return pedidos.map(pedido => {
+    const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
+    return {
+      numeroVenta: pedido.numeroVenta,
+      mesa: pedido.mesa,
+      status: pedido.status,
+      estado: pedido.estado,
+      createdAt: pedido.createdAt,
+      propina: pedido.propina,
+      totalProductos,
+      totalPedido: totalProductos + (pedido.propina || 0),
+      products: pedido.orderProducts.map(op => ({
         id: op.product.id,
         nombre: op.product.name,
         cantidad: op.cantidad,
         precio: op.precioUnitario,
         subtotal: op.subtotal,
-      }))
-    );
-
-    const totalProductos = todosLosProductos.reduce((sum, p) => sum + p.subtotal, 0);
-    const propinaTotal = pedidosDeVenta.reduce((sum, p) => sum + (p.propina || 0), 0);
-    const totalPedido = totalProductos + propinaTotal;
-
-    // Tomar datos comunes del primer pedido del grupo
-    const primerPedido = pedidosDeVenta[0];
-
-    return {
-      numeroVenta: +numeroVenta,
-      mesa: primerPedido.mesa,
-      customer: primerPedido.customer,
-      user: primerPedido.user,
-      detalle_venta: primerPedido.detalle_venta,
-      status: primerPedido.status,
-      createdAt: primerPedido.createdAt,
-      propina: propinaTotal,
-      totalProductos,
-      totalPedido,
-      products: todosLosProductos,
+      })),
     };
   });
-}
+  }
 
 
 
