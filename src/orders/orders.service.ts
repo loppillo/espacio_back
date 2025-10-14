@@ -282,9 +282,9 @@ export class OrdersService {
     return updatedOrder;
   }
 
-  async getHistorialPorMesas(mesaId: number) {
+async getHistorialPorMesa(mesaId: number) {
   const pedidos = await this.orderRepository.find({
-    where: { mesa: { id: mesaId } },
+    where: { mesa: { id: mesaId } }, // ✅ usar relación para filtrar por id de mesa
     relations: [
       'orderProducts',
       'orderProducts.product',
@@ -294,6 +294,10 @@ export class OrdersService {
     ],
     order: { createdAt: 'DESC' },
   });
+
+  if (!pedidos.length) {
+    console.log('⚠️ No se encontraron pedidos para la mesa', mesaId);
+  }
 
   // Agrupar por numeroVenta
   const historialMap = new Map<number, any>();
@@ -317,8 +321,7 @@ export class OrdersService {
 
     const grupo = historialMap.get(numeroVenta);
 
-    // Calcular subtotales
-    for (const op of pedido.orderProducts) {
+    for (const op of pedido.orderProducts || []) {
       grupo.productos.push({
         id: op.product.id,
         nombre: op.product.name,
@@ -332,13 +335,9 @@ export class OrdersService {
     grupo.totalPedido = grupo.totalProductos + grupo.propina;
   }
 
-  // Convertir el Map en un arreglo ordenado por fecha descendente
-  const historial = Array.from(historialMap.values()).sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-  );
-
-  return historial;
+  return Array.from(historialMap.values());
 }
+
 
 
 
