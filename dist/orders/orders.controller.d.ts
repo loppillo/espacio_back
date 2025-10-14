@@ -11,7 +11,23 @@ export declare class OrdersController {
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
     create(createOrderDto: CreateOrderDto): Promise<Order>;
-    getHistorialPorMesa(mesaId: number): Promise<any[]>;
+    getHistorialPorMesa(mesaId: number): Promise<{
+        numeroVenta: number;
+        mesaId: number;
+        status: string;
+        estado: string;
+        createdAt: Date;
+        propina: number;
+        totalProductos: number;
+        totalPedido: number;
+        products: {
+            id: number;
+            nombre: string;
+            cantidad: number;
+            precio: number;
+            subtotal: number;
+        }[];
+    }[]>;
     creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
