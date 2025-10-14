@@ -70,9 +70,6 @@ let OrdersController = class OrdersController {
         }));
         return ordenesConTotal;
     }
-    async getHistorial(mesaId) {
-        return this.ordersService.getProductosPorMesa(+mesaId);
-    }
     async eliminarProducto(orderId, productId) {
         return this.ordersService.eliminarProducto(orderId, productId);
     }
@@ -144,13 +141,6 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "obtenerVentasPorDia", null);
-__decorate([
-    (0, common_1.Get)('historial'),
-    __param(0, (0, common_1.Query)('mesaId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], OrdersController.prototype, "getHistorial", null);
 __decorate([
     (0, common_1.Delete)(':orderId/productos/:productId'),
     __param(0, (0, common_1.Param)('orderId', common_1.ParseIntPipe)),
