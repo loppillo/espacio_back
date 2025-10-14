@@ -212,7 +212,6 @@ let OrdersService = class OrdersService {
             .leftJoinAndSelect('order.user', 'user')
             .where('mesa.id = :mesaId', { mesaId })
             .orderBy('order.numeroVenta', 'ASC')
-            .addOrderBy('order.createdAt', 'ASC')
             .getMany();
         if (!pedidos.length)
             return [];
