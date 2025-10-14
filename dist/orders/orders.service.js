@@ -208,35 +208,47 @@ let OrdersService = class OrdersService {
             .leftJoinAndSelect('order.mesa', 'mesa')
             .leftJoinAndSelect('order.orderProducts', 'op')
             .leftJoinAndSelect('op.product', 'product')
+            .leftJoinAndSelect('order.customer', 'customer')
+            .leftJoinAndSelect('order.user', 'user')
             .where('mesa.id = :mesaId', { mesaId })
             .orderBy('order.numeroVenta', 'ASC')
+            .addOrderBy('order.createdAt', 'ASC')
             .getMany();
-        const agrupados = {};
-        pedidos.forEach(pedido => {
-            if (!agrupados[pedido.numeroVenta]) {
-                agrupados[pedido.numeroVenta] = {
-                    numeroVenta: pedido.numeroVenta,
-                    status: pedido.status,
-                    createdAt: pedido.createdAt,
-                    propina: pedido.propina,
-                    totalProductos: 0,
-                    totalPedido: 0,
-                    products: [],
-                };
-            }
-            pedido.orderProducts.forEach(op => {
-                agrupados[pedido.numeroVenta].products.push({
-                    id: op.product.id,
-                    nombre: op.product.name,
-                    cantidad: op.cantidad,
-                    precio: op.precioUnitario,
-                    subtotal: op.subtotal,
-                });
-                agrupados[pedido.numeroVenta].totalProductos += op.subtotal || 0;
-            });
-            agrupados[pedido.numeroVenta].totalPedido = agrupados[pedido.numeroVenta].totalProductos + (pedido.propina || 0);
+        if (!pedidos.length)
+            return [];
+        const pedidosAgrupados = {};
+        for (const pedido of pedidos) {
+            if (!pedidosAgrupados[pedido.numeroVenta])
+                pedidosAgrupados[pedido.numeroVenta] = [];
+            pedidosAgrupados[pedido.numeroVenta].push(pedido);
+        }
+        return Object.keys(pedidosAgrupados).map(numeroVenta => {
+            const pedidosDeVenta = pedidosAgrupados[+numeroVenta];
+            const todosLosProductos = pedidosDeVenta.flatMap(p => p.orderProducts.map(op => ({
+                id: op.product.id,
+                nombre: op.product.name,
+                cantidad: op.cantidad,
+                precio: op.precioUnitario,
+                subtotal: op.subtotal,
+            })));
+            const totalProductos = todosLosProductos.reduce((sum, p) => sum + p.subtotal, 0);
+            const propinaTotal = pedidosDeVenta.reduce((sum, p) => sum + (p.propina || 0), 0);
+            const totalPedido = totalProductos + propinaTotal;
+            const primerPedido = pedidosDeVenta[0];
+            return {
+                numeroVenta: +numeroVenta,
+                mesa: primerPedido.mesa,
+                customer: primerPedido.customer,
+                user: primerPedido.user,
+                detalle_venta: primerPedido.detalle_venta,
+                status: primerPedido.status,
+                createdAt: primerPedido.createdAt,
+                propina: propinaTotal,
+                totalProductos,
+                totalPedido,
+                products: todosLosProductos,
+            };
         });
-        return Object.values(agrupados);
     }
 };
 exports.OrdersService = OrdersService;

@@ -28,7 +28,7 @@ let OrdersController = class OrdersController {
         this.orderRepository = orderRepository;
         this.printService = printService;
     }
-    async getHistorialPorMesaYDia(mesaId, fecha) {
+    async getHistorialPorMesaYDia(mesaId) {
         return this.ordersService.getHistorialPorMesa(mesaId);
     }
     create(createOrderDto) {
@@ -84,9 +84,8 @@ exports.OrdersController = OrdersController;
 __decorate([
     (0, common_1.Get)('historial'),
     __param(0, (0, common_1.Query)('mesaId', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Query)('fecha')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getHistorialPorMesaYDia", null);
 __decorate([

@@ -30,5 +30,17 @@ export declare class OrdersService {
     cancelarOrden(id: number): Promise<Order>;
     getProductosPorMesa(mesaId: number): Promise<any[]>;
     eliminarProducto(orderId: number, productId: number): Promise<Order>;
-    getHistorialPorMesa(mesaId: number): Promise<unknown[]>;
+    getHistorialPorMesa(mesaId: number): Promise<{
+        numeroVenta: number;
+        mesa: any;
+        customer: any;
+        user: any;
+        detalle_venta: any;
+        status: any;
+        createdAt: any;
+        propina: any;
+        totalProductos: any;
+        totalPedido: any;
+        products: any[];
+    }[]>;
 }
