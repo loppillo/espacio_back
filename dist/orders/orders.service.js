@@ -202,7 +202,7 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(updatedOrder);
         return updatedOrder;
     }
-    async getHistorialPorMesa(mesaId) {
+    async getHistorialPorMesas(mesaId) {
         const pedidos = await this.orderRepository.find({
             where: { mesa: { id: mesaId } },
             relations: [
