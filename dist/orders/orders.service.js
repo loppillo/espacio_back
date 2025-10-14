@@ -162,19 +162,29 @@ let OrdersService = class OrdersService {
     }
     async getProductosPorMesa(mesaId) {
         const orders = await this.orderRepository.find({
-            where: { mesa: { id: mesaId } },
+            where: { mesa: { id: mesaId }, estado: (0, typeorm_1.In)(['activo', 'cerrada', 'pagada']) },
             relations: ['orderProducts', 'orderProducts.product'],
+            withDeleted: true,
+            order: { numeroVenta: 'ASC' },
         });
         if (!orders.length) {
             throw new common_1.NotFoundException('No se encontraron órdenes para esta mesa');
         }
-        const productos = orders.flatMap(order => order.orderProducts.map(op => ({
-            orderId: order.id,
-            productoId: op.product.id,
-            nombre: op.product.name,
-            precio: op.product.price,
-            cantidad: op.cantidad,
-        })));
+        const productos = orders.map(order => ({
+            numeroVenta: order.numeroVenta,
+            estado: order.estado,
+            fecha: order.createdAt,
+            total: order.total,
+            propina: order.propina,
+            totalPedido: order.total + order.propina,
+            products: order.orderProducts.map(op => ({
+                id: op.product.id,
+                nombre: op.product.name,
+                cantidad: op.cantidad,
+                precio: op.precioUnitario,
+                subtotal: op.subtotal,
+            })),
+        }));
         return productos;
     }
     async eliminarProducto(orderId, productId) {
