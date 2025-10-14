@@ -284,60 +284,37 @@ export class OrdersService {
 
 async getHistorialPorMesa(mesaId: number) {
   const pedidos = await this.orderRepository.find({
-    where: { mesa: { id: mesaId } }, // ✅ usar relación para filtrar por id de mesa
-    relations: [
-      'orderProducts',
-      'orderProducts.product',
-      'mesa',
-      'customer',
-      'user',
-    ],
+    where: { mesaId }, // ✅ usa la columna directa
+    relations: ['orderProducts', 'orderProducts.product'],
     order: { createdAt: 'DESC' },
   });
 
   if (!pedidos.length) {
-    console.log('⚠️ No se encontraron pedidos para la mesa', mesaId);
+    console.warn('⚠️ No se encontraron pedidos para la mesa', mesaId);
+    return [];
   }
 
-  // Agrupar por numeroVenta
-  const historialMap = new Map<number, any>();
-
-  for (const pedido of pedidos) {
-    const numeroVenta = pedido.numeroVenta;
-
-    if (!historialMap.has(numeroVenta)) {
-      historialMap.set(numeroVenta, {
-        numeroVenta,
-        mesa: pedido.mesa ? pedido.mesa.numero_mesa : null,
-        estado: pedido.estado,
-        status: pedido.status,
-        createdAt: pedido.createdAt,
-        propina: pedido.propina || 0,
-        productos: [],
-        totalProductos: 0,
-        totalPedido: 0,
-      });
-    }
-
-    const grupo = historialMap.get(numeroVenta);
-
-    for (const op of pedido.orderProducts || []) {
-      grupo.productos.push({
+  return pedidos.map(pedido => {
+    const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
+    return {
+      numeroVenta: pedido.numeroVenta,
+      mesaId: pedido.mesaId,
+      status: pedido.status,
+      estado: pedido.estado,
+      createdAt: pedido.createdAt,
+      propina: pedido.propina,
+      totalProductos,
+      totalPedido: totalProductos + (pedido.propina || 0),
+      products: pedido.orderProducts.map(op => ({
         id: op.product.id,
         nombre: op.product.name,
         cantidad: op.cantidad,
         precio: op.precioUnitario,
         subtotal: op.subtotal,
-      });
-      grupo.totalProductos += op.subtotal;
-    }
-
-    grupo.totalPedido = grupo.totalProductos + grupo.propina;
-  }
-
-  return Array.from(historialMap.values());
+      })),
+    };
+  });
 }
-
 
 
 

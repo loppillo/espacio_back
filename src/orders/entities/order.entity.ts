@@ -65,4 +65,7 @@ mesa: Mesa;
    @Column()
   numeroVenta: number;
   
+  @Column({ nullable: true })
+mesaId: number;
+
 }
