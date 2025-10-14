@@ -32,7 +32,7 @@ let OrdersController = class OrdersController {
         return this.ordersService.create(createOrderDto);
     }
     async getHistorialPorMesaYDia(mesaId) {
-        return this.ordersService.getHistorialPorMesas(mesaId);
+        return this.ordersService.getHistorialPorMesa(mesaId);
     }
     creates(createOrderDto) {
         return this.ordersService.creates(createOrderDto);
