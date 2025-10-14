@@ -162,7 +162,7 @@ let OrdersService = class OrdersService {
     }
     async getProductosPorMesa(mesaId) {
         const orders = await this.orderRepository.find({
-            where: { mesa: { id: mesaId }, estado: 'activo' },
+            where: { mesa: { id: mesaId } },
             relations: ['orderProducts', 'orderProducts.product'],
         });
         if (!orders.length) {
