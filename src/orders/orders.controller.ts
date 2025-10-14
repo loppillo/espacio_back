@@ -23,14 +23,11 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto);
   }
 
-  @Get('historials')
-  async getHistorialPorMesaYDia(
-    @Query('mesaId', ParseIntPipe) mesaId: number
-  ) {
-
-    return this.ordersService.getHistorialPorMesa(mesaId);
-  }
-
+  @Get('historial/:mesaId')
+async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
+  console.log('🧩 Mesa ID recibido:', mesaId);
+  return this.ordersService.getHistorialPorMesa(+mesaId);
+}
 
 
   @Post('s')
