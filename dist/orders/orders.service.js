@@ -161,23 +161,27 @@ let OrdersService = class OrdersService {
         return this.orderRepository.save(orden);
     }
     async getProductosPorMesa(mesaId) {
-        const orders = await this.orderRepository.find({
-            where: { mesa: { id: mesaId }, estado: (0, typeorm_1.In)(['activo', 'cerrada', 'pagada']) },
-            relations: ['orderProducts', 'orderProducts.product'],
-            withDeleted: true,
-            order: { numeroVenta: 'ASC' },
-        });
+        const orders = await this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.mesa', 'mesa')
+            .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+            .leftJoinAndSelect('orderProducts.product', 'product')
+            .where('order.mesaId = :mesaId', { mesaId })
+            .withDeleted()
+            .orderBy('order.numeroVenta', 'ASC')
+            .getMany();
         if (!orders.length) {
-            throw new common_1.NotFoundException('No se encontraron órdenes para esta mesa');
+            return [];
         }
-        const productos = orders.map(order => ({
+        return orders.map((order) => ({
             numeroVenta: order.numeroVenta,
             estado: order.estado,
+            status: order.status,
             fecha: order.createdAt,
-            total: order.total,
             propina: order.propina,
-            totalPedido: order.total + order.propina,
-            products: order.orderProducts.map(op => ({
+            totalProductos: order.total,
+            totalPedido: order.total + (order.propina || 0),
+            products: order.orderProducts.map((op) => ({
                 id: op.product.id,
                 nombre: op.product.name,
                 cantidad: op.cantidad,
@@ -185,7 +189,6 @@ let OrdersService = class OrdersService {
                 subtotal: op.subtotal,
             })),
         }));
-        return productos;
     }
     async eliminarProducto(orderId, productId) {
         const orderProduct = await this.productsOrdersRepository.findOne({

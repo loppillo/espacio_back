@@ -39,7 +39,7 @@ export declare class OrdersController {
         status: string;
         total: number;
     }[]>;
-    getProductosPorMesa(mesaId: number): Promise<any[]>;
+    getHistorial(mesaId: number): Promise<any[]>;
     eliminarProducto(orderId: number, productId: number): Promise<Order>;
     print(body: any): Promise<{
         success: boolean;
