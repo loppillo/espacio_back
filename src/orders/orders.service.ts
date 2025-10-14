@@ -283,42 +283,63 @@ export class OrdersService {
   }
 
   async getHistorialPorMesa(mesaId: number) {
-  const pedidos = await this.orderRepository
-    .createQueryBuilder('order')
-    .leftJoinAndSelect('order.mesa', 'mesa')
-    .leftJoinAndSelect('order.orderProducts', 'op')
-    .leftJoinAndSelect('op.product', 'product')
-    .leftJoinAndSelect('order.customer', 'customer')
-    .leftJoinAndSelect('order.user', 'user')
-    .where('order.mesaId = :mesaId', { mesaId })
-    .orderBy('order.createdAt', 'DESC')
-    .getMany();
+  const pedidos = await this.orderRepository.find({
+    where: { mesa: { id: mesaId } },
+    relations: [
+      'orderProducts',
+      'orderProducts.product',
+      'mesa',
+      'customer',
+      'user',
+    ],
+    order: { createdAt: 'DESC' },
+  });
 
-  if (!pedidos.length) {
-    console.log('⚠️ No se encontraron pedidos para la mesa:', mesaId);
-  }
+  // Agrupar por numeroVenta
+  const historialMap = new Map<number, any>();
 
-  return pedidos.map(pedido => {
-    const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
-    return {
-      numeroVenta: pedido.numeroVenta,
-      mesa: pedido.mesa,
-      status: pedido.status,
-      estado: pedido.estado,
-      createdAt: pedido.createdAt,
-      propina: pedido.propina,
-      totalProductos,
-      totalPedido: totalProductos + (pedido.propina || 0),
-      products: pedido.orderProducts.map(op => ({
+  for (const pedido of pedidos) {
+    const numeroVenta = pedido.numeroVenta;
+
+    if (!historialMap.has(numeroVenta)) {
+      historialMap.set(numeroVenta, {
+        numeroVenta,
+        mesa: pedido.mesa ? pedido.mesa.numero_mesa : null,
+        estado: pedido.estado,
+        status: pedido.status,
+        createdAt: pedido.createdAt,
+        propina: pedido.propina || 0,
+        productos: [],
+        totalProductos: 0,
+        totalPedido: 0,
+      });
+    }
+
+    const grupo = historialMap.get(numeroVenta);
+
+    // Calcular subtotales
+    for (const op of pedido.orderProducts) {
+      grupo.productos.push({
         id: op.product.id,
         nombre: op.product.name,
         cantidad: op.cantidad,
         precio: op.precioUnitario,
         subtotal: op.subtotal,
-      })),
-    };
-  });
+      });
+      grupo.totalProductos += op.subtotal;
+    }
+
+    grupo.totalPedido = grupo.totalProductos + grupo.propina;
+  }
+
+  // Convertir el Map en un arreglo ordenado por fecha descendente
+  const historial = Array.from(historialMap.values()).sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+
+  return historial;
 }
+
 
 
 

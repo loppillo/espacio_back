@@ -11,17 +11,10 @@ import { PrintService } from './print/print.service';
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService, @InjectRepository(Order)
-      private readonly orderRepository:Repository<Order>,
-      private readonly printService: PrintService
-    ) {}
+  private readonly orderRepository: Repository<Order>,
+    private readonly printService: PrintService
+  ) { }
 
-    @Get('historial')
-async getHistorialPorMesaYDia(
-  @Query('mesaId', ParseIntPipe) mesaId: number
-) {
-
-  return this.ordersService.getHistorialPorMesa(mesaId);
-}
 
 
 
@@ -29,6 +22,16 @@ async getHistorialPorMesaYDia(
   create(@Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(createOrderDto);
   }
+
+  @Get('historial')
+  async getHistorialPorMesaYDia(
+    @Query('mesaId', ParseIntPipe) mesaId: number
+  ) {
+
+    return this.ordersService.getHistorialPorMesa(mesaId);
+  }
+
+
 
   @Post('s')
   creates(@Body() createOrderDto: CreateSOrderDto) {
@@ -58,45 +61,45 @@ async getHistorialPorMesaYDia(
 
   @Patch(':id/cancelar')
   cancelarOrden(@Param('id') id: number) {
-  return this.ordersService.cancelarOrden(id);
-}
-
-@Get('ventas/por-dia')
-async obtenerVentasPorDia(@Query('fecha') fecha: string) {
-  if (!fecha) {
-    throw new BadRequestException('Debe proporcionar una fecha en formato YYYY-MM-DD');
+    return this.ordersService.cancelarOrden(id);
   }
 
-  const ordenes = await this.orderRepository.find({
-    where: {
-      createdAt: Raw(alias => `DATE(${alias}) = :fecha`, { fecha })
-    },
-    order: { id: 'DESC' }
-  });
+  @Get('ventas/por-dia')
+  async obtenerVentasPorDia(@Query('fecha') fecha: string) {
+    if (!fecha) {
+      throw new BadRequestException('Debe proporcionar una fecha en formato YYYY-MM-DD');
+    }
 
-  const ordenesConTotal = ordenes.map(orden => ({
-    id: orden.id,
-    fecha: orden.createdAt,
-    status: orden.status,
-    total: orden.total
-  }));
+    const ordenes = await this.orderRepository.find({
+      where: {
+        createdAt: Raw(alias => `DATE(${alias}) = :fecha`, { fecha })
+      },
+      order: { id: 'DESC' }
+    });
 
-  return ordenesConTotal;
-}
+    const ordenesConTotal = ordenes.map(orden => ({
+      id: orden.id,
+      fecha: orden.createdAt,
+      status: orden.status,
+      total: orden.total
+    }));
+
+    return ordenesConTotal;
+  }
 
 
 
 
   @Delete(':orderId/productos/:productId')
-async eliminarProducto(
-  @Param('orderId', ParseIntPipe) orderId: number,
-  @Param('productId', ParseIntPipe) productId: number,
-) {
-  return this.ordersService.eliminarProducto(orderId, productId);
+  async eliminarProducto(
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('productId', ParseIntPipe) productId: number,
+  ) {
+    return this.ordersService.eliminarProducto(orderId, productId);
 
-}
+  }
 
-@Post('imprimir/factura')
+  @Post('imprimir/factura')
   async print(@Body() body: any) {
     return this.printService.printFactura(body);
   }
