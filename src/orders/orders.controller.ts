@@ -28,7 +28,7 @@ export class OrdersController {
     @Query('mesaId', ParseIntPipe) mesaId: number
   ) {
 
-    return this.ordersService.getHistorialPorMesas(mesaId);
+    return this.ordersService.getHistorialPorMesa(mesaId);
   }
 
 
