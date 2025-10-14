@@ -31,8 +31,9 @@ let OrdersController = class OrdersController {
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
     }
-    async getHistorialPorMesaYDia(mesaId) {
-        return this.ordersService.getHistorialPorMesa(mesaId);
+    async getHistorialPorMesa(mesaId) {
+        console.log('🧩 Mesa ID recibido:', mesaId);
+        return this.ordersService.getHistorialPorMesa(+mesaId);
     }
     creates(createOrderDto) {
         return this.ordersService.creates(createOrderDto);
@@ -86,12 +87,12 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "create", null);
 __decorate([
-    (0, common_1.Get)('historials'),
-    __param(0, (0, common_1.Query)('mesaId', common_1.ParseIntPipe)),
+    (0, common_1.Get)('historial/:mesaId'),
+    __param(0, (0, common_1.Param)('mesaId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
-], OrdersController.prototype, "getHistorialPorMesaYDia", null);
+], OrdersController.prototype, "getHistorialPorMesa", null);
 __decorate([
     (0, common_1.Post)('s'),
     __param(0, (0, common_1.Body)()),

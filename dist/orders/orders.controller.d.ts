@@ -11,7 +11,7 @@ export declare class OrdersController {
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
     create(createOrderDto: CreateOrderDto): Promise<Order>;
-    getHistorialPorMesaYDia(mesaId: number): Promise<any[]>;
+    getHistorialPorMesa(mesaId: number): Promise<any[]>;
     creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
