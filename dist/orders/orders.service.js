@@ -202,7 +202,7 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(updatedOrder);
         return updatedOrder;
     }
-    async getHistorialPorMesas(mesaId) {
+    async getHistorialPorMesa(mesaId) {
         const pedidos = await this.orderRepository.find({
             where: { mesa: { id: mesaId } },
             relations: [
@@ -214,6 +214,9 @@ let OrdersService = class OrdersService {
             ],
             order: { createdAt: 'DESC' },
         });
+        if (!pedidos.length) {
+            console.log('⚠️ No se encontraron pedidos para la mesa', mesaId);
+        }
         const historialMap = new Map();
         for (const pedido of pedidos) {
             const numeroVenta = pedido.numeroVenta;
@@ -231,7 +234,7 @@ let OrdersService = class OrdersService {
                 });
             }
             const grupo = historialMap.get(numeroVenta);
-            for (const op of pedido.orderProducts) {
+            for (const op of pedido.orderProducts || []) {
                 grupo.productos.push({
                     id: op.product.id,
                     nombre: op.product.name,
@@ -243,8 +246,7 @@ let OrdersService = class OrdersService {
             }
             grupo.totalPedido = grupo.totalProductos + grupo.propina;
         }
-        const historial = Array.from(historialMap.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        return historial;
+        return Array.from(historialMap.values());
     }
 };
 exports.OrdersService = OrdersService;
