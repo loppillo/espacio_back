@@ -21,6 +21,12 @@ import { Order } from 'src/orders/entities/order.entity';
 export class MesaController {
   constructor(private readonly mesaService: MesaService) {}
 
+    @Get('historial')
+async getHistorialPorMesas(@Query('mesaId', ParseIntPipe) mesaId: number) {
+  return this.mesaService.getPedidosPorMesa(mesaId);
+}
+
+
   @Get()
   findAll(): Promise<Mesa[]> {
     return this.mesaService.findAll();
@@ -95,9 +101,6 @@ async marcarPedidoPagado(@Param('id') mesaId: number) {
     return this.mesaService.getPedidosActuales(id, numeroVenta);
   }
 
-  @Get('historial')
-async getHistorialPorMesas(@Query('mesaId', ParseIntPipe) mesaId: number) {
-  return this.mesaService.getPedidosPorMesa(mesaId);
-}
+
 
 }
