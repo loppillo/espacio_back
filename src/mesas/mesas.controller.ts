@@ -96,7 +96,7 @@ async marcarPedidoPagado(@Param('id') mesaId: number) {
   }
 
   @Get('historial')
-async getHistorialPorMesa(@Query('mesaId', ParseIntPipe) mesaId: number) {
+async getHistorialPorMesas(@Query('mesaId', ParseIntPipe) mesaId: number) {
   return this.mesaService.getPedidosPorMesa(mesaId);
 }
 
