@@ -212,4 +212,40 @@ async crearNuevoPedido(mesaId: number): Promise<Order> {
   return { message: 'Producto eliminado correctamente' };
 }
 
+
+  async getPedidosPorMesa(mesaId: number): Promise<any[]> {
+  const pedidos = await this.ordersRepository.find({
+    where: { mesa: { id: mesaId } },
+    relations: ['orderProducts', 'orderProducts.product', 'mesa'],
+    order: { createdAt: 'DESC' },
+  });
+
+  return pedidos.map(pedido => {
+    const totalProductos = pedido.orderProducts.reduce(
+      (sum, p) => sum + p.subtotal,
+      0,
+    );
+
+    return {
+      id: pedido.id,
+      numeroVenta: pedido.numeroVenta,
+      estado: pedido.estado,
+      createdAt: pedido.createdAt,
+      propina: pedido.propina || 0,
+      totalProductos,
+      totalFinal: totalProductos + (pedido.propina || 0),
+      productos: pedido.orderProducts.map(op => ({
+        id: op.product.id,
+        nombre: op.product.name,
+        cantidad: op.cantidad,
+        precioUnitario: op.precioUnitario,
+        subtotal: op.subtotal,
+      })),
+    };
+  });
+}
+
+
+
+
 }
