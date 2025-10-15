@@ -23,4 +23,5 @@ export declare class MesaService {
     eliminarProducto(orderId: number, productId: number): Promise<{
         message: string;
     }>;
+    getPedidosPorMesa(mesaId: number): Promise<any[]>;
 }

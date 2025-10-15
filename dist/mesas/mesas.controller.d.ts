@@ -18,4 +18,5 @@ export declare class MesaController {
     getMesa(id: number): Promise<Mesa>;
     crearNuevoPedido(id: number): Promise<Order>;
     getPedidosActuales(id: number, numeroVenta: number): Promise<Order[]>;
+    getHistorialPorMesa(mesaId: number): Promise<any[]>;
 }
