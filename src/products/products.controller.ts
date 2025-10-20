@@ -13,26 +13,15 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
 @Put(':id')
-@UseInterceptors(FileInterceptor('image'))
-async updateProduct(
-  @Param('id', ParseIntPipe) id: number,
-  @Body() body: any,
-  @UploadedFile() file?: Express.Multer.File,
-) {
-  // Parsear categorías si vienen como string
-  if (body.categories && typeof body.categories === 'string') {
-    try {
-      body.categories = JSON.parse(body.categories);
-    } catch {
-      body.categories = [];
-    }
+  @UseInterceptors(FileInterceptor('image'))
+  async updateProduct(
+    @Param('id') id: number,
+    @Body() body: any,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const imagePath = file ? `/uploads/${file.filename}` : undefined;
+    return this.productsService.updateImage(id, body, imagePath);
   }
-
-  // 🔹 Solo pasar la ruta relativa al servicio
-  const imagePath = file ? `/uploads/${file.filename}` : undefined;
-
-  return this.productsService.updateImage(id, body, imagePath);
-}
 
 
 

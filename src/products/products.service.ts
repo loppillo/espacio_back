@@ -49,65 +49,59 @@ async create(createProductDto: CreateProductDto) {
 
 
 
-async updateImage(id: number, body: any, imagePath?: string) {
-  // 1️⃣ Buscar el producto existente
-  const product = await this.proRepository.findOne({
-    where: { id },
-    relations: ['categories'],
-  });
+ async updateImage(id: number, body: any, imagePath?: string) {
+    const product = await this.proRepository.findOne({
+      where: { id },
+      relations: ['categories'],
+    });
 
-  if (!product) {
-    throw new NotFoundException('Producto no encontrado');
+    if (!product) {
+      throw new NotFoundException('Producto no encontrado');
+    }
+
+    const updatedData: any = { ...body };
+
+    // 🔹 Convertir valores
+    if (updatedData.price) updatedData.price = Number(updatedData.price);
+    updatedData.cantidad = updatedData.cantidad ?? product.cantidad ?? 0;
+
+    // 🔹 Categorías
+    if (updatedData.categories && Array.isArray(updatedData.categories)) {
+      const categorias = await this.categoryRepository.findByIds(updatedData.categories);
+      product.categories = categorias;
+    }
+
+    // 🔹 Eliminar dominio si viene en body
+    if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
+      updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
+    }
+
+    // 🔹 Actualizar resto de campos
+    Object.assign(product, {
+      ...updatedData,
+      categories: product.categories,
+    });
+
+    // 🔹 Manejar nueva imagen
+    if (imagePath && !imagePath.includes('undefined')) {
+      product.imageUrl = imagePath;
+    }
+
+    const saved = await this.proRepository.save(product);
+    return this.normalizeProduct(saved);
   }
 
-  // 2️⃣ Preparar datos actualizados
-  const updatedData: any = { ...body };
-
-  // 🔹 Convertir precio a número si corresponde
-  if (updatedData.price) {
-    updatedData.price = Number(updatedData.price);
+  private normalizeProduct(product: Product) {
+    return {
+      ...product,
+      imageUrl:
+        product.imageUrl && product.imageUrl.includes('/uploads/')
+          ? product.imageUrl.startsWith('http')
+            ? product.imageUrl
+            : `https://espacioboulevard.com${product.imageUrl}`
+          : null,
+    };
   }
-
-  // 🔹 Mantener o inicializar cantidad
-  updatedData.cantidad =
-    updatedData.cantidad ?? product.cantidad ?? 0;
-
-  // 3️⃣ Manejar categorías
-  if (updatedData.categories && Array.isArray(updatedData.categories)) {
-    const categorias = await this.categoryRepository.findByIds(updatedData.categories);
-    product.categories = categorias;
-  }
-
-  // 4️⃣ Limpiar cualquier dominio previo en imageUrl (por si vino en body)
-  if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
-    updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
-  }
-
-  // 5️⃣ Manejar imagen subida (solo si es válida)
-  if (imagePath && !imagePath.includes('undefined')) {
-    product.imageUrl = imagePath;
-  }
-
-  // 6️⃣ Asignar campos actualizados
-  Object.assign(product, {
-    ...updatedData,
-    categories: product.categories,
-  });
-
-  // 7️⃣ Guardar producto
-  const saved = await this.proRepository.save(product);
-
-  // 8️⃣ Normalizar salida (devolver URL completa si existe)
-  return {
-    ...saved,
-    imageUrl:
-      saved.imageUrl && saved.imageUrl.includes('/uploads/')
-        ? saved.imageUrl.startsWith('http')
-          ? saved.imageUrl
-          : `https://espacioboulevard.com${saved.imageUrl}`
-        : null,
-  };
-}
 
 
 
