@@ -16,17 +16,17 @@ export class Order {
   tableNumber: number;
 
   @Column()
-  orderType:string;
+  orderType: string;
 
   @Column({ type: 'text', nullable: true })
-  detalle_venta:string;
+  detalle_venta: string;
 
 
   @Column({ type: 'varchar', default: 'activo' })
-estado: string;
+  estado: string;
 
-   @Column('int')
-  propina:number;
+  @Column('int')
+  propina: number;
 
   @Column()
   status: string;
@@ -36,24 +36,24 @@ estado: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
-  
-@Column({ default: 'null' })
-  paymentMethod:string;
+
+  @Column({ default: 'null' })
+  paymentMethod: string;
 
   @ManyToOne(() => User, user => user.id)
   @JoinColumn({ name: 'userId' })
   user: User;
 
-@ManyToOne(() => Customer, (customer) => customer.id, { nullable: true })
-@JoinColumn({ name: 'customerId' })
-customer: Customer;
+  @ManyToOne(() => Customer, (customer) => customer.id, { nullable: true })
+  @JoinColumn({ name: 'customerId' })
+  customer: Customer;
 
-@OneToMany(() => ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true })
+  @OneToMany(() => ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true })
   orderProducts: ProductsOrders[];
 
- @ManyToOne(() => Mesa, (mesa) => mesa.orders)
-@JoinColumn({ name: 'mesaId' })
-mesa: Mesa;
+  @ManyToOne(() => Mesa, (mesa) => mesa.orders)
+  @JoinColumn({ name: 'mesaId' })
+  mesa: Mesa;
 
   @ManyToOne(() => Product, product => product.id)
   @JoinColumn({ name: 'productId' })
@@ -62,10 +62,10 @@ mesa: Mesa;
   @DeleteDateColumn({ nullable: true })
   deletedAt?: Date;
 
-   @Column()
+  @Column()
   numeroVenta: number;
-  
+
   @Column({ nullable: true })
-mesaId: number;
+  mesaId: number;
 
 }

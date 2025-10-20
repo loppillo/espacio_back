@@ -17,7 +17,7 @@ import { ProductsOrdersModule } from './products-orders/products-orders.module';
 
 
 @Module({
-  imports: [
+imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
