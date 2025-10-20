@@ -21,6 +21,7 @@ export declare class ProductsService {
         order: import("../orders/entities/order.entity").Order[];
         orderProducts: import("../products-orders/entities/products-order.entity").ProductsOrders[];
     }>;
+    private normalizeProduct;
     findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
     findAlls(): Promise<ProductDto[]>;
     buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number): Promise<{

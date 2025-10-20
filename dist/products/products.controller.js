@@ -24,14 +24,6 @@ let ProductsController = class ProductsController {
         this.productsService = productsService;
     }
     async updateProduct(id, body, file) {
-        if (body.categories && typeof body.categories === 'string') {
-            try {
-                body.categories = JSON.parse(body.categories);
-            }
-            catch {
-                body.categories = [];
-            }
-        }
         const imagePath = file ? `/uploads/${file.filename}` : undefined;
         return this.productsService.updateImage(id, body, imagePath);
     }
@@ -102,7 +94,7 @@ exports.ProductsController = ProductsController;
 __decorate([
     (0, common_1.Put)(':id'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image')),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),

@@ -53,11 +53,9 @@ let ProductsService = class ProductsService {
             throw new common_1.NotFoundException('Producto no encontrado');
         }
         const updatedData = { ...body };
-        if (updatedData.price) {
+        if (updatedData.price)
             updatedData.price = Number(updatedData.price);
-        }
-        updatedData.cantidad =
-            updatedData.cantidad ?? product.cantidad ?? 0;
+        updatedData.cantidad = updatedData.cantidad ?? product.cantidad ?? 0;
         if (updatedData.categories && Array.isArray(updatedData.categories)) {
             const categorias = await this.categoryRepository.findByIds(updatedData.categories);
             product.categories = categorias;
@@ -65,20 +63,23 @@ let ProductsService = class ProductsService {
         if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
             updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
         }
-        if (imagePath && !imagePath.includes('undefined')) {
-            product.imageUrl = imagePath;
-        }
         Object.assign(product, {
             ...updatedData,
             categories: product.categories,
         });
+        if (imagePath && !imagePath.includes('undefined')) {
+            product.imageUrl = imagePath;
+        }
         const saved = await this.proRepository.save(product);
+        return this.normalizeProduct(saved);
+    }
+    normalizeProduct(product) {
         return {
-            ...saved,
-            imageUrl: saved.imageUrl && saved.imageUrl.includes('/uploads/')
-                ? saved.imageUrl.startsWith('http')
-                    ? saved.imageUrl
-                    : `https://espacioboulevard.com${saved.imageUrl}`
+            ...product,
+            imageUrl: product.imageUrl && product.imageUrl.includes('/uploads/')
+                ? product.imageUrl.startsWith('http')
+                    ? product.imageUrl
+                    : `https://espacioboulevard.com${product.imageUrl}`
                 : null,
         };
     }
