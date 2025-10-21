@@ -65,15 +65,19 @@ async updateImage(id: number, body: any, imagePath?: string) {
   if (updatedData.price) updatedData.price = Number(updatedData.price);
   updatedData.cantidad = updatedData.cantidad ?? product.cantidad ?? 0;
 
-  // 🔹 Actualizar categorías (sin duplicar, sincronizando)
+  // 🔹 Sincronizar categorías (eliminar las anteriores y asignar nuevas)
   if (Array.isArray(updatedData.categories)) {
-    // Buscar las categorías válidas en la base de datos
-    const categorias = await this.categoryRepository.find({
+    // Buscar las nuevas categorías
+    const nuevasCategorias = await this.categoryRepository.find({
       where: { id: In(updatedData.categories) },
     });
 
-    // Reemplazar completamente las categorías previas
-    product.categories = categorias;
+    // Limpiar categorías anteriores y asignar nuevas
+    product.categories = []; // limpia la relación previa
+    await this.proRepository.save(product); // guarda vacío para limpiar relación
+
+    // Asignar nuevas
+    product.categories = nuevasCategorias;
   }
 
   // 🔹 Eliminar dominio si viene en body
@@ -81,13 +85,13 @@ async updateImage(id: number, body: any, imagePath?: string) {
     updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
   }
 
-  // 🔹 Asignar el resto de campos
+  // 🔹 Asignar campos actualizados
   Object.assign(product, {
     ...updatedData,
     categories: product.categories,
   });
 
-  // 🔹 Manejar nueva imagen
+  // 🔹 Imagen
   if (imagePath && !imagePath.includes('undefined')) {
     product.imageUrl = imagePath;
   }
