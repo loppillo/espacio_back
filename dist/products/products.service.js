@@ -56,8 +56,10 @@ let ProductsService = class ProductsService {
         if (updatedData.price)
             updatedData.price = Number(updatedData.price);
         updatedData.cantidad = updatedData.cantidad ?? product.cantidad ?? 0;
-        if (updatedData.categories && Array.isArray(updatedData.categories)) {
-            const categorias = await this.categoryRepository.findByIds(updatedData.categories);
+        if (Array.isArray(updatedData.categories)) {
+            const categorias = await this.categoryRepository.find({
+                where: { id: (0, typeorm_2.In)(updatedData.categories) },
+            });
             product.categories = categorias;
         }
         if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
