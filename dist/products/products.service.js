@@ -57,10 +57,12 @@ let ProductsService = class ProductsService {
             updatedData.price = Number(updatedData.price);
         updatedData.cantidad = updatedData.cantidad ?? product.cantidad ?? 0;
         if (Array.isArray(updatedData.categories)) {
-            const categorias = await this.categoryRepository.find({
+            const nuevasCategorias = await this.categoryRepository.find({
                 where: { id: (0, typeorm_2.In)(updatedData.categories) },
             });
-            product.categories = categorias;
+            product.categories = [];
+            await this.proRepository.save(product);
+            product.categories = nuevasCategorias;
         }
         if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
             updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
