@@ -45,6 +45,14 @@ let ProductsService = class ProductsService {
         return await this.proRepository.save(product);
     }
     async updateImage(id, body, imagePath) {
+        if (body.categories && typeof body.categories === 'string') {
+            try {
+                body.categories = JSON.parse(body.categories);
+            }
+            catch {
+                body.categories = [];
+            }
+        }
         const product = await this.proRepository.findOne({
             where: { id },
             relations: ['categories'],
