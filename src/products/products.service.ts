@@ -50,6 +50,14 @@ async create(createProductDto: CreateProductDto) {
 
 
 async updateImage(id: number, body: any, imagePath?: string) {
+
+  if (body.categories && typeof body.categories === 'string') {
+  try {
+    body.categories = JSON.parse(body.categories);
+  } catch {
+    body.categories = [];
+  }
+}
   const product = await this.proRepository.findOne({
     where: { id },
     relations: ['categories'],
