@@ -49,59 +49,64 @@ async create(createProductDto: CreateProductDto) {
 
 
 
- async updateImage(id: number, body: any, imagePath?: string) {
-    const product = await this.proRepository.findOne({
-      where: { id },
-      relations: ['categories'],
-    });
+async updateImage(id: number, body: any, imagePath?: string) {
+  const product = await this.proRepository.findOne({
+    where: { id },
+    relations: ['categories'],
+  });
 
-    if (!product) {
-      throw new NotFoundException('Producto no encontrado');
-    }
-
-    const updatedData: any = { ...body };
-
-    // 🔹 Convertir valores
-    if (updatedData.price) updatedData.price = Number(updatedData.price);
-    updatedData.cantidad = updatedData.cantidad ?? product.cantidad ?? 0;
-
-    // 🔹 Categorías
-    if (updatedData.categories && Array.isArray(updatedData.categories)) {
-      const categorias = await this.categoryRepository.findByIds(updatedData.categories);
-      product.categories = categorias;
-    }
-
-    // 🔹 Eliminar dominio si viene en body
-    if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
-      updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
-    }
-
-    // 🔹 Actualizar resto de campos
-    Object.assign(product, {
-      ...updatedData,
-      categories: product.categories,
-    });
-
-    // 🔹 Manejar nueva imagen
-    if (imagePath && !imagePath.includes('undefined')) {
-      product.imageUrl = imagePath;
-    }
-
-    const saved = await this.proRepository.save(product);
-    return this.normalizeProduct(saved);
+  if (!product) {
+    throw new NotFoundException('Producto no encontrado');
   }
 
-  private normalizeProduct(product: Product) {
-    return {
-      ...product,
-      imageUrl:
-        product.imageUrl && product.imageUrl.includes('/uploads/')
-          ? product.imageUrl.startsWith('http')
-            ? product.imageUrl
-            : `https://espacioboulevard.com${product.imageUrl}`
-          : null,
-    };
+  const updatedData: any = { ...body };
+
+  // 🔹 Convertir valores
+  if (updatedData.price) updatedData.price = Number(updatedData.price);
+  updatedData.cantidad = updatedData.cantidad ?? product.cantidad ?? 0;
+
+  // 🔹 Actualizar categorías (sin duplicar, sincronizando)
+  if (Array.isArray(updatedData.categories)) {
+    // Buscar las categorías válidas en la base de datos
+    const categorias = await this.categoryRepository.find({
+      where: { id: In(updatedData.categories) },
+    });
+
+    // Reemplazar completamente las categorías previas
+    product.categories = categorias;
   }
+
+  // 🔹 Eliminar dominio si viene en body
+  if (updatedData.imageUrl && updatedData.imageUrl.startsWith('http')) {
+    updatedData.imageUrl = updatedData.imageUrl.replace('https://espacioboulevard.com', '');
+  }
+
+  // 🔹 Asignar el resto de campos
+  Object.assign(product, {
+    ...updatedData,
+    categories: product.categories,
+  });
+
+  // 🔹 Manejar nueva imagen
+  if (imagePath && !imagePath.includes('undefined')) {
+    product.imageUrl = imagePath;
+  }
+
+  const saved = await this.proRepository.save(product);
+  return this.normalizeProduct(saved);
+}
+
+private normalizeProduct(product: Product) {
+  return {
+    ...product,
+    imageUrl:
+      product.imageUrl && product.imageUrl.includes('/uploads/')
+        ? product.imageUrl.startsWith('http')
+          ? product.imageUrl
+          : `https://espacioboulevard.com${product.imageUrl}`
+        : null,
+  };
+}
 
 
 
