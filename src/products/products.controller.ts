@@ -133,18 +133,24 @@ async create(
 ) {
   // ✅ Parsear categoryIds si viene como string
   let categoryIds: number[] = [];
-  if (body.categoryIds) {
-    if (typeof body.categoryIds === 'string') {
-      try {
-        categoryIds = JSON.parse(body.categoryIds);
-      } catch {
-        // En caso de que llegue como "1,2,3"
-        categoryIds = body.categoryIds.split(',').map((id: string) => parseInt(id, 10));
-      }
+
+
+if (body.categoryIds) {
+  if (Array.isArray(body.categoryIds)) {
+    // Vienen múltiples categoryIds (ej: ['1', '2', '3'])
+    categoryIds = body.categoryIds.map((id: string) => parseInt(id, 10));
+  } else if (typeof body.categoryIds === 'string') {
+    // Puede venir como JSON, CSV o número suelto
+    if (body.categoryIds.startsWith('[')) {
+      categoryIds = JSON.parse(body.categoryIds).map((id: any) => parseInt(id, 10));
+    } else if (body.categoryIds.includes(',')) {
+      categoryIds = body.categoryIds.split(',').map((id: string) => parseInt(id, 10));
     } else {
-      categoryIds = body.categoryIds;
+      // 🟢 Caso de una sola categoría
+      categoryIds = [parseInt(body.categoryIds, 10)];
     }
   }
+}
 
   // ✅ Manejar imagen
   const imageUrl = file ? `/uploads/${file.filename}` : undefined;
