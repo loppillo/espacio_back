@@ -64,16 +64,19 @@ let ProductsController = class ProductsController {
     async create(body, file) {
         let categoryIds = [];
         if (body.categoryIds) {
-            if (typeof body.categoryIds === 'string') {
-                try {
-                    categoryIds = JSON.parse(body.categoryIds);
+            if (Array.isArray(body.categoryIds)) {
+                categoryIds = body.categoryIds.map((id) => parseInt(id, 10));
+            }
+            else if (typeof body.categoryIds === 'string') {
+                if (body.categoryIds.startsWith('[')) {
+                    categoryIds = JSON.parse(body.categoryIds).map((id) => parseInt(id, 10));
                 }
-                catch {
+                else if (body.categoryIds.includes(',')) {
                     categoryIds = body.categoryIds.split(',').map((id) => parseInt(id, 10));
                 }
-            }
-            else {
-                categoryIds = body.categoryIds;
+                else {
+                    categoryIds = [parseInt(body.categoryIds, 10)];
+                }
             }
         }
         const imageUrl = file ? `/uploads/${file.filename}` : undefined;
