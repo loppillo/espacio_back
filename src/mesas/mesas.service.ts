@@ -84,22 +84,23 @@ async findOne(id: number): Promise<Mesa> {
 }
 
 async marcarPedidoPagado(mesaId: number): Promise<Mesa> {
-    const mesa = await this.mesaRepository.findOne({
-      where: { id: mesaId },
-      relations: ['orders'],
-    });
-    if (!mesa) throw new NotFoundException('Mesa no encontrada');
+  const mesa = await this.mesaRepository.findOne({
+    where: { id: mesaId },
+    relations: ['orders'],
+  });
+  if (!mesa) throw new NotFoundException('Mesa no encontrada');
 
-    if (mesa.orders && mesa.orders.length > 0) {
-      mesa.orders.forEach(order => (order.status = 'Pagado'));
-      await this.ordersRepository.save(mesa.orders);
-    }
-
-    mesa.status = 'Libre';
-    mesa.orders = [];
-    return this.mesaRepository.save(mesa);
+  if (mesa.orders && mesa.orders.length > 0) {
+    mesa.orders.forEach(order => (order.status = 'Pagado'));
+    await this.ordersRepository.save(mesa.orders);
   }
 
+  mesa.status = 'Libre';
+  // ❌ NO desasociar órdenes
+  // mesa.orders = [];
+
+  return this.mesaRepository.save(mesa);
+}
   async getMesa(mesaId: number): Promise<Mesa> {
     const mesa = await this.mesaRepository.findOne({
       where: { id: mesaId },
