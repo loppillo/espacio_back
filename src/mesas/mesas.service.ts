@@ -249,25 +249,24 @@ async crearNuevoPedido(mesaId: number): Promise<Order> {
 async getMesaDetail(mesaId: number, fecha?: string) {
   const query = this.ordersRepository
     .createQueryBuilder('order')
-    .leftJoinAndSelect('order.orderProducts', 'op')
-    .leftJoinAndSelect('op.product', 'product')
+    .leftJoin('order.orderProducts', 'op')
+    .leftJoin('op.product', 'product')
     .select('product.name', 'producto')
-    .addSelect('op.quantity', 'cantidad')
+    .addSelect('SUM(op.cantidad)', 'cantidad') // ✅ sumamos cantidad por producto
     .addSelect('product.price', 'precioUnitario')
-    .addSelect('(op.quantity * product.price)', 'subtotal')
-    .addSelect('SUM(op.quantity * product.price)', 'totalMesa')
+    .addSelect('(SUM(op.cantidad) * product.price)', 'subtotal')
     .where('order.deletedAt IS NULL')
-    .andWhere('order.mesaId = :mesaId', { mesaId })
-    .groupBy('product.name')
-    .addGroupBy('op.quantity')
-    .addGroupBy('product.price');
+    .andWhere('order.mesaId = :mesaId', { mesaId });
 
   if (fecha) {
     query.andWhere('DATE(order.createdAt) = :fecha', { fecha });
   }
 
+  query.groupBy('product.id'); // ✅ agrupamos correctamente
+
   const detalle = await query.getRawMany();
 
+  // ✅ Totales exactos del día por mesa
   const totalQuery = this.ordersRepository
     .createQueryBuilder('order')
     .select('SUM(order.total)', 'total')
@@ -289,6 +288,7 @@ async getMesaDetail(mesaId: number, fecha?: string) {
       (Number(totales.total) || 0) + (Number(totales.totalPropina) || 0),
   };
 }
+
 
 
 }
