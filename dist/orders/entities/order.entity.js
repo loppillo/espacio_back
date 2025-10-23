@@ -92,7 +92,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Order.prototype, "numeroVenta", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: false }),
     __metadata("design:type", Number)
 ], Order.prototype, "mesaId", void 0);
 exports.Order = Order = __decorate([

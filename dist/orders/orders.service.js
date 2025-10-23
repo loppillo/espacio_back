@@ -35,12 +35,12 @@ let OrdersService = class OrdersService {
     }
     async create(createOrderDto) {
         const { products, propina, mesaId } = createOrderDto;
-        let mesa = null;
-        if (mesaId) {
-            mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
-            if (!mesa) {
-                throw new common_1.BadRequestException('La mesa no se encuentra');
-            }
+        if (!mesaId || isNaN(Number(mesaId))) {
+            throw new common_1.BadRequestException('La mesa es obligatoria');
+        }
+        const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
+        if (!mesa) {
+            throw new common_1.BadRequestException('La mesa no se encuentra');
         }
         const lastOrder = await this.orderRepository.findOne({
             where: {},
