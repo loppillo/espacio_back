@@ -89,7 +89,6 @@ let MesaService = class MesaService {
             await this.ordersRepository.save(mesa.orders);
         }
         mesa.status = 'Libre';
-        mesa.orders = [];
         return this.mesaRepository.save(mesa);
     }
     async getMesa(mesaId) {
