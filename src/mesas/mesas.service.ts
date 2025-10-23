@@ -247,32 +247,33 @@ async crearNuevoPedido(mesaId: number): Promise<Order> {
 
 
 async getMesaDetail(mesaId: number, fecha?: string) {
+  // Traer detalle de productos vendidos
   const query = this.ordersRepository
     .createQueryBuilder('order')
     .leftJoin('order.orderProducts', 'op')
     .leftJoin('op.product', 'product')
     .select('product.name', 'producto')
-    .addSelect('SUM(op.cantidad)', 'cantidad') // ✅ sumamos cantidad por producto
+    .addSelect('SUM(op.cantidad)', 'cantidad')
     .addSelect('product.price', 'precioUnitario')
     .addSelect('(SUM(op.cantidad) * product.price)', 'subtotal')
-    .where('order.deletedAt IS NULL')
-    .andWhere('order.mesaId = :mesaId', { mesaId });
+    .where('order.mesaId = :mesaId', { mesaId })
+    .andWhere('order.status = :status', { status: 'pagado' }); // ✅ solo pagadas
 
   if (fecha) {
     query.andWhere('DATE(order.createdAt) = :fecha', { fecha });
   }
 
-  query.groupBy('product.id'); // ✅ agrupamos correctamente
+  query.groupBy('product.id');
 
   const detalle = await query.getRawMany();
 
-  // ✅ Totales exactos del día por mesa
+  // Totales exactos del día por mesa
   const totalQuery = this.ordersRepository
     .createQueryBuilder('order')
     .select('SUM(order.total)', 'total')
     .addSelect('SUM(order.propina)', 'totalPropina')
-    .where('order.deletedAt IS NULL')
-    .andWhere('order.mesaId = :mesaId', { mesaId });
+    .where('order.mesaId = :mesaId', { mesaId })
+    .andWhere('order.status = :status', { status: 'pagado' });
 
   if (fecha) totalQuery.andWhere('DATE(order.createdAt) = :fecha', { fecha });
 
