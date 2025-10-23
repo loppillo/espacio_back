@@ -65,7 +65,7 @@ export class Order {
   @Column()
   numeroVenta: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   mesaId: number;
 
 }

@@ -36,69 +36,65 @@ export class OrdersService {
 
 
   async create(createOrderDto: CreateOrderDto) {
-    const { products, propina, mesaId } = createOrderDto;
+  const { products, propina, mesaId } = createOrderDto;
 
-    // Validar mesa (si viene)
-    let mesa = null;
-    if (mesaId) {
-      mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
-      if (!mesa) {
-        throw new BadRequestException('La mesa no se encuentra');
-      }
-    }
-
-    // Obtener el último numeroVenta
-    const lastOrder = await this.orderRepository.findOne({
-      where: {},
-      order: { id: 'DESC' },
-    });
-    const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-
-    // Crear la orden base (sin productos todavía)
-    const newOrder = this.orderRepository.create({
-      detalle_venta: createOrderDto.detalle_venta,
-      tableNumber: createOrderDto.tableNumber,
-      propina,
-      status: createOrderDto.status,
-      orderType: createOrderDto.orderType,
-      paymentMethod: createOrderDto.paymentMethod,
-      mesa,
-      numeroVenta: nextNumeroVenta,
-      total: 0, // se recalcula más abajo
-    });
-
-    // Inicializar la lista de productos de la orden
-    newOrder.orderProducts = [];
-
-    let total = 0;
-
-    for (const p of products) {
-      // Buscar producto real en la DB
-      const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
-      if (!productEntity) {
-        throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
-      }
-
-      // Calcular subtotal
-      const subtotal = productEntity.price * p.cantidad;
-      total += subtotal;
-
-      // Crear relación pivot
-      const orderProduct = new ProductsOrders();
-      orderProduct.product = productEntity;
-      orderProduct.cantidad = p.cantidad;
-      orderProduct.precioUnitario = productEntity.price;
-      orderProduct.subtotal = subtotal;
-
-      newOrder.orderProducts.push(orderProduct);
-    }
-
-    // Actualizar el total de la orden
-    newOrder.total = total + (propina || 0);
-
-    // Guardar la orden con cascade → también guarda orderProducts
-    return await this.orderRepository.save(newOrder);
+  // ✅ Validar mesa obligatoria
+  if (!mesaId || isNaN(Number(mesaId))) {
+    throw new BadRequestException('La mesa es obligatoria');
   }
+
+  // ✅ Buscar la mesa
+  const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
+  if (!mesa) {
+    throw new BadRequestException('La mesa no se encuentra');
+  }
+
+  // ✅ Obtener el último numeroVenta
+  const lastOrder = await this.orderRepository.findOne({
+    where: {},
+    order: { id: 'DESC' },
+  });
+  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+
+  // ✅ Crear la orden base
+  const newOrder = this.orderRepository.create({
+    detalle_venta: createOrderDto.detalle_venta,
+    tableNumber: createOrderDto.tableNumber,
+    propina,
+    status: createOrderDto.status,
+    orderType: createOrderDto.orderType,
+    paymentMethod: createOrderDto.paymentMethod,
+    mesa, // ✅ asignada correctamente
+    numeroVenta: nextNumeroVenta,
+    total: 0,
+  });
+
+  newOrder.orderProducts = [];
+  let total = 0;
+
+  for (const p of products) {
+    const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+    if (!productEntity) {
+      throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+    }
+
+    const subtotal = productEntity.price * p.cantidad;
+    total += subtotal;
+
+    const orderProduct = new ProductsOrders();
+    orderProduct.product = productEntity;
+    orderProduct.cantidad = p.cantidad;
+    orderProduct.precioUnitario = productEntity.price;
+    orderProduct.subtotal = subtotal;
+
+    newOrder.orderProducts.push(orderProduct);
+  }
+
+  newOrder.total = total + (propina || 0);
+
+  return await this.orderRepository.save(newOrder);
+}
+
 
 
 
