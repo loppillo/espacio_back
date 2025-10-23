@@ -229,7 +229,7 @@ let MesaService = class MesaService {
     async obtenerDetalleMesaActual(mesaId) {
         return await this.mesaRepository.findOne({
             where: { id: mesaId },
-            relations: ['pedidos', 'pedidos.productos'],
+            relations: ['orders', 'orders.products'],
         });
     }
 };
