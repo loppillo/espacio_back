@@ -47,4 +47,7 @@ export declare class OrdersService {
             subtotal: number;
         }[];
     }[]>;
+    obtenerPendientes(): Promise<Order[]>;
+    aceptarVenta(orderId: number): Promise<Order>;
+    cancelarVenta(orderId: number): Promise<Order>;
 }

@@ -47,4 +47,7 @@ export declare class OrdersController {
     print(body: any): Promise<{
         success: boolean;
     }>;
+    obtenerPendientes(): Promise<Order[]>;
+    aceptarVenta(id: number): Promise<Order>;
+    cancelarVenta(id: number): Promise<Order>;
 }

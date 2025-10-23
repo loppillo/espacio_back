@@ -77,6 +77,15 @@ let OrdersController = class OrdersController {
     async print(body) {
         return this.printService.printFactura(body);
     }
+    async obtenerPendientes() {
+        return this.ordersService.obtenerPendientes();
+    }
+    async aceptarVenta(id) {
+        return this.ordersService.aceptarVenta(+id);
+    }
+    async cancelarVenta(id) {
+        return this.ordersService.cancelarVenta(+id);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -157,6 +166,26 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "print", null);
+__decorate([
+    (0, common_1.Get)('pendientes'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "obtenerPendientes", null);
+__decorate([
+    (0, common_1.Patch)(':id/aceptar'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "aceptarVenta", null);
+__decorate([
+    (0, common_1.Patch)(':id/cancelar'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "cancelarVenta", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),

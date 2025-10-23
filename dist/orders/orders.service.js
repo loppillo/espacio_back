@@ -233,6 +233,27 @@ let OrdersService = class OrdersService {
             };
         });
     }
+    async obtenerPendientes() {
+        return await this.orderRepository.find({
+            where: { status: 'Pendiente' },
+            relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+            order: { createdAt: 'ASC' }
+        });
+    }
+    async aceptarVenta(orderId) {
+        const order = await this.orderRepository.findOne({ where: { id: orderId } });
+        if (!order)
+            throw new common_1.NotFoundException('Pedido no encontrado');
+        order.status = 'Aceptado';
+        return await this.orderRepository.save(order);
+    }
+    async cancelarVenta(orderId) {
+        const order = await this.orderRepository.findOne({ where: { id: orderId } });
+        if (!order)
+            throw new common_1.NotFoundException('Pedido no encontrado');
+        order.status = 'Cancelado';
+        return await this.orderRepository.save(order);
+    }
 };
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([
