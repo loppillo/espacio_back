@@ -202,8 +202,8 @@ let MesaService = class MesaService {
             .addSelect('SUM(op.cantidad)', 'cantidad')
             .addSelect('product.price', 'precioUnitario')
             .addSelect('(SUM(op.cantidad) * product.price)', 'subtotal')
-            .where('order.deletedAt IS NULL')
-            .andWhere('order.mesaId = :mesaId', { mesaId });
+            .where('order.mesaId = :mesaId', { mesaId })
+            .andWhere('order.status = :status', { status: 'pagado' });
         if (fecha) {
             query.andWhere('DATE(order.createdAt) = :fecha', { fecha });
         }
@@ -213,8 +213,8 @@ let MesaService = class MesaService {
             .createQueryBuilder('order')
             .select('SUM(order.total)', 'total')
             .addSelect('SUM(order.propina)', 'totalPropina')
-            .where('order.deletedAt IS NULL')
-            .andWhere('order.mesaId = :mesaId', { mesaId });
+            .where('order.mesaId = :mesaId', { mesaId })
+            .andWhere('order.status = :status', { status: 'pagado' });
         if (fecha)
             totalQuery.andWhere('DATE(order.createdAt) = :fecha', { fecha });
         const totales = await totalQuery.getRawOne();
