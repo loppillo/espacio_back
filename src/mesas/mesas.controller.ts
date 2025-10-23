@@ -20,6 +20,11 @@ import { Order } from 'src/orders/entities/order.entity';
 @Controller('mesas')
 export class MesaController {
   constructor(private readonly mesaService: MesaService) {}
+  @Get(':id/detalle-actual')
+async getDetalleMesaActual(@Param('id', ParseIntPipe) id: number) {
+  return this.mesaService.obtenerDetalleMesaActual(id);
+}
+
 
     @Get('historial')
 async getHistorialPorMesas(@Query('mesaId', ParseIntPipe) mesaId: number) {
@@ -108,5 +113,8 @@ async getDetalleMesas(
 ) {
   return this.mesaService.getMesaDetail(mesaId, fecha);
 }
+
+
+
 
 }
