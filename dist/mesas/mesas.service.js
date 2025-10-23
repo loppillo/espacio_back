@@ -193,6 +193,43 @@ let MesaService = class MesaService {
             };
         });
     }
+    async getMesaDetail(mesaId, fecha) {
+        const query = this.ordersRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.orderProducts', 'op')
+            .leftJoinAndSelect('op.product', 'product')
+            .select('product.name', 'producto')
+            .addSelect('op.quantity', 'cantidad')
+            .addSelect('product.price', 'precioUnitario')
+            .addSelect('(op.quantity * product.price)', 'subtotal')
+            .addSelect('SUM(op.quantity * product.price)', 'totalMesa')
+            .where('order.deletedAt IS NULL')
+            .andWhere('order.mesaId = :mesaId', { mesaId })
+            .groupBy('product.name')
+            .addGroupBy('op.quantity')
+            .addGroupBy('product.price');
+        if (fecha) {
+            query.andWhere('DATE(order.createdAt) = :fecha', { fecha });
+        }
+        const detalle = await query.getRawMany();
+        const totalQuery = this.ordersRepository
+            .createQueryBuilder('order')
+            .select('SUM(order.total)', 'total')
+            .addSelect('SUM(order.propina)', 'totalPropina')
+            .where('order.deletedAt IS NULL')
+            .andWhere('order.mesaId = :mesaId', { mesaId });
+        if (fecha)
+            totalQuery.andWhere('DATE(order.createdAt) = :fecha', { fecha });
+        const totales = await totalQuery.getRawOne();
+        return {
+            mesaId,
+            fecha: fecha ?? 'todas las fechas',
+            detalle,
+            totalMesa: Number(totales.total) || 0,
+            propina: Number(totales.totalPropina) || 0,
+            totalConPropina: (Number(totales.total) || 0) + (Number(totales.totalPropina) || 0),
+        };
+    }
 };
 exports.MesaService = MesaService;
 exports.MesaService = MesaService = __decorate([

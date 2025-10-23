@@ -60,6 +60,9 @@ let MesaController = class MesaController {
     getPedidosActuales(id, numeroVenta) {
         return this.mesaService.getPedidosActuales(id, numeroVenta);
     }
+    async getDetalleMesas(mesaId, fecha) {
+        return this.mesaService.getMesaDetail(mesaId, fecha);
+    }
 };
 exports.MesaController = MesaController;
 __decorate([
@@ -155,6 +158,14 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], MesaController.prototype, "getPedidosActuales", null);
+__decorate([
+    (0, common_1.Get)('ventas/detalle-mesa'),
+    __param(0, (0, common_1.Query)('mesaId')),
+    __param(1, (0, common_1.Query)('fecha')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:returntype", Promise)
+], MesaController.prototype, "getDetalleMesas", null);
 exports.MesaController = MesaController = __decorate([
     (0, common_1.Controller)('mesas'),
     __metadata("design:paramtypes", [mesas_service_1.MesaService])

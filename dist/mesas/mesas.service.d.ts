@@ -24,4 +24,12 @@ export declare class MesaService {
         message: string;
     }>;
     getPedidosPorMesa(mesaId: number): Promise<any[]>;
+    getMesaDetail(mesaId: number, fecha?: string): Promise<{
+        mesaId: number;
+        fecha: string;
+        detalle: any[];
+        totalMesa: number;
+        propina: number;
+        totalConPropina: number;
+    }>;
 }

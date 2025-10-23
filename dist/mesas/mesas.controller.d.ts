@@ -19,4 +19,12 @@ export declare class MesaController {
     getMesa(id: number): Promise<Mesa>;
     crearNuevoPedido(id: number): Promise<Order>;
     getPedidosActuales(id: number, numeroVenta: number): Promise<Order[]>;
+    getDetalleMesas(mesaId: number, fecha?: string): Promise<{
+        mesaId: number;
+        fecha: string;
+        detalle: any[];
+        totalMesa: number;
+        propina: number;
+        totalConPropina: number;
+    }>;
 }
