@@ -32,4 +32,5 @@ export declare class MesaService {
         propina: number;
         totalConPropina: number;
     }>;
+    obtenerDetalleMesaActual(mesaId: number): Promise<Mesa>;
 }

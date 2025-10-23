@@ -226,6 +226,12 @@ let MesaService = class MesaService {
             totalConPropina: (Number(totales.total) || 0) + (Number(totales.totalPropina) || 0),
         };
     }
+    async obtenerDetalleMesaActual(mesaId) {
+        return await this.mesaRepository.findOne({
+            where: { id: mesaId },
+            relations: ['pedidos', 'pedidos.productos'],
+        });
+    }
 };
 exports.MesaService = MesaService;
 exports.MesaService = MesaService = __decorate([

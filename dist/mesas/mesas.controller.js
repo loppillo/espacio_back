@@ -21,6 +21,9 @@ let MesaController = class MesaController {
     constructor(mesaService) {
         this.mesaService = mesaService;
     }
+    async getDetalleMesaActual(id) {
+        return this.mesaService.obtenerDetalleMesaActual(id);
+    }
     async getHistorialPorMesas(mesaId) {
         return this.mesaService.getPedidosPorMesa(mesaId);
     }
@@ -65,6 +68,13 @@ let MesaController = class MesaController {
     }
 };
 exports.MesaController = MesaController;
+__decorate([
+    (0, common_1.Get)(':id/detalle-actual'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], MesaController.prototype, "getDetalleMesaActual", null);
 __decorate([
     (0, common_1.Get)('historial'),
     __param(0, (0, common_1.Query)('mesaId', common_1.ParseIntPipe)),
