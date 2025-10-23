@@ -318,6 +318,27 @@ async getHistorialPorMesa(mesaId: number) {
 
 
 
+  async obtenerPendientes(): Promise<Order[]> {
+    return await this.orderRepository.find({
+      where: { status: 'Pendiente' },
+      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+      order: { createdAt: 'ASC' }
+    });
+  }
+
+  async aceptarVenta(orderId: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({ where: { id: orderId }});
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    order.status = 'Aceptado';
+    return await this.orderRepository.save(order);
+  }
+
+  async cancelarVenta(orderId: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({ where: { id: orderId }});
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    order.status = 'Cancelado';
+    return await this.orderRepository.save(order);
+  }
 
 
 

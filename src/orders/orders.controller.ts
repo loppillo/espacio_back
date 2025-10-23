@@ -101,6 +101,21 @@ async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
     return this.printService.printFactura(body);
   }
 
+  @Get('pendientes')
+  async obtenerPendientes() {
+    return this.ordersService.obtenerPendientes();
+  }
 
+  // Aceptar una venta (cambia status => 'Aceptado')
+  @Patch(':id/aceptar')
+  async aceptarVenta(@Param('id') id: number) {
+    return this.ordersService.aceptarVenta(+id);
+  }
+
+  // Cancelar venta (opcional) - status => 'Cancelado' o 'Anulado'
+  @Patch(':id/cancelar')
+  async cancelarVenta(@Param('id') id: number) {
+    return this.ordersService.cancelarVenta(+id);
+  }
 
 }
