@@ -294,7 +294,7 @@ async getMesaDetail(mesaId: number, fecha?: string) {
 async obtenerDetalleMesaActual(mesaId: number): Promise<Mesa> {
   return await this.mesaRepository.findOne({
     where: { id: mesaId },
-    relations: ['pedidos', 'pedidos.productos'], // relaciones necesarias
+    relations: ['orders', 'orders.products'], // relaciones necesarias
   });
 }
 
