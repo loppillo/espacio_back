@@ -3,7 +3,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Between, DeepPartial, In, Repository } from 'typeorm';
+import { Between, DeepPartial, In, IsNull, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Product } from 'src/products/entities/product.entity';
@@ -318,13 +318,16 @@ async getHistorialPorMesa(mesaId: number) {
 
 
 
-  async obtenerPendientes(): Promise<Order[]> {
-    return await this.orderRepository.find({
-      where: { status: 'Pendiente' },
-      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
-      order: { createdAt: 'ASC' }
-    });
-  }
+ async obtenerPendientes(): Promise<Order[]> {
+  return await this.orderRepository.find({
+    where: { 
+      status: 'pendiente',
+      mesaId: Not(IsNull())  // ✅ evitar NaN o null
+    },
+    relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+    order: { createdAt: 'ASC' }
+  });
+}
 
   async aceptarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({ where: { id: orderId }});
