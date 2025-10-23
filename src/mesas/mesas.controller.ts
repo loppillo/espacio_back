@@ -101,6 +101,12 @@ async marcarPedidoPagado(@Param('id') mesaId: number) {
     return this.mesaService.getPedidosActuales(id, numeroVenta);
   }
 
-
+@Get('ventas/detalle-mesa')
+async getDetalleMesas(
+  @Query('mesaId') mesaId: number,
+  @Query('fecha') fecha?: string,
+) {
+  return this.mesaService.getMesaDetail(mesaId, fecha);
+}
 
 }
