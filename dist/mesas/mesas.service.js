@@ -196,21 +196,18 @@ let MesaService = class MesaService {
     async getMesaDetail(mesaId, fecha) {
         const query = this.ordersRepository
             .createQueryBuilder('order')
-            .leftJoinAndSelect('order.orderProducts', 'op')
-            .leftJoinAndSelect('op.product', 'product')
+            .leftJoin('order.orderProducts', 'op')
+            .leftJoin('op.product', 'product')
             .select('product.name', 'producto')
-            .addSelect('op.quantity', 'cantidad')
+            .addSelect('SUM(op.cantidad)', 'cantidad')
             .addSelect('product.price', 'precioUnitario')
-            .addSelect('(op.quantity * product.price)', 'subtotal')
-            .addSelect('SUM(op.quantity * product.price)', 'totalMesa')
+            .addSelect('(SUM(op.cantidad) * product.price)', 'subtotal')
             .where('order.deletedAt IS NULL')
-            .andWhere('order.mesaId = :mesaId', { mesaId })
-            .groupBy('product.name')
-            .addGroupBy('op.quantity')
-            .addGroupBy('product.price');
+            .andWhere('order.mesaId = :mesaId', { mesaId });
         if (fecha) {
             query.andWhere('DATE(order.createdAt) = :fecha', { fecha });
         }
+        query.groupBy('product.id');
         const detalle = await query.getRawMany();
         const totalQuery = this.ordersRepository
             .createQueryBuilder('order')
