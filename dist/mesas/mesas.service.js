@@ -78,26 +78,21 @@ let MesaService = class MesaService {
         return mesa;
     }
     async marcarPedidoPagado(mesaId) {
+        if (isNaN(mesaId) || mesaId <= 0) {
+            throw new common_1.BadRequestException('ID de mesa inválido');
+        }
         const mesa = await this.mesaRepository.findOne({
             where: { id: mesaId },
             relations: ['orders'],
         });
         if (!mesa)
             throw new common_1.NotFoundException('Mesa no encontrada');
-        if (mesa.orders && mesa.orders.length > 0) {
+        if (mesa.orders?.length) {
             mesa.orders.forEach(order => (order.status = 'Pagado'));
             await this.ordersRepository.save(mesa.orders);
         }
         mesa.status = 'Libre';
         return this.mesaRepository.save(mesa);
-    }
-    async getMesa(mesaId) {
-        const mesa = await this.mesaRepository.findOne({
-            where: { id: mesaId },
-        });
-        if (!mesa)
-            throw new common_1.NotFoundException('Mesa no encontrada');
-        return mesa;
     }
     async crearNuevoPedido(mesaId) {
         const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
@@ -231,6 +226,17 @@ let MesaService = class MesaService {
             where: { id: mesaId },
             relations: ['orders', 'orders.orderProducts', 'orders.orderProducts.product'],
         });
+    }
+    async getMesa(mesaId) {
+        if (isNaN(mesaId) || mesaId <= 0) {
+            throw new common_1.BadRequestException('ID de mesa inválido');
+        }
+        const mesa = await this.mesaRepository.findOne({
+            where: { id: mesaId },
+        });
+        if (!mesa)
+            throw new common_1.NotFoundException('Mesa no encontrada');
+        return mesa;
     }
 };
 exports.MesaService = MesaService;

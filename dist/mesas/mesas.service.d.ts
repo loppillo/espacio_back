@@ -16,7 +16,6 @@ export declare class MesaService {
     actualizarEstadoMesa(id: number, status: string): Promise<Mesa>;
     obtenerDetalleMesa(id: number): Promise<Mesa>;
     marcarPedidoPagado(mesaId: number): Promise<Mesa>;
-    getMesa(mesaId: number): Promise<Mesa>;
     crearNuevoPedido(mesaId: number): Promise<Order>;
     getPedidosActuales(mesaId: number, numeroVenta: number): Promise<Order[]>;
     getProductosPorMesa(mesaId: number): Promise<any[]>;
@@ -33,4 +32,5 @@ export declare class MesaService {
         totalConPropina: number;
     }>;
     obtenerDetalleMesaActual(mesaId: number): Promise<Mesa>;
+    getMesa(mesaId: number): Promise<Mesa>;
 }
