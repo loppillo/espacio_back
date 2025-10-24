@@ -234,14 +234,16 @@ let OrdersService = class OrdersService {
         });
     }
     async obtenerPendientes() {
-        return await this.orderRepository.find({
-            where: {
-                status: 'pendiente',
-                mesaId: (0, typeorm_1.MoreThan)(0),
-            },
-            relations: ['mesa', 'orderProducts', 'orderProducts.product'],
-            order: { createdAt: 'ASC' },
-        });
+        return await this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.mesa', 'mesa')
+            .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+            .leftJoinAndSelect('orderProducts.product', 'product')
+            .where('order.status = :status', { status: 'pendiente' })
+            .andWhere('order.mesaId IS NOT NULL')
+            .andWhere('order.mesaId > 0')
+            .orderBy('order.createdAt', 'ASC')
+            .getMany();
     }
     async aceptarVenta(orderId) {
         const order = await this.orderRepository.findOne({ where: { id: orderId } });
