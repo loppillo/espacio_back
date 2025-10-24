@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateMesaDto } from './dto/create-mesa.dto';
@@ -84,30 +84,26 @@ async findOne(id: number): Promise<Mesa> {
 }
 
 async marcarPedidoPagado(mesaId: number): Promise<Mesa> {
+  if (isNaN(mesaId) || mesaId <= 0) {
+    throw new BadRequestException('ID de mesa inválido');
+  }
+
   const mesa = await this.mesaRepository.findOne({
     where: { id: mesaId },
     relations: ['orders'],
   });
+
   if (!mesa) throw new NotFoundException('Mesa no encontrada');
 
-  if (mesa.orders && mesa.orders.length > 0) {
+  if (mesa.orders?.length) {
     mesa.orders.forEach(order => (order.status = 'Pagado'));
     await this.ordersRepository.save(mesa.orders);
   }
 
   mesa.status = 'Libre';
-  // ❌ NO desasociar órdenes
-  // mesa.orders = [];
 
   return this.mesaRepository.save(mesa);
 }
-  async getMesa(mesaId: number): Promise<Mesa> {
-    const mesa = await this.mesaRepository.findOne({
-      where: { id: mesaId },
-    });
-    if (!mesa) throw new NotFoundException('Mesa no encontrada');
-    return mesa;
-  }
 
 async crearNuevoPedido(mesaId: number): Promise<Order> {
   // Buscar la mesa
@@ -298,5 +294,17 @@ async obtenerDetalleMesaActual(mesaId: number): Promise<Mesa> {
   });
 }
 
+async getMesa(mesaId: number): Promise<Mesa> {
+  if (isNaN(mesaId) || mesaId <= 0) {
+    throw new BadRequestException('ID de mesa inválido');
+  }
+
+  const mesa = await this.mesaRepository.findOne({
+    where: { id: mesaId },
+  });
+
+  if (!mesa) throw new NotFoundException('Mesa no encontrada');
+  return mesa;
+}
 
 }
