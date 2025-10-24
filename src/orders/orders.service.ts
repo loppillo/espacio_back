@@ -315,14 +315,16 @@ async getHistorialPorMesa(mesaId: number) {
 
 
 async obtenerPendientes(): Promise<Order[]> {
-  return await this.orderRepository.find({
-    where: {
-      status: 'pendiente',
-      mesaId: MoreThan(0),  // ✅ asegura que sea número válido
-    },
-    relations: ['mesa', 'orderProducts', 'orderProducts.product'],
-    order: { createdAt: 'ASC' },
-  });
+  return await this.orderRepository
+    .createQueryBuilder('order')
+    .leftJoinAndSelect('order.mesa', 'mesa')
+    .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+    .leftJoinAndSelect('orderProducts.product', 'product')
+    .where('order.status = :status', { status: 'pendiente' })
+    .andWhere('order.mesaId IS NOT NULL')   // ✅ Filtra seguros
+    .andWhere('order.mesaId > 0')           // ✅ Previene NaN
+    .orderBy('order.createdAt', 'ASC')
+    .getMany();
 }
 
   async aceptarVenta(orderId: number): Promise<Order> {
