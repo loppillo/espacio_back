@@ -3,7 +3,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Between, DeepPartial, In, IsNull, Not, Repository } from 'typeorm';
+import { Between, DeepPartial, In, IsNull, MoreThan, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Product } from 'src/products/entities/product.entity';
@@ -314,14 +314,14 @@ async getHistorialPorMesa(mesaId: number) {
 
 
 
- async obtenerPendientes(): Promise<Order[]> {
+async obtenerPendientes(): Promise<Order[]> {
   return await this.orderRepository.find({
-    where: { 
+    where: {
       status: 'pendiente',
-      mesaId: Not(IsNull())  // ✅ evitar NaN o null
+      mesaId: MoreThan(0),  // ✅ asegura que sea número válido
     },
     relations: ['mesa', 'orderProducts', 'orderProducts.product'],
-    order: { createdAt: 'ASC' }
+    order: { createdAt: 'ASC' },
   });
 }
 

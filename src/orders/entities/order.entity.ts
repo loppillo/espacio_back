@@ -51,8 +51,7 @@ export class Order {
   @OneToMany(() => ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true })
   orderProducts: ProductsOrders[];
 
-  @ManyToOne(() => Mesa, (mesa) => mesa.orders)
-  @JoinColumn({ name: 'mesaId' })
+  @ManyToOne(() => Mesa, mesa => mesa.orders, { nullable: true })
   mesa: Mesa;
 
   @ManyToOne(() => Product, product => product.id)
@@ -65,7 +64,7 @@ export class Order {
   @Column()
   numeroVenta: number;
 
-  @Column({ nullable: false })
-  mesaId: number;
+ @Column({ type: 'int', nullable: true })
+mesaId: number | null;
 
 }
