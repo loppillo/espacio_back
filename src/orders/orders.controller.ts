@@ -15,7 +15,10 @@ export class OrdersController {
     private readonly printService: PrintService
   ) { }
 
-
+     @Get('pendientes')
+  async obtenerPendientes() {
+    return this.ordersService.obtenerPendientes();
+  }
 
 
   @Post()
@@ -34,7 +37,6 @@ async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
   creates(@Body() createOrderDto: CreateSOrderDto) {
     return this.ordersService.creates(createOrderDto);
   }
-
 
   @Get()
   findAll() {
@@ -99,11 +101,6 @@ async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
   @Post('imprimir/factura')
   async print(@Body() body: any) {
     return this.printService.printFactura(body);
-  }
-
-  @Get('pendientes')
-  async obtenerPendientes() {
-    return this.ordersService.obtenerPendientes();
   }
 
   // Aceptar una venta (cambia status => 'Aceptado')
