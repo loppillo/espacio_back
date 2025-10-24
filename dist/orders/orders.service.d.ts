@@ -9,6 +9,7 @@ import { Propina } from 'src/propina/entities/propina.entity';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
+import { OrdersGateway } from './orders.gateway';
 export declare class OrdersService {
     private readonly orderRepository;
     private readonly userRepository;
@@ -17,7 +18,8 @@ export declare class OrdersService {
     private readonly propinaRepository;
     private readonly mesaRepository;
     private readonly productsOrdersRepository;
-    constructor(orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>);
+    private ordersGateway;
+    constructor(orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway);
     create(createOrderDto: CreateOrderDto): Promise<Order>;
     creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;

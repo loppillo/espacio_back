@@ -19,6 +19,7 @@ const mesa_entity_1 = require("../mesas/entities/mesa.entity");
 const propina_entity_1 = require("../propina/entities/propina.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
 const print_service_1 = require("./print/print.service");
+const orders_gateway_1 = require("./orders.gateway");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -27,6 +28,7 @@ exports.OrdersModule = OrdersModule = __decorate([
         imports: [typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order]), typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]), typeorm_1.TypeOrmModule.forFeature([propina_entity_1.Propina]), typeorm_1.TypeOrmModule.forFeature([customer_entity_1.Customer]), typeorm_1.TypeOrmModule.forFeature([product_entity_1.Product]),
             typeorm_1.TypeOrmModule.forFeature([mesa_entity_1.Mesa]), typeorm_1.TypeOrmModule.forFeature([products_order_entity_1.ProductsOrders])
         ],
+        exports: [orders_gateway_1.OrdersGateway],
         controllers: [orders_controller_1.OrdersController],
         providers: [orders_service_1.OrdersService, print_service_1.PrintService],
     })

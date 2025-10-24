@@ -23,8 +23,9 @@ const product_entity_1 = require("../products/entities/product.entity");
 const propina_entity_1 = require("../propina/entities/propina.entity");
 const mesa_entity_1 = require("../mesas/entities/mesa.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
+const orders_gateway_1 = require("./orders.gateway");
 let OrdersService = class OrdersService {
-    constructor(orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, productsOrdersRepository) {
+    constructor(orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, productsOrdersRepository, ordersGateway) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
@@ -32,20 +33,16 @@ let OrdersService = class OrdersService {
         this.propinaRepository = propinaRepository;
         this.mesaRepository = mesaRepository;
         this.productsOrdersRepository = productsOrdersRepository;
+        this.ordersGateway = ordersGateway;
     }
     async create(createOrderDto) {
         const { products, propina, mesaId } = createOrderDto;
-        if (!mesaId || isNaN(Number(mesaId))) {
+        if (!mesaId || isNaN(Number(mesaId)))
             throw new common_1.BadRequestException('La mesa es obligatoria');
-        }
         const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
-        if (!mesa) {
+        if (!mesa)
             throw new common_1.BadRequestException('La mesa no se encuentra');
-        }
-        const lastOrder = await this.orderRepository.findOne({
-            where: {},
-            order: { id: 'DESC' },
-        });
+        const lastOrder = await this.orderRepository.findOne({ order: { id: 'DESC' } });
         const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
         const newOrder = this.orderRepository.create({
             detalle_venta: createOrderDto.detalle_venta,
@@ -62,9 +59,8 @@ let OrdersService = class OrdersService {
         let total = 0;
         for (const p of products) {
             const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
-            if (!productEntity) {
+            if (!productEntity)
                 throw new common_1.BadRequestException(`Producto con id ${p.id} no encontrado`);
-            }
             const subtotal = productEntity.price * p.cantidad;
             total += subtotal;
             const orderProduct = new products_order_entity_1.ProductsOrders();
@@ -75,7 +71,9 @@ let OrdersService = class OrdersService {
             newOrder.orderProducts.push(orderProduct);
         }
         newOrder.total = total + (propina || 0);
-        return await this.orderRepository.save(newOrder);
+        const savedOrder = await this.orderRepository.save(newOrder);
+        this.ordersGateway.notifyNewOrder(savedOrder);
+        return savedOrder;
     }
     async creates(createOrderDto) {
         const { products, customerId, newCustomer, propina } = createOrderDto;
@@ -276,6 +274,7 @@ exports.OrdersService = OrdersService = __decorate([
         typeorm_1.Repository,
         typeorm_1.Repository,
         typeorm_1.Repository,
-        typeorm_1.Repository])
+        typeorm_1.Repository,
+        orders_gateway_1.OrdersGateway])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map
