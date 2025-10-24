@@ -37,8 +37,8 @@ export class Order {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ default: 'null' })
-  paymentMethod: string;
+  @Column({ type: 'varchar', nullable: true })
+paymentMethod: string | null;
 
   @ManyToOne(() => User, user => user.id)
   @JoinColumn({ name: 'userId' })
