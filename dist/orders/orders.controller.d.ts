@@ -10,6 +10,7 @@ export declare class OrdersController {
     private readonly orderRepository;
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
+    obtenerPendientes(): Promise<Order[]>;
     create(createOrderDto: CreateOrderDto): Promise<Order>;
     getHistorialPorMesa(mesaId: number): Promise<{
         numeroVenta: number;
@@ -47,7 +48,6 @@ export declare class OrdersController {
     print(body: any): Promise<{
         success: boolean;
     }>;
-    obtenerPendientes(): Promise<Order[]>;
     aceptarVenta(id: number): Promise<Order>;
     cancelarVenta(id: number): Promise<Order>;
 }

@@ -28,6 +28,9 @@ let OrdersController = class OrdersController {
         this.orderRepository = orderRepository;
         this.printService = printService;
     }
+    async obtenerPendientes() {
+        return this.ordersService.obtenerPendientes();
+    }
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
     }
@@ -77,9 +80,6 @@ let OrdersController = class OrdersController {
     async print(body) {
         return this.printService.printFactura(body);
     }
-    async obtenerPendientes() {
-        return this.ordersService.obtenerPendientes();
-    }
     async aceptarVenta(id) {
         return this.ordersService.aceptarVenta(+id);
     }
@@ -88,6 +88,12 @@ let OrdersController = class OrdersController {
     }
 };
 exports.OrdersController = OrdersController;
+__decorate([
+    (0, common_1.Get)('pendientes'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "obtenerPendientes", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -166,12 +172,6 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "print", null);
-__decorate([
-    (0, common_1.Get)('pendientes'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], OrdersController.prototype, "obtenerPendientes", null);
 __decorate([
     (0, common_1.Patch)(':id/aceptar'),
     __param(0, (0, common_1.Param)('id')),
