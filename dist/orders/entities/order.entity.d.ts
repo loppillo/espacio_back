@@ -13,7 +13,7 @@ export declare class Order {
     status: string;
     total: number;
     createdAt: Date;
-    paymentMethod: string;
+    paymentMethod: string | null;
     user: User;
     customer: Customer;
     orderProducts: ProductsOrders[];
