@@ -74,8 +74,7 @@ __decorate([
     __metadata("design:type", Array)
 ], Order.prototype, "orderProducts", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => mesa_entity_1.Mesa, (mesa) => mesa.orders),
-    (0, typeorm_1.JoinColumn)({ name: 'mesaId' }),
+    (0, typeorm_1.ManyToOne)(() => mesa_entity_1.Mesa, mesa => mesa.orders, { nullable: true }),
     __metadata("design:type", mesa_entity_1.Mesa)
 ], Order.prototype, "mesa", void 0);
 __decorate([
@@ -92,7 +91,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Order.prototype, "numeroVenta", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: false }),
+    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
     __metadata("design:type", Number)
 ], Order.prototype, "mesaId", void 0);
 exports.Order = Order = __decorate([

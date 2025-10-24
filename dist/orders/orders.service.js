@@ -237,10 +237,10 @@ let OrdersService = class OrdersService {
         return await this.orderRepository.find({
             where: {
                 status: 'pendiente',
-                mesaId: (0, typeorm_1.Not)((0, typeorm_1.IsNull)())
+                mesaId: (0, typeorm_1.MoreThan)(0),
             },
             relations: ['mesa', 'orderProducts', 'orderProducts.product'],
-            order: { createdAt: 'ASC' }
+            order: { createdAt: 'ASC' },
         });
     }
     async aceptarVenta(orderId) {

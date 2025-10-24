@@ -21,5 +21,5 @@ export declare class Order {
     product: Product;
     deletedAt?: Date;
     numeroVenta: number;
-    mesaId: number;
+    mesaId: number | null;
 }
