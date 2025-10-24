@@ -11,6 +11,7 @@ import { Propina } from 'src/propina/entities/propina.entity';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
+import { OrdersGateway } from './orders.gateway';
 
 
 @Injectable()
@@ -31,6 +32,7 @@ export class OrdersService {
     private readonly mesaRepository: Repository<Mesa>,
     @InjectRepository(ProductsOrders)
     private readonly productsOrdersRepository: Repository<ProductsOrders>,
+    private ordersGateway: OrdersGateway
 
   ) { }
 
@@ -38,25 +40,15 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto) {
   const { products, propina, mesaId } = createOrderDto;
 
-  // ✅ Validar mesa obligatoria
-  if (!mesaId || isNaN(Number(mesaId))) {
-    throw new BadRequestException('La mesa es obligatoria');
-  }
+  // Validaciones
+  if (!mesaId || isNaN(Number(mesaId))) throw new BadRequestException('La mesa es obligatoria');
 
-  // ✅ Buscar la mesa
   const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
-  if (!mesa) {
-    throw new BadRequestException('La mesa no se encuentra');
-  }
+  if (!mesa) throw new BadRequestException('La mesa no se encuentra');
 
-  // ✅ Obtener el último numeroVenta
-  const lastOrder = await this.orderRepository.findOne({
-    where: {},
-    order: { id: 'DESC' },
-  });
+  const lastOrder = await this.orderRepository.findOne({ order: { id: 'DESC' } });
   const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
-  // ✅ Crear la orden base
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
     tableNumber: createOrderDto.tableNumber,
@@ -64,7 +56,7 @@ export class OrdersService {
     status: createOrderDto.status,
     orderType: createOrderDto.orderType,
     paymentMethod: createOrderDto.paymentMethod,
-    mesa, // ✅ asignada correctamente
+    mesa,
     numeroVenta: nextNumeroVenta,
     total: 0,
   });
@@ -74,9 +66,7 @@ export class OrdersService {
 
   for (const p of products) {
     const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
-    if (!productEntity) {
-      throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
-    }
+    if (!productEntity) throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
 
     const subtotal = productEntity.price * p.cantidad;
     total += subtotal;
@@ -92,7 +82,12 @@ export class OrdersService {
 
   newOrder.total = total + (propina || 0);
 
-  return await this.orderRepository.save(newOrder);
+  const savedOrder = await this.orderRepository.save(newOrder);
+
+  // ✅ Emitir evento WebSocket para panel en tiempo real
+  this.ordersGateway.notifyNewOrder(savedOrder);
+
+  return savedOrder;
 }
 
 
