@@ -243,8 +243,6 @@ let OrdersService = class OrdersService {
             .leftJoinAndSelect('order.orderProducts', 'orderProducts')
             .leftJoinAndSelect('orderProducts.product', 'product')
             .where('order.status = :status', { status: 'pendiente' })
-            .andWhere('order.mesaId IS NOT NULL')
-            .andWhere('order.mesaId > 0')
             .orderBy('order.createdAt', 'ASC')
             .getMany();
     }
