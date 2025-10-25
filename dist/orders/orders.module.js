@@ -25,12 +25,26 @@ let OrdersModule = class OrdersModule {
 exports.OrdersModule = OrdersModule;
 exports.OrdersModule = OrdersModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order]), typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]), typeorm_1.TypeOrmModule.forFeature([propina_entity_1.Propina]), typeorm_1.TypeOrmModule.forFeature([customer_entity_1.Customer]), typeorm_1.TypeOrmModule.forFeature([product_entity_1.Product]),
-            typeorm_1.TypeOrmModule.forFeature([mesa_entity_1.Mesa]), typeorm_1.TypeOrmModule.forFeature([products_order_entity_1.ProductsOrders])
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([
+                order_entity_1.Order,
+                user_entity_1.User,
+                propina_entity_1.Propina,
+                customer_entity_1.Customer,
+                product_entity_1.Product,
+                mesa_entity_1.Mesa,
+                products_order_entity_1.ProductsOrders,
+            ]),
         ],
-        exports: [orders_gateway_1.OrdersGateway],
         controllers: [orders_controller_1.OrdersController],
-        providers: [orders_service_1.OrdersService, print_service_1.PrintService, orders_gateway_1.OrdersGateway],
+        providers: [
+            orders_service_1.OrdersService,
+            print_service_1.PrintService,
+            orders_gateway_1.OrdersGateway,
+        ],
+        exports: [
+            orders_gateway_1.OrdersGateway,
+        ],
     })
 ], OrdersModule);
 //# sourceMappingURL=orders.module.js.map
