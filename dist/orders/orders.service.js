@@ -252,7 +252,7 @@ let OrdersService = class OrdersService {
         const order = await this.orderRepository.findOne({ where: { id: orderId } });
         if (!order)
             throw new common_1.NotFoundException('Pedido no encontrado');
-        order.status = 'Aceptado';
+        order.status = 'Pagado';
         return await this.orderRepository.save(order);
     }
     async cancelarVenta(orderId) {

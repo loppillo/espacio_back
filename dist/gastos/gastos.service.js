@@ -126,8 +126,8 @@ let GastosService = class GastosService {
     async getBalancePorAnio(anio) {
         const entityManager = this.dataSource.manager;
         const filtroOrders = anio
-            ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'pagado')`
-            : `WHERE (o.status = 'vendido' OR o.status = 'pagado')`;
+            ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'Pagado')`
+            : `WHERE (o.status = 'vendido' OR o.status = 'Pagado')`;
         const filtroExpenses = anio
             ? `WHERE YEAR(e.createdAt) = ${anio} AND e.type = 'egreso'`
             : `WHERE e.type = 'egreso'`;
@@ -177,7 +177,7 @@ let GastosService = class GastosService {
             .from("orders", "o")
             .innerJoin("o.products", "p")
             .where("DATE(o.createdAt) = :fecha", { fecha })
-            .andWhere("o.status = :status", { status: 'vendido' })
+            .andWhere("o.status = :status", { status: 'Pagado' })
             .groupBy("fecha, p.name")
             .getRawMany();
         const egresos = await entityManager
