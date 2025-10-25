@@ -137,6 +137,7 @@ let OrdersService = class OrdersService {
             newOrder.orderProducts.push(orderProduct);
         }
         newOrder.total = total + (propina || 0);
+        this.ordersGateway.notifyNewOrder(newOrder);
         return await this.orderRepository.save(newOrder);
     }
     async findAll() {
