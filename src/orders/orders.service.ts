@@ -315,11 +315,11 @@ async getHistorialPorMesa(mesaId: number) {
 }
 
 
-
 async obtenerPendientes(): Promise<Order[]> {
   return await this.orderRepository
     .createQueryBuilder('order')
     .leftJoinAndSelect('order.mesa', 'mesa')
+    .leftJoinAndSelect('order.customer', 'customer') // ✅ Cliente Delivery
     .leftJoinAndSelect('order.orderProducts', 'orderProducts')
     .leftJoinAndSelect('orderProducts.product', 'product')
     .where('order.status = :status', { status: 'pendiente' })
