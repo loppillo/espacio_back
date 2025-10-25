@@ -14,6 +14,8 @@ import { GastosModule } from './gastos/gastos.module';
 import { CategoriaGastoModule } from './categoria-gasto/categoria-gasto.module';
 import { AuthModule } from './auth/auth/auth.module';
 import { ProductsOrdersModule } from './products-orders/products-orders.module';
+import { HorariosModule } from './horarios/horarios.module';
+import { Horario } from './horarios/entities/horario.entity';
 
 
 @Module({
@@ -28,7 +30,8 @@ imports: [
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
-    UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule],
+       TypeOrmModule.forFeature([Horario]),
+    UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule],
   controllers: [AppController],
   providers: [AppService],
 })
