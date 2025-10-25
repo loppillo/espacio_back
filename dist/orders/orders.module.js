@@ -30,7 +30,7 @@ exports.OrdersModule = OrdersModule = __decorate([
         ],
         exports: [orders_gateway_1.OrdersGateway],
         controllers: [orders_controller_1.OrdersController],
-        providers: [orders_service_1.OrdersService, print_service_1.PrintService],
+        providers: [orders_service_1.OrdersService, print_service_1.PrintService, orders_gateway_1.OrdersGateway],
     })
 ], OrdersModule);
 //# sourceMappingURL=orders.module.js.map
