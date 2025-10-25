@@ -30,8 +30,8 @@ imports: [
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
-       TypeOrmModule.forFeature([Horario]),
-    UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule],
+
+ UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule],
   controllers: [AppController],
   providers: [AppService],
 })
