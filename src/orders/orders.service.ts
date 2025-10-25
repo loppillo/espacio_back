@@ -176,6 +176,7 @@ const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
     newOrder.total = total + (propina || 0);
 
     // 7️⃣ Guardar y devolver
+     this.ordersGateway.notifyNewOrder(newOrder);
     return await this.orderRepository.save(newOrder);
   }
 
