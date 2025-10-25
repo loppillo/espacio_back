@@ -322,8 +322,6 @@ async obtenerPendientes(): Promise<Order[]> {
     .leftJoinAndSelect('order.orderProducts', 'orderProducts')
     .leftJoinAndSelect('orderProducts.product', 'product')
     .where('order.status = :status', { status: 'pendiente' })
-    .andWhere('order.mesaId IS NOT NULL')
-    .andWhere('order.mesaId > 0') // evita NaN
     .orderBy('order.createdAt', 'ASC')
     .getMany();
 }
