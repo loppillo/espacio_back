@@ -331,7 +331,7 @@ async obtenerPendientes(): Promise<Order[]> {
   async aceptarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({ where: { id: orderId }});
     if (!order) throw new NotFoundException('Pedido no encontrado');
-    order.status = 'Aceptado';
+    order.status = 'Pagado';
     return await this.orderRepository.save(order);
   }
 

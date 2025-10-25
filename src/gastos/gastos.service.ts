@@ -143,8 +143,8 @@ async getBalancePorAnio(anio?: number) {
   const entityManager = this.dataSource.manager;
 
   const filtroOrders = anio
-    ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'pagado')`
-    : `WHERE (o.status = 'vendido' OR o.status = 'pagado')`;
+    ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'Pagado')`
+    : `WHERE (o.status = 'vendido' OR o.status = 'Pagado')`;
 
   const filtroExpenses = anio
     ? `WHERE YEAR(e.createdAt) = ${anio} AND e.type = 'egreso'`
@@ -207,7 +207,7 @@ async getBalanceDiario(fecha: string): Promise<{
     .from("orders", "o")
     .innerJoin("o.products", "p")
     .where("DATE(o.createdAt) = :fecha", { fecha })
-    .andWhere("o.status = :status", { status: 'vendido' }) // 🔥 Filtrar por status
+    .andWhere("o.status = :status", { status: 'Pagado' }) // 🔥 Filtrar por status
     .groupBy("fecha, p.name")
     .getRawMany();
 
