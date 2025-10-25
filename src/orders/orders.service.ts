@@ -43,11 +43,17 @@ export class OrdersService {
   // Validaciones
   if (!mesaId || isNaN(Number(mesaId))) throw new BadRequestException('La mesa es obligatoria');
 
-  const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
-  if (!mesa) throw new BadRequestException('La mesa no se encuentra');
+  const mesa = await this.mesaRepository.findOne({
+  where: { id: Number(mesaId) },
+});
+if (!mesa) throw new BadRequestException('La mesa no se encuentra');
 
-  const lastOrder = await this.orderRepository.findOne({ order: { id: 'DESC' } });
-  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+const lastOrder = await this.orderRepository.findOne({
+  where: {},
+  order: { id: 'DESC' },
+});
+
+const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
