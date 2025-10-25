@@ -13,11 +13,26 @@ import { PrintService } from './print/print.service';
 import { OrdersGateway } from './orders.gateway';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Order]),TypeOrmModule.forFeature([User]),TypeOrmModule.forFeature([Propina]),TypeOrmModule.forFeature([Customer]),TypeOrmModule.forFeature([Product]),
-  TypeOrmModule.forFeature([Mesa]),TypeOrmModule.forFeature([ProductsOrders])
-],
-  exports: [OrdersGateway],
+  imports: [
+    TypeOrmModule.forFeature([
+      Order,
+      User,
+      Propina,
+      Customer,
+      Product,
+      Mesa,
+      ProductsOrders,
+    ]),
+  ],
   controllers: [OrdersController],
-  providers: [OrdersService, PrintService,OrdersGateway],
+  providers: [
+    OrdersService,
+    PrintService,
+    OrdersGateway, // ✅ AGREGADO AQUÍ
+  ],
+  exports: [
+    OrdersGateway, // ✅ SOLO ahora tiene sentido exportarlo
+  ],
 })
 export class OrdersModule {}
+
