@@ -330,7 +330,7 @@ let OrdersService = class OrdersService {
             'order.orderType AS orderType',
             'order.paymentMethod AS paymentMethod',
             'order.createdAt AS createdAt',
-            'mesa.tableNumber AS tableNumber',
+            'mesa.numero_mesa AS numero_mesa',
         ])
             .leftJoin('order.mesa', 'mesa')
             .where('order.status = :status', { status: 'Pagado' })
