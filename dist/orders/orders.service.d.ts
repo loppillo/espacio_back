@@ -55,9 +55,10 @@ export declare class OrdersService {
     getVentasDiarias(desde?: string, hasta?: string): Promise<{
         totalVentas: number;
         cantidadPedidos: number;
-        rango: string | {
-            desde: string;
-            hasta: string;
+        rango: {
+            desde: Date;
+            hasta: Date;
         };
+        grafico: any[];
     }>;
 }
