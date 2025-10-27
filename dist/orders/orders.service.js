@@ -300,19 +300,19 @@ let OrdersService = class OrdersService {
         if (!desde && !hasta) {
             const hoy = new Date();
             inicio = new Date(hoy.setHours(0, 0, 0, 0));
-            fin = new Date();
+            fin = new Date(hoy.setHours(23, 59, 59, 999));
         }
         else {
             inicio = new Date(desde);
             fin = new Date(hasta);
         }
-        const query = this.orderRepository
+        const totales = await this.orderRepository
             .createQueryBuilder('order')
             .select('SUM(order.total)', 'total_ventas')
             .addSelect('COUNT(order.id)', 'cantidad_pedidos')
             .where('order.status = :status', { status: 'Pagado' })
-            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
-        const resultado = await query.getRawOne();
+            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+            .getRawOne();
         const grafico = await this.orderRepository
             .createQueryBuilder('order')
             .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
@@ -322,11 +322,27 @@ let OrdersService = class OrdersService {
             .groupBy('hora')
             .orderBy('hora', 'ASC')
             .getRawMany();
+        const detalles = await this.orderRepository
+            .createQueryBuilder('order')
+            .select([
+            'order.id AS id',
+            'order.total AS total',
+            'order.orderType AS orderType',
+            'order.paymentMethod AS paymentMethod',
+            'order.createdAt AS createdAt',
+            'mesa.tableNumber AS tableNumber',
+        ])
+            .leftJoin('order.mesa', 'mesa')
+            .where('order.status = :status', { status: 'Pagado' })
+            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+            .orderBy('order.createdAt', 'DESC')
+            .getRawMany();
         return {
-            totalVentas: Number(resultado?.total_ventas || 0),
-            cantidadPedidos: Number(resultado?.cantidad_pedidos || 0),
+            totalVentas: Number(totales?.total_ventas || 0),
+            cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
             rango: { desde: inicio, hasta: fin },
             grafico,
+            detalles,
         };
     }
 };

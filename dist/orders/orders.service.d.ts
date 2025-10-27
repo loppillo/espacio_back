@@ -60,5 +60,6 @@ export declare class OrdersService {
             hasta: Date;
         };
         grafico: any[];
+        detalles: any[];
     }>;
 }

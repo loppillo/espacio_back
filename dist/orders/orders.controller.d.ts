@@ -58,5 +58,6 @@ export declare class OrdersController {
             hasta: Date;
         };
         grafico: any[];
+        detalles: any[];
     }>;
 }
