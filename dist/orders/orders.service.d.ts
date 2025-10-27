@@ -52,4 +52,12 @@ export declare class OrdersService {
     obtenerPendientes(): Promise<Order[]>;
     aceptarVenta(orderId: number): Promise<Order>;
     cancelarVenta(orderId: number): Promise<Order>;
+    getVentasDiarias(desde?: string, hasta?: string): Promise<{
+        totalVentas: number;
+        cantidadPedidos: number;
+        rango: string | {
+            desde: string;
+            hasta: string;
+        };
+    }>;
 }

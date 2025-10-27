@@ -294,6 +294,36 @@ let OrdersService = class OrdersService {
         }
         return order;
     }
+    async getVentasDiarias(desde, hasta) {
+        const query = this.orderRepository
+            .createQueryBuilder('order')
+            .select('SUM(order.total)', 'total_ventas')
+            .addSelect('COUNT(order.id)', 'cantidad_pedidos')
+            .where('order.status = :status', { status: 'Pagado' });
+        if (!desde && !hasta) {
+            const hoy = new Date();
+            const inicio = new Date(hoy);
+            inicio.setHours(0, 0, 0, 0);
+            const fin = new Date(hoy);
+            fin.setHours(23, 59, 59, 999);
+            query.andWhere('order.createdAt BETWEEN :inicio AND :fin', {
+                inicio,
+                fin,
+            });
+        }
+        if (desde && hasta) {
+            query.andWhere('order.createdAt BETWEEN :inicio AND :fin', {
+                inicio: new Date(desde),
+                fin: new Date(hasta),
+            });
+        }
+        const resultado = await query.getRawOne();
+        return {
+            totalVentas: Number(resultado.total_ventas || 0),
+            cantidadPedidos: Number(resultado.cantidad_pedidos || 0),
+            rango: desde && hasta ? { desde, hasta } : 'Día actual',
+        };
+    }
 };
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([
