@@ -13,12 +13,16 @@ const mesas_service_1 = require("./mesas.service");
 const mesas_controller_1 = require("./mesas.controller");
 const mesa_entity_1 = require("./entities/mesa.entity");
 const order_entity_1 = require("../orders/entities/order.entity");
+const orders_module_1 = require("../orders/orders.module");
 let MesasModule = class MesasModule {
 };
 exports.MesasModule = MesasModule;
 exports.MesasModule = MesasModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([mesa_entity_1.Mesa]), typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([mesa_entity_1.Mesa, order_entity_1.Order]),
+            orders_module_1.OrdersModule,
+        ],
         controllers: [mesas_controller_1.MesaController],
         providers: [mesas_service_1.MesaService],
     })

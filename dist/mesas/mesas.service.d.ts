@@ -7,7 +7,7 @@ import { OrdersGateway } from 'src/orders/orders.gateway';
 export declare class MesaService {
     private readonly mesaRepository;
     private readonly ordersRepository;
-    private ordersGateway;
+    private readonly ordersGateway;
     constructor(mesaRepository: Repository<Mesa>, ordersRepository: Repository<Order>, ordersGateway: OrdersGateway);
     findAll(): Promise<Mesa[]>;
     findOne(id: number): Promise<Mesa>;
