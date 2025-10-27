@@ -93,15 +93,19 @@ async marcarPedidoPagado(mesaId: number): Promise<Mesa> {
   });
   if (!mesa) throw new NotFoundException('Mesa no encontrada');
 
+  // Marcar todos los pedidos como pagados
   if (mesa.orders?.length) {
     mesa.orders.forEach(order => (order.status = 'Pagado'));
     await this.ordersRepository.save(mesa.orders);
   }
 
-  mesa.status = 'Libre';
+  // Actualizar status de la mesa según pedidos restantes no pagados
+  const tienePedidosActivos = mesa.orders.some(order => order.status !== 'Pagado');
+  mesa.status = tienePedidosActivos ? 'Ocupada' : 'Libre';
+
   const saved = await this.mesaRepository.save(mesa);
 
-  // emitir evento
+  // Emitir evento al frontend
   this.ordersGateway.notifyMesaUpdated(mesa.id, saved.status);
 
   return saved;
