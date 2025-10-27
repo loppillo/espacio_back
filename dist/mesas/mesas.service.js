@@ -18,10 +18,12 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const mesa_entity_1 = require("./entities/mesa.entity");
 const order_entity_1 = require("../orders/entities/order.entity");
+const orders_gateway_1 = require("../orders/orders.gateway");
 let MesaService = class MesaService {
-    constructor(mesaRepository, ordersRepository) {
+    constructor(mesaRepository, ordersRepository, ordersGateway) {
         this.mesaRepository = mesaRepository;
         this.ordersRepository = ordersRepository;
+        this.ordersGateway = ordersGateway;
     }
     async findAll() {
         return this.mesaRepository.find({ relations: ['orders'] });
@@ -78,12 +80,9 @@ let MesaService = class MesaService {
         return mesa;
     }
     async marcarPedidoPagado(mesaId) {
-        if (isNaN(mesaId) || mesaId <= 0) {
-            throw new common_1.BadRequestException('ID de mesa inválido');
-        }
         const mesa = await this.mesaRepository.findOne({
             where: { id: mesaId },
-            relations: ['orders'],
+            relations: ['orders']
         });
         if (!mesa)
             throw new common_1.NotFoundException('Mesa no encontrada');
@@ -92,7 +91,9 @@ let MesaService = class MesaService {
             await this.ordersRepository.save(mesa.orders);
         }
         mesa.status = 'Libre';
-        return this.mesaRepository.save(mesa);
+        const saved = await this.mesaRepository.save(mesa);
+        this.ordersGateway.notifyMesaUpdated(mesa.id, saved.status);
+        return saved;
     }
     async crearNuevoPedido(mesaId) {
         const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
@@ -245,6 +246,7 @@ exports.MesaService = MesaService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(mesa_entity_1.Mesa)),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        orders_gateway_1.OrdersGateway])
 ], MesaService);
 //# sourceMappingURL=mesas.service.js.map

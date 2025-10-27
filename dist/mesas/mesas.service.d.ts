@@ -3,10 +3,12 @@ import { CreateMesaDto } from './dto/create-mesa.dto';
 import { UpdateMesaDto } from './dto/update-mesa.dto';
 import { Mesa } from './entities/mesa.entity';
 import { Order } from 'src/orders/entities/order.entity';
+import { OrdersGateway } from 'src/orders/orders.gateway';
 export declare class MesaService {
     private readonly mesaRepository;
     private readonly ordersRepository;
-    constructor(mesaRepository: Repository<Mesa>, ordersRepository: Repository<Order>);
+    private ordersGateway;
+    constructor(mesaRepository: Repository<Mesa>, ordersRepository: Repository<Order>, ordersGateway: OrdersGateway);
     findAll(): Promise<Mesa[]>;
     findOne(id: number): Promise<Mesa>;
     create(createMesaDto: CreateMesaDto): Promise<Mesa>;

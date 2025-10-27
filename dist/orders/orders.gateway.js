@@ -17,6 +17,12 @@ let OrdersGateway = class OrdersGateway {
     notifyNewOrder(order) {
         this.server.emit('newOrder', order);
     }
+    notifyOrderUpdated(order) {
+        this.server.emit('orderStatusUpdated', order);
+    }
+    notifyMesaUpdated(mesaId, status) {
+        this.server.emit('mesaStatusUpdated', { mesaId, status });
+    }
 };
 exports.OrdersGateway = OrdersGateway;
 __decorate([
