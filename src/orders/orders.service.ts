@@ -379,13 +379,28 @@ async aceptarVenta(orderId: number): Promise<Order> {
   return order;
 }
 
+async cancelarVenta(orderId: number): Promise<Order> {
+  const order = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['mesa'], // ✅ Para traer la mesa asociada
+  });
 
-  async cancelarVenta(orderId: number): Promise<Order> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId }});
-    if (!order) throw new NotFoundException('Pedido no encontrado');
-    order.status = 'Cancelado';
-    return await this.orderRepository.save(order);
+  if (!order) {
+    throw new NotFoundException('Pedido no encontrado');
   }
+
+  // ✅ Cambiar estado del pedido
+  order.status = 'Cancelado';
+  await this.orderRepository.save(order);
+
+  // ✅ Verificamos si hay mesa asociada
+  if (order.mesa) {
+    order.mesa.status = 'Disponible'; // ✅ Liberar mesa
+    await this.mesaRepository.save(order.mesa);
+  }
+
+  return order;
+}
 
 
 
