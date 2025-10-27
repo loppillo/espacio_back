@@ -403,42 +403,49 @@ async cancelarVenta(orderId: number): Promise<Order> {
 }
 
 async getVentasDiarias(desde?: string, hasta?: string) {
+  // 🕒 Definir rango de fechas
+  let inicio: Date;
+  let fin: Date;
+
+  if (!desde && !hasta) {
+    const hoy = new Date();
+    inicio = new Date(hoy.setHours(0, 0, 0, 0));
+    fin = new Date();
+  } else {
+    inicio = new Date(desde);
+    fin = new Date(hasta);
+  }
+
+  // 🧾 1️⃣ Consulta principal: totales generales
   const query = this.orderRepository
     .createQueryBuilder('order')
     .select('SUM(order.total)', 'total_ventas')
     .addSelect('COUNT(order.id)', 'cantidad_pedidos')
-    .where('order.status = :status', { status: 'Pagado' });
-
-  // 📅 Si no se pasa rango, usar el día actual
-  if (!desde && !hasta) {
-    const hoy = new Date();
-    const inicio = new Date(hoy);
-    inicio.setHours(0, 0, 0, 0);
-    const fin = new Date(hoy);
-    fin.setHours(23, 59, 59, 999);
-
-    query.andWhere('order.createdAt BETWEEN :inicio AND :fin', {
-      inicio,
-      fin,
-    });
-  }
-
-  // 📆 Si se envía rango
-  if (desde && hasta) {
-    query.andWhere('order.createdAt BETWEEN :inicio AND :fin', {
-      inicio: new Date(desde),
-      fin: new Date(hasta),
-    });
-  }
+    .where('order.status = :status', { status: 'Pagado' })
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
 
   const resultado = await query.getRawOne();
 
+  // 📊 2️⃣ Consulta secundaria: ventas agrupadas por hora
+  const grafico = await this.orderRepository
+    .createQueryBuilder('order')
+    .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
+    .addSelect('SUM(order.total)', 'total')
+    .where('order.status = :status', { status: 'Pagado' })
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+    .groupBy('hora')
+    .orderBy('hora', 'ASC')
+    .getRawMany();
+
+  // 📋 3️⃣ Armar respuesta
   return {
-    totalVentas: Number(resultado.total_ventas || 0),
-    cantidadPedidos: Number(resultado.cantidad_pedidos || 0),
-    rango: desde && hasta ? { desde, hasta } : 'Día actual',
+    totalVentas: Number(resultado?.total_ventas || 0),
+    cantidadPedidos: Number(resultado?.cantidad_pedidos || 0),
+    rango: { desde: inicio, hasta: fin },
+    grafico, // 👈 importante para el Chart.js
   };
 }
+
 
 
 
