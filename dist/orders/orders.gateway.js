@@ -15,13 +15,39 @@ const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 let OrdersGateway = class OrdersGateway {
     notifyNewOrder(order) {
-        this.server.emit('newOrder', order);
+        const payload = this.sanitizeOrder(order);
+        this.server.emit('newOrder', payload);
     }
     notifyOrderUpdated(order) {
-        this.server.emit('orderStatusUpdated', order);
+        const payload = this.sanitizeOrder(order);
+        this.server.emit('orderStatusUpdated', payload);
     }
     notifyMesaUpdated(mesaId, status) {
         this.server.emit('mesaStatusUpdated', { mesaId, status });
+    }
+    sanitizeOrder(order) {
+        return {
+            id: order.id,
+            status: order.status,
+            tableNumber: order.tableNumber,
+            total: order.total,
+            createdAt: order.createdAt,
+            orderType: order.orderType,
+            detalle_venta: order.detalle_venta,
+            propina: order.propina,
+            paymentMethod: order.paymentMethod,
+            numeroVenta: order.numeroVenta,
+            mesaId: order.mesaId,
+            orderProducts: order.orderProducts?.map(op => ({
+                orderId: op.orderId,
+                productId: op.productId,
+                cantidad: op.cantidad,
+                precioUnitario: op.precioUnitario,
+                subtotal: op.subtotal,
+                productName: op.product?.name,
+                productPrice: op.product?.price,
+            })),
+        };
     }
 };
 exports.OrdersGateway = OrdersGateway;
