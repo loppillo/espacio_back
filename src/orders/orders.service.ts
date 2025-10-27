@@ -351,12 +351,34 @@ async obtenerPendientes(): Promise<Order[]> {
     .getMany();
 }
 
-  async aceptarVenta(orderId: number): Promise<Order> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId }});
-    if (!order) throw new NotFoundException('Pedido no encontrado');
-    order.status = 'Pagado';
-    return await this.orderRepository.save(order);
+async aceptarVenta(orderId: number): Promise<Order> {
+  const order = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['mesa'] // Relación con la mesa
+  });
+  if (!order) throw new NotFoundException('Pedido no encontrado');
+
+  // Marcar pedido como Pagado
+  order.status = 'Pagado';
+  await this.orderRepository.save(order);
+
+  // Actualizar status de la mesa
+  const mesa = order.mesa;
+  if (mesa) {
+    // Revisar si hay otros pedidos activos en la mesa
+    const pedidosActivos = await this.orderRepository.count({
+      where: { mesaId: mesa.id, status: 'Activo' }
+    });
+    mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
+    await this.mesaRepository.save(mesa);
+
+    // Emitir evento para frontend
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
   }
+
+  return order;
+}
+
 
   async cancelarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({ where: { id: orderId }});
