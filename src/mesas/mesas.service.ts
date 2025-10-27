@@ -5,6 +5,7 @@ import { CreateMesaDto } from './dto/create-mesa.dto';
 import { UpdateMesaDto } from './dto/update-mesa.dto';
 import { Mesa } from './entities/mesa.entity';
 import { Order } from 'src/orders/entities/order.entity';
+import { OrdersGateway } from 'src/orders/orders.gateway';
 
 @Injectable()
 export class MesaService {
@@ -14,6 +15,8 @@ export class MesaService {
 
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
+
+     private ordersGateway: OrdersGateway
   ) {}
 
   async findAll(): Promise<Mesa[]> {
@@ -84,15 +87,10 @@ async findOne(id: number): Promise<Mesa> {
 }
 
 async marcarPedidoPagado(mesaId: number): Promise<Mesa> {
-  if (isNaN(mesaId) || mesaId <= 0) {
-    throw new BadRequestException('ID de mesa inválido');
-  }
-
   const mesa = await this.mesaRepository.findOne({
     where: { id: mesaId },
-    relations: ['orders'],
+    relations: ['orders']
   });
-
   if (!mesa) throw new NotFoundException('Mesa no encontrada');
 
   if (mesa.orders?.length) {
@@ -101,8 +99,12 @@ async marcarPedidoPagado(mesaId: number): Promise<Mesa> {
   }
 
   mesa.status = 'Libre';
+  const saved = await this.mesaRepository.save(mesa);
 
-  return this.mesaRepository.save(mesa);
+  // emitir evento
+  this.ordersGateway.notifyMesaUpdated(mesa.id, saved.status);
+
+  return saved;
 }
 
 async crearNuevoPedido(mesaId: number): Promise<Order> {

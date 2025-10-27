@@ -38,29 +38,50 @@ export class OrdersService {
 
 
   async create(createOrderDto: CreateOrderDto) {
-  const { products, propina, mesaId } = createOrderDto;
+  const { products, propina, mesaId, orderType } = createOrderDto;
 
-  // Validaciones
-  if (!mesaId || isNaN(Number(mesaId))) throw new BadRequestException('La mesa es obligatoria');
+  // ✅ Si no es delivery, se requiere mesa válida
+  if (orderType !== 'delivery') {
+    if (!mesaId || isNaN(Number(mesaId))) {
+      throw new BadRequestException('La mesa es obligatoria');
+    }
+  }
 
-  const mesa = await this.mesaRepository.findOne({
-  where: { id: Number(mesaId) },
-});
-if (!mesa) throw new BadRequestException('La mesa no se encuentra');
+  let mesa = null;
 
-const lastOrder = await this.orderRepository.findOne({
-  where: {},
-  order: { id: 'DESC' },
-});
+  // ✅ Si es para mesa, validar y marcar como ocupada
+  if (orderType !== 'delivery') {
+    mesa = await this.mesaRepository.findOne({
+      where: { id: Number(mesaId) },
+    });
 
-const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+    if (!mesa) throw new BadRequestException('La mesa no se encuentra');
+
+    if (mesa.status === 'ocupada') {
+      throw new BadRequestException('⛔ La mesa está ocupada, no puedes agregar más productos.');
+    }
+
+    // ✅ Cambiar estado a ocupada
+    mesa.status = 'ocupada';
+    await this.mesaRepository.save(mesa);
+
+    // ✅ Emitir actualización en tiempo real
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+  }
+
+  // ✅ Obtener correlativo venta
+  const lastOrder = await this.orderRepository.findOne({
+    where: {},
+    order: { id: 'DESC' },
+  });
+  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
-    tableNumber: createOrderDto.tableNumber,
+    tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
     propina,
     status: createOrderDto.status,
-    orderType: createOrderDto.orderType,
+    orderType,
     paymentMethod: createOrderDto.paymentMethod,
     mesa,
     numeroVenta: nextNumeroVenta,
@@ -90,7 +111,7 @@ const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
   const savedOrder = await this.orderRepository.save(newOrder);
 
-  // ✅ Emitir evento WebSocket para panel en tiempo real
+  // ✅ Emitir evento WebSocket de nueva orden
   this.ordersGateway.notifyNewOrder(savedOrder);
 
   return savedOrder;
@@ -101,84 +122,87 @@ const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
 
 
   async creates(createOrderDto: CreateSOrderDto) {
-    const { products, customerId, newCustomer, propina } = createOrderDto;
+  const { products, customerId, newCustomer, propina } = createOrderDto;
 
-    // 1️⃣ Validar o crear cliente
-    let customer = null;
+  // ✅ 1️⃣ Validar o crear cliente
+  let customer = null;
 
-    if (customerId) {
-      customer = await this.customerRepository.findOneBy({ id: customerId });
-      if (!customer) throw new BadRequestException('El cliente no se encuentra');
-    }
-    else if (newCustomer) {
-      if (!newCustomer.customerName) {
-        throw new BadRequestException('El nombre del cliente es obligatorio');
-      }
-
-      customer = this.customerRepository.create({
-        customerName: newCustomer.customerName,
-        customerEmail: newCustomer.customerEmail || '',
-        customerAddress: newCustomer.customerAddress || '',
-        customerPhone: newCustomer.customerPhone || '',
-      });
-
-      await this.customerRepository.save(customer);
+  if (customerId) {
+    customer = await this.customerRepository.findOneBy({ id: customerId });
+    if (!customer) throw new BadRequestException('El cliente no se encuentra');
+  } else if (newCustomer) {
+    if (!newCustomer.customerName) {
+      throw new BadRequestException('El nombre del cliente es obligatorio');
     }
 
-    // 2️⃣ Validar productos
-    const productIds = products.map(p => p.id);
-    const foundProducts = await this.productRepository.findBy({ id: In(productIds) });
-    if (foundProducts.length !== productIds.length) {
-      throw new BadRequestException('Uno o más productos no se encuentran');
-    }
-
-    // 3️⃣ Buscar último numeroVenta
-    const lastOrder = await this.orderRepository.findOne({
-      where: {},
-      order: { id: 'DESC' },
-    });
-    const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-
-    // 4️⃣ Crear la orden
-    const newOrder = this.orderRepository.create({
-      detalle_venta: createOrderDto.detalle_venta,
-      status: createOrderDto.status || 'activo',
-      orderType: createOrderDto.orderType || 'local',
-      paymentMethod: createOrderDto.paymentMethod || 'pendiente',
-      createdAt: new Date(),
-      customer,
-      propina: propina ?? 0,
-      numeroVenta: nextNumeroVenta,
-      orderProducts: [], // la llenamos abajo
+    customer = this.customerRepository.create({
+      customerName: newCustomer.customerName,
+      customerEmail: newCustomer.customerEmail || '',
+      customerAddress: newCustomer.customerAddress || '',
+      customerPhone: newCustomer.customerPhone || '',
     });
 
-    // 5️⃣ Mapear productos a la tabla pivote ProductsOrders
-    let total = 0;
-    for (const p of products) {
-      const productEntity = foundProducts.find(fp => fp.id === p.id);
-      if (!productEntity) {
-        throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
-      }
-
-      const subtotal = productEntity.price * p.cantidad;
-      total += subtotal;
-
-      const orderProduct = new ProductsOrders();
-      orderProduct.product = productEntity;
-      orderProduct.cantidad = p.cantidad;
-      orderProduct.precioUnitario = productEntity.price;
-      orderProduct.subtotal = subtotal;
-
-      newOrder.orderProducts.push(orderProduct);
-    }
-
-    // 6️⃣ Calcular total real (productos + propina)
-    newOrder.total = total + (propina || 0);
-
-    // 7️⃣ Guardar y devolver
-     this.ordersGateway.notifyNewOrder(newOrder);
-    return await this.orderRepository.save(newOrder);
+    await this.customerRepository.save(customer);
   }
+
+  // ✅ 2️⃣ Validar productos
+  const productIds = products.map(p => p.id);
+  const foundProducts = await this.productRepository.findBy({ id: In(productIds) });
+
+  if (foundProducts.length !== productIds.length) {
+    throw new BadRequestException('Uno o más productos no se encuentran');
+  }
+
+  // ✅ 3️⃣ Buscar último numeroVenta
+  const lastOrder = await this.orderRepository.findOne({
+    where: {},
+    order: { id: 'DESC' },
+  });
+  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+
+  // ✅ 4️⃣ Crear Orden sin guardar aún
+  const newOrder = this.orderRepository.create({
+    detalle_venta: createOrderDto.detalle_venta,
+    status: createOrderDto.status || 'activo',
+    orderType: createOrderDto.orderType || 'local',
+    paymentMethod: createOrderDto.paymentMethod || 'pendiente',
+    customer,
+    propina: propina ?? 0,
+    numeroVenta: nextNumeroVenta,
+    orderProducts: [],
+  });
+
+  let total = 0;
+
+  // ✅ 5️⃣ Mapear productos correctamente
+  for (const p of products) {
+    const productEntity = foundProducts.find(fp => fp.id === p.id);
+    const subtotal = productEntity.price * p.cantidad;
+    total += subtotal;
+
+    const orderProduct = new ProductsOrders();
+    orderProduct.product = productEntity;
+    orderProduct.cantidad = p.cantidad;
+    orderProduct.precioUnitario = productEntity.price;
+    orderProduct.subtotal = subtotal;
+
+    // 🔥 Necesario para que TypeORM lo guarde correctamente
+    orderProduct.order = newOrder;
+
+    newOrder.orderProducts.push(orderProduct);
+  }
+
+  // ✅ 6️⃣ Total final
+  newOrder.total = total + (propina || 0);
+
+  // ✅ 7️⃣ Guardar primero y luego notificar el evento
+  const savedOrder = await this.orderRepository.save(newOrder);
+
+  // 🔥 Notificar **después** de grabar correctamente
+  this.ordersGateway.notifyNewOrder(savedOrder);
+
+  return savedOrder;
+}
 
 
   async findAll() {

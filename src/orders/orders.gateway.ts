@@ -16,4 +16,13 @@ export class OrdersGateway {
   notifyNewOrder(order: any) {
     this.server.emit('newOrder', order);
   }
+
+  notifyOrderUpdated(order: any) {
+    this.server.emit('orderStatusUpdated', order);
+  }
+
+  notifyMesaUpdated(mesaId: number, status: string) {
+    this.server.emit('mesaStatusUpdated', { mesaId, status });
+  }
+
 }
