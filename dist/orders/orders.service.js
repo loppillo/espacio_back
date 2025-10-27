@@ -279,11 +279,20 @@ let OrdersService = class OrdersService {
         return order;
     }
     async cancelarVenta(orderId) {
-        const order = await this.orderRepository.findOne({ where: { id: orderId } });
-        if (!order)
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+            relations: ['mesa'],
+        });
+        if (!order) {
             throw new common_1.NotFoundException('Pedido no encontrado');
+        }
         order.status = 'Cancelado';
-        return await this.orderRepository.save(order);
+        await this.orderRepository.save(order);
+        if (order.mesa) {
+            order.mesa.status = 'Disponible';
+            await this.mesaRepository.save(order.mesa);
+        }
+        return order;
     }
 };
 exports.OrdersService = OrdersService;
