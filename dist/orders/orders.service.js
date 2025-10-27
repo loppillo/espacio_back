@@ -259,11 +259,24 @@ let OrdersService = class OrdersService {
             .getMany();
     }
     async aceptarVenta(orderId) {
-        const order = await this.orderRepository.findOne({ where: { id: orderId } });
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+            relations: ['mesa']
+        });
         if (!order)
             throw new common_1.NotFoundException('Pedido no encontrado');
         order.status = 'Pagado';
-        return await this.orderRepository.save(order);
+        await this.orderRepository.save(order);
+        const mesa = order.mesa;
+        if (mesa) {
+            const pedidosActivos = await this.orderRepository.count({
+                where: { mesaId: mesa.id, status: 'Activo' }
+            });
+            mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
+            await this.mesaRepository.save(mesa);
+            this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+        }
+        return order;
     }
     async cancelarVenta(orderId) {
         const order = await this.orderRepository.findOne({ where: { id: orderId } });
