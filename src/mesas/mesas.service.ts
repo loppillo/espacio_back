@@ -16,7 +16,7 @@ export class MesaService {
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
 
-     private ordersGateway: OrdersGateway
+     private readonly ordersGateway: OrdersGateway
   ) {}
 
   async findAll(): Promise<Mesa[]> {
