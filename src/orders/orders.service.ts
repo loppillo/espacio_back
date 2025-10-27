@@ -403,30 +403,28 @@ async cancelarVenta(orderId: number): Promise<Order> {
 }
 
 async getVentasDiarias(desde?: string, hasta?: string) {
-  // 🕒 Definir rango de fechas
   let inicio: Date;
   let fin: Date;
 
   if (!desde && !hasta) {
     const hoy = new Date();
     inicio = new Date(hoy.setHours(0, 0, 0, 0));
-    fin = new Date();
+    fin = new Date(hoy.setHours(23, 59, 59, 999));
   } else {
     inicio = new Date(desde);
     fin = new Date(hasta);
   }
 
-  // 🧾 1️⃣ Consulta principal: totales generales
-  const query = this.orderRepository
+  // 🧾 1️⃣ Totales generales
+  const totales = await this.orderRepository
     .createQueryBuilder('order')
     .select('SUM(order.total)', 'total_ventas')
     .addSelect('COUNT(order.id)', 'cantidad_pedidos')
     .where('order.status = :status', { status: 'Pagado' })
-    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+    .getRawOne();
 
-  const resultado = await query.getRawOne();
-
-  // 📊 2️⃣ Consulta secundaria: ventas agrupadas por hora
+  // 📊 2️⃣ Ventas agrupadas por hora (para Chart.js)
   const grafico = await this.orderRepository
     .createQueryBuilder('order')
     .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
@@ -437,14 +435,33 @@ async getVentasDiarias(desde?: string, hasta?: string) {
     .orderBy('hora', 'ASC')
     .getRawMany();
 
-  // 📋 3️⃣ Armar respuesta
+  // 🧾 3️⃣ Detalle de ventas individuales (para la tabla)
+  const detalles = await this.orderRepository
+    .createQueryBuilder('order')
+    .select([
+      'order.id AS id',
+      'order.total AS total',
+      'order.orderType AS orderType',
+      'order.paymentMethod AS paymentMethod',
+      'order.createdAt AS createdAt',
+      'mesa.tableNumber AS tableNumber',
+    ])
+    .leftJoin('order.mesa', 'mesa')
+    .where('order.status = :status', { status: 'Pagado' })
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+    .orderBy('order.createdAt', 'DESC')
+    .getRawMany();
+
+  // 📋 4️⃣ Respuesta final
   return {
-    totalVentas: Number(resultado?.total_ventas || 0),
-    cantidadPedidos: Number(resultado?.cantidad_pedidos || 0),
+    totalVentas: Number(totales?.total_ventas || 0),
+    cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
     rango: { desde: inicio, hasta: fin },
-    grafico, // 👈 importante para el Chart.js
+    grafico,
+    detalles, // 👈 este llena la tabla
   };
 }
+
 
 
 
