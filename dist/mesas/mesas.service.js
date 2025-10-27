@@ -90,7 +90,8 @@ let MesaService = class MesaService {
             mesa.orders.forEach(order => (order.status = 'Pagado'));
             await this.ordersRepository.save(mesa.orders);
         }
-        mesa.status = 'Libre';
+        const tienePedidosActivos = mesa.orders.some(order => order.status !== 'Pagado');
+        mesa.status = tienePedidosActivos ? 'Ocupada' : 'Libre';
         const saved = await this.mesaRepository.save(mesa);
         this.ordersGateway.notifyMesaUpdated(mesa.id, saved.status);
         return saved;
