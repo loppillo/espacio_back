@@ -444,7 +444,7 @@ async getVentasDiarias(desde?: string, hasta?: string) {
       'order.orderType AS orderType',
       'order.paymentMethod AS paymentMethod',
       'order.createdAt AS createdAt',
-      'mesa.tableNumber AS tableNumber',
+      'mesa.numero_mesa AS numero_mesa', // 👈 CAMBIO AQUÍ
     ])
     .leftJoin('order.mesa', 'mesa')
     .where('order.status = :status', { status: 'Pagado' })
@@ -458,9 +458,10 @@ async getVentasDiarias(desde?: string, hasta?: string) {
     cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
     rango: { desde: inicio, hasta: fin },
     grafico,
-    detalles, // 👈 este llena la tabla
+    detalles, // 👈 usado por tu tabla en Angular
   };
 }
+
 
 
 
