@@ -60,4 +60,9 @@ export declare class OrdersController {
         grafico: any[];
         detalles: any[];
     }>;
+    getVentasDiariasxMesa(desde?: string, hasta?: string, mesaId?: number): Promise<any[]>;
+    cancelarVentas(fecha?: string, mesaId?: number): Promise<{
+        message: string;
+        afectadas: number;
+    }>;
 }

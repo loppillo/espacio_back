@@ -354,6 +354,61 @@ let OrdersService = class OrdersService {
             detalles,
         };
     }
+    async getVentasDiariasxMesa(desde, hasta, mesaId) {
+        let inicio;
+        let fin;
+        if (!desde && !hasta) {
+            const hoy = new Date();
+            inicio = new Date(hoy.setHours(0, 0, 0, 0));
+            fin = new Date(hoy.setHours(23, 59, 59, 999));
+        }
+        else {
+            inicio = new Date(desde);
+            fin = new Date(hasta);
+        }
+        const query = this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.mesa', 'mesa')
+            .where('order.status = :status', { status: 'Pagado' })
+            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+        if (mesaId)
+            query.andWhere('order.mesaId = :mesaId', { mesaId });
+        const ventas = await query
+            .select([
+            'order.id AS id',
+            'order.total AS total',
+            'order.orderType AS tipo',
+            'order.paymentMethod AS metodo',
+            'mesa.numero_mesa AS mesa',
+            'order.createdAt AS fecha',
+        ])
+            .orderBy('order.createdAt', 'DESC')
+            .getRawMany();
+        return ventas;
+    }
+    async cancelarVentas(fecha, mesaId) {
+        const query = this.orderRepository.createQueryBuilder('order')
+            .update()
+            .set({ status: 'Cancelado' });
+        if (fecha) {
+            const inicio = new Date(`${fecha}T00:00:00`);
+            const fin = new Date(`${fecha}T23:59:59`);
+            query.where('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+        }
+        if (mesaId) {
+            if (fecha) {
+                query.andWhere('order.mesaId = :mesaId', { mesaId });
+            }
+            else {
+                query.where('order.mesaId = :mesaId', { mesaId });
+            }
+        }
+        const result = await query.execute();
+        return {
+            message: 'Ventas canceladas correctamente',
+            afectadas: result.affected,
+        };
+    }
 };
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([

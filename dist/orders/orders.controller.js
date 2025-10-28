@@ -89,6 +89,15 @@ let OrdersController = class OrdersController {
     async getVentasDiarias(desde, hasta, orderType) {
         return this.ordersService.getVentasDiarias(desde, hasta, orderType);
     }
+    async getVentasDiariasxMesa(desde, hasta, mesaId) {
+        return this.ordersService.getVentasDiariasxMesa(desde, hasta, mesaId);
+    }
+    async cancelarVentas(fecha, mesaId) {
+        if (!fecha && !mesaId) {
+            throw new common_1.BadRequestException('Debe especificar al menos una fecha o una mesa.');
+        }
+        return this.ordersService.cancelarVentas(fecha, mesaId);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -198,6 +207,23 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getVentasDiarias", null);
+__decorate([
+    (0, common_1.Get)('ventas/diarias'),
+    __param(0, (0, common_1.Query)('desde')),
+    __param(1, (0, common_1.Query)('hasta')),
+    __param(2, (0, common_1.Query)('mesaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getVentasDiariasxMesa", null);
+__decorate([
+    (0, common_1.Patch)('cancelar'),
+    __param(0, (0, common_1.Query)('fecha')),
+    __param(1, (0, common_1.Query)('mesaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "cancelarVentas", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
