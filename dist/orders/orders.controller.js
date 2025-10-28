@@ -98,6 +98,9 @@ let OrdersController = class OrdersController {
         }
         return this.ordersService.cancelarVentas(fecha, mesaId);
     }
+    async cancelar(id) {
+        return this.ordersService.cancelar(id);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -224,6 +227,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Number]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "cancelarVentas", null);
+__decorate([
+    (0, common_1.Patch)(':id/cancelar'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "cancelar", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),

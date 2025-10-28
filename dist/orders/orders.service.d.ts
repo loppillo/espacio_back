@@ -67,4 +67,7 @@ export declare class OrdersService {
         message: string;
         afectadas: number;
     }>;
+    cancelar(id: number): Promise<{
+        message: string;
+    }>;
 }

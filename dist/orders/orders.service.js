@@ -409,6 +409,18 @@ let OrdersService = class OrdersService {
             afectadas: result.affected,
         };
     }
+    async cancelar(id) {
+        const order = await this.orderRepository.findOne({ where: { id } });
+        if (!order) {
+            throw new common_1.NotFoundException('La venta no existe');
+        }
+        if (order.status === 'Cancelado') {
+            throw new common_1.BadRequestException('La venta ya está cancelada');
+        }
+        order.status = 'Cancelado';
+        await this.orderRepository.save(order);
+        return { message: `Venta ${id} cancelada correctamente` };
+    }
 };
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([

@@ -65,4 +65,7 @@ export declare class OrdersController {
         message: string;
         afectadas: number;
     }>;
+    cancelar(id: number): Promise<{
+        message: string;
+    }>;
 }
