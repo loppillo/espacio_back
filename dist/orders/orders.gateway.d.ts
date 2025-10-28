@@ -2,14 +2,20 @@ import { Server } from 'socket.io';
 import { Order } from './entities/order.entity';
 export interface OrderDTO {
     id: number;
+    tableNumber: number | null;
     orderType: string;
-    detalle_venta: string;
-    status: string;
-    paymentMethod: string;
-    total: number;
-    numeroVenta: number;
+    detalle_venta: string | null;
+    estado: string;
     propina: number;
+    status: string;
+    total: number;
     createdAt: Date;
+    paymentMethod: string | null;
+    numeroVenta: number;
+    mesa: {
+        id: number;
+        numero_mesa: string;
+    } | null;
     customer: {
         id: number;
         name: string;
@@ -22,15 +28,12 @@ export interface OrderDTO {
         cantidad: number;
         precioUnitario: number;
         subtotal: number;
+        imageUrl?: string;
     }[];
-    mesa: {
-        id: number;
-        numero_mesa: string;
-    } | null;
 }
 export declare class OrdersGateway {
     server: Server;
-    notifyNewOrder(order: OrderDTO): void;
+    notifyNewOrder(order: any): void;
     notifyOrderUpdated(order: Order): void;
     notifyMesaUpdated(mesaId: number, status: string): void;
     private sanitizeOrder;

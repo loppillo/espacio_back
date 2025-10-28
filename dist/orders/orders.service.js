@@ -89,8 +89,9 @@ let OrdersService = class OrdersService {
         }
         newOrder.total = total + (propina || 0);
         const savedOrder = await this.orderRepository.save(newOrder);
-        this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
-        return this.sanitizeOrder(savedOrder);
+        const sanitized = this.sanitizeOrder(savedOrder);
+        this.ordersGateway.notifyNewOrder(sanitized);
+        return sanitized;
     }
     async creates(createOrderDto) {
         const { products, customerId, newCustomer, propina } = createOrderDto;
@@ -147,8 +148,9 @@ let OrdersService = class OrdersService {
         }
         newOrder.total = total + (propina || 0);
         const savedOrder = await this.orderRepository.save(newOrder);
-        this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
-        return this.sanitizeOrder(savedOrder);
+        const sanitized = this.sanitizeOrder(savedOrder);
+        this.ordersGateway.notifyNewOrder(sanitized);
+        return sanitized;
     }
     async findAll() {
         return await this.orderRepository.find();
@@ -424,14 +426,19 @@ let OrdersService = class OrdersService {
     sanitizeOrder(order) {
         return {
             id: order.id,
+            tableNumber: order.tableNumber ?? null,
             orderType: order.orderType,
-            detalle_venta: order.detalle_venta,
-            status: order.status,
-            paymentMethod: order.paymentMethod,
-            total: order.total,
-            numeroVenta: order.numeroVenta,
+            detalle_venta: order.detalle_venta ?? null,
+            estado: order.estado,
             propina: order.propina,
+            status: order.status,
+            total: order.total,
             createdAt: order.createdAt,
+            paymentMethod: order.paymentMethod ?? null,
+            numeroVenta: order.numeroVenta,
+            mesa: order.mesa
+                ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa }
+                : null,
             customer: order.customer
                 ? {
                     id: order.customer.id,
@@ -440,14 +447,14 @@ let OrdersService = class OrdersService {
                     phone: order.customer.customerPhone,
                 }
                 : null,
-            products: order.orderProducts?.map(p => ({
-                productId: p.product.id,
-                name: p.product.name,
-                cantidad: p.cantidad,
-                precioUnitario: p.precioUnitario,
-                subtotal: p.subtotal,
+            products: order.orderProducts?.map(op => ({
+                productId: op.product.id,
+                name: op.product.name,
+                cantidad: op.cantidad,
+                precioUnitario: op.precioUnitario,
+                subtotal: op.subtotal,
+                imageUrl: op.product.imageUrl ?? undefined,
             })) || [],
-            mesa: order.mesa ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa } : null,
         };
     }
 };

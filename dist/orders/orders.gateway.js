@@ -15,7 +15,8 @@ const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 let OrdersGateway = class OrdersGateway {
     notifyNewOrder(order) {
-        this.server.emit('newOrder', order);
+        const sanitized = this.sanitizeOrder(order);
+        this.server.emit('newOrder', sanitized);
     }
     notifyOrderUpdated(order) {
         const payload = this.sanitizeOrder(order);
@@ -27,25 +28,35 @@ let OrdersGateway = class OrdersGateway {
     sanitizeOrder(order) {
         return {
             id: order.id,
+            tableNumber: order.tableNumber ?? null,
+            orderType: order.orderType,
+            detalle_venta: order.detalle_venta ?? null,
+            estado: order.estado,
+            propina: order.propina,
             status: order.status,
-            tableNumber: order.tableNumber,
             total: order.total,
             createdAt: order.createdAt,
-            orderType: order.orderType,
-            detalle_venta: order.detalle_venta,
-            propina: order.propina,
-            paymentMethod: order.paymentMethod,
+            paymentMethod: order.paymentMethod ?? null,
             numeroVenta: order.numeroVenta,
-            mesaId: order.mesaId,
-            orderProducts: order.orderProducts?.map(op => ({
-                orderId: op.orderId,
-                productId: op.productId,
+            mesa: order.mesa
+                ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa }
+                : null,
+            customer: order.customer
+                ? {
+                    id: order.customer.id,
+                    name: order.customer.customerName,
+                    email: order.customer.customerEmail,
+                    phone: order.customer.customerPhone,
+                }
+                : null,
+            products: order.orderProducts?.map(op => ({
+                productId: op.product.id,
+                name: op.product.name,
                 cantidad: op.cantidad,
                 precioUnitario: op.precioUnitario,
                 subtotal: op.subtotal,
-                productName: op.product?.name,
-                productPrice: op.product?.price,
-            })),
+                imageUrl: op.product.imageUrl ?? undefined,
+            })) || [],
         };
     }
 };
