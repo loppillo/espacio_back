@@ -541,7 +541,22 @@ async getVentasDiarias(desde?: string, hasta?: string, orderType?: string) {
     };
   }
 
+  async cancelar(id: number) {
+  const order = await this.orderRepository.findOne({ where: { id } });
 
+  if (!order) {
+    throw new NotFoundException('La venta no existe');
+  }
+
+  if (order.status === 'Cancelado') {
+    throw new BadRequestException('La venta ya está cancelada');
+  }
+
+  order.status = 'Cancelado';
+  await this.orderRepository.save(order);
+
+  return { message: `Venta ${id} cancelada correctamente` };
+}
 
 
 }

@@ -15,7 +15,7 @@ export class OrdersController {
     private readonly printService: PrintService
   ) { }
 
-     @Get('pendientes')
+  @Get('pendientes')
   async obtenerPendientes() {
     return this.ordersService.obtenerPendientes();
   }
@@ -27,10 +27,10 @@ export class OrdersController {
   }
 
   @Get('historial/:mesaId')
-async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
-  console.log('🧩 Mesa ID recibido:', mesaId);
-  return this.ordersService.getHistorialPorMesa(+mesaId);
-}
+  async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
+    console.log('🧩 Mesa ID recibido:', mesaId);
+    return this.ordersService.getHistorialPorMesa(+mesaId);
+  }
 
 
   @Post('s')
@@ -115,16 +115,16 @@ async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
     return this.ordersService.cancelarVenta(+id);
   }
 
-@Get('ventas/diarias')
-async getVentasDiarias(
-  @Query('desde') desde?: string,
-  @Query('hasta') hasta?: string,
-  @Query('orderType') orderType?: string, 
-) {
-  return this.ordersService.getVentasDiarias(desde, hasta, orderType);
-}
+  @Get('ventas/diarias')
+  async getVentasDiarias(
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+    @Query('orderType') orderType?: string,
+  ) {
+    return this.ordersService.getVentasDiarias(desde, hasta, orderType);
+  }
 
-@Get('ventas/diariasMesa')
+  @Get('ventas/diariasMesa')
   async getVentasDiariasxMesa(
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
@@ -143,6 +143,13 @@ async getVentasDiarias(
     }
 
     return this.ordersService.cancelarVentas(fecha, mesaId);
+  }
+
+
+
+  @Patch(':id/cancelar')
+  async cancelar(@Param('id') id: number) {
+    return this.ordersService.cancelar(id);
   }
 
 
