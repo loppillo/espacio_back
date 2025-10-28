@@ -11,7 +11,7 @@ import { Propina } from 'src/propina/entities/propina.entity';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
-import { OrdersGateway } from './orders.gateway';
+import { OrderDTO, OrdersGateway } from './orders.gateway';
 
 
 @Injectable()
@@ -111,10 +111,12 @@ export class OrdersService {
 
     const savedOrder = await this.orderRepository.save(newOrder);
 
-    // ✅ Emitir evento WebSocket de nueva orden
-    this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
+    // Sanitize primero y luego emitir
+    const sanitized = this.sanitizeOrder(savedOrder);
+    this.ordersGateway.notifyNewOrder(sanitized);
 
-    return this.sanitizeOrder(savedOrder);
+    // Devolver también el DTO limpio al frontend
+    return sanitized;
   }
 
 
@@ -195,13 +197,14 @@ export class OrdersService {
     // ✅ 6️⃣ Total final
     newOrder.total = total + (propina || 0);
 
-    // ✅ 7️⃣ Guardar primero y luego notificar el evento
-    const savedOrder = await this.orderRepository.save(newOrder);
+   const savedOrder = await this.orderRepository.save(newOrder);
 
-    // 🚀 Emitir la orden **sanitizada**
-    this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
+// Sanitize primero y luego emitir
+const sanitized = this.sanitizeOrder(savedOrder);
+this.ordersGateway.notifyNewOrder(sanitized);
 
-    return this.sanitizeOrder(savedOrder); // también devuelve al frontend
+// Devolver también el DTO limpio al frontend
+return sanitized;
   }
 
 
@@ -560,35 +563,40 @@ export class OrdersService {
 
 
 
-  private sanitizeOrder(order: Order) {
-  return {
-    id: order.id,
-    orderType: order.orderType,
-    detalle_venta: order.detalle_venta,
-    status: order.status,
-    paymentMethod: order.paymentMethod,
-    total: order.total,
-    numeroVenta: order.numeroVenta,
-    propina: order.propina,
-    createdAt: order.createdAt,
-    customer: order.customer
-      ? {
+  private sanitizeOrder(order: Order): OrderDTO {
+    return {
+      id: order.id,
+      tableNumber: order.tableNumber ?? null,
+      orderType: order.orderType,
+      detalle_venta: order.detalle_venta ?? null,
+      estado: order.estado,
+      propina: order.propina,
+      status: order.status,
+      total: order.total,
+      createdAt: order.createdAt,
+      paymentMethod: order.paymentMethod ?? null,
+      numeroVenta: order.numeroVenta,
+      mesa: order.mesa
+        ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa }
+        : null,
+      customer: order.customer
+        ? {
           id: order.customer.id,
           name: order.customer.customerName,
           email: order.customer.customerEmail,
           phone: order.customer.customerPhone,
         }
-      : null,
-    products: order.orderProducts?.map(p => ({
-      productId: p.product.id,
-      name: p.product.name,
-      cantidad: p.cantidad,
-      precioUnitario: p.precioUnitario,
-      subtotal: p.subtotal,
-    })) || [], // 🔹 asegura que siempre sea un array
-    mesa: order.mesa ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa } : null,
-  };
-}
+        : null,
+      products: order.orderProducts?.map(op => ({
+        productId: op.product.id,
+        name: op.product.name,
+        cantidad: op.cantidad,
+        precioUnitario: op.precioUnitario,
+        subtotal: op.subtotal,
+        imageUrl: op.product.imageUrl ?? undefined,
+      })) || [],
+    };
+  }
 
 
 
