@@ -124,7 +124,7 @@ async getVentasDiarias(
   return this.ordersService.getVentasDiarias(desde, hasta, orderType);
 }
 
-@Get('ventas/diarias')
+@Get('ventas/diariasMesa')
   async getVentasDiariasxMesa(
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
