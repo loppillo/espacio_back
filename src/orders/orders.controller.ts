@@ -115,12 +115,13 @@ async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
     return this.ordersService.cancelarVenta(+id);
   }
 
-  @Get('ventas/diarias')
+@Get('ventas/diarias')
 async getVentasDiarias(
   @Query('desde') desde?: string,
   @Query('hasta') hasta?: string,
+  @Query('orderType') orderType?: string, 
 ) {
-  return this.ordersService.getVentasDiarias(desde, hasta);
+  return this.ordersService.getVentasDiarias(desde, hasta, orderType);
 }
 
 }

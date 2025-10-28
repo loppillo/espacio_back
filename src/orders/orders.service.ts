@@ -402,7 +402,7 @@ async cancelarVenta(orderId: number): Promise<Order> {
   return order;
 }
 
-async getVentasDiarias(desde?: string, hasta?: string) {
+async getVentasDiarias(desde?: string, hasta?: string, orderType?: string) {
   let inicio: Date;
   let fin: Date;
 
@@ -416,27 +416,37 @@ async getVentasDiarias(desde?: string, hasta?: string) {
   }
 
   // 🧾 1️⃣ Totales generales
-  const totales = await this.orderRepository
+  const totalesQuery = this.orderRepository
     .createQueryBuilder('order')
     .select('SUM(order.total)', 'total_ventas')
     .addSelect('COUNT(order.id)', 'cantidad_pedidos')
     .where('order.status = :status', { status: 'Pagado' })
-    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-    .getRawOne();
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+
+  if (orderType) {
+    totalesQuery.andWhere('order.orderType = :orderType', { orderType });
+  }
+
+  const totales = await totalesQuery.getRawOne();
 
   // 📊 2️⃣ Ventas agrupadas por hora (para Chart.js)
-  const grafico = await this.orderRepository
+  const graficoQuery = this.orderRepository
     .createQueryBuilder('order')
     .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
     .addSelect('SUM(order.total)', 'total')
     .where('order.status = :status', { status: 'Pagado' })
     .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
     .groupBy('hora')
-    .orderBy('hora', 'ASC')
-    .getRawMany();
+    .orderBy('hora', 'ASC');
+
+  if (orderType) {
+    graficoQuery.andWhere('order.orderType = :orderType', { orderType });
+  }
+
+  const grafico = await graficoQuery.getRawMany();
 
   // 🧾 3️⃣ Detalle de ventas individuales (para la tabla)
-  const detalles = await this.orderRepository
+  const detallesQuery = this.orderRepository
     .createQueryBuilder('order')
     .select([
       'order.id AS id',
@@ -444,13 +454,18 @@ async getVentasDiarias(desde?: string, hasta?: string) {
       'order.orderType AS orderType',
       'order.paymentMethod AS paymentMethod',
       'order.createdAt AS createdAt',
-      'mesa.numero_mesa AS numero_mesa', // 👈 CAMBIO AQUÍ
+      'mesa.numero_mesa AS numero_mesa',
     ])
     .leftJoin('order.mesa', 'mesa')
     .where('order.status = :status', { status: 'Pagado' })
     .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-    .orderBy('order.createdAt', 'DESC')
-    .getRawMany();
+    .orderBy('order.createdAt', 'DESC');
+
+  if (orderType) {
+    detallesQuery.andWhere('order.orderType = :orderType', { orderType });
+  }
+
+  const detalles = await detallesQuery.getRawMany();
 
   // 📋 4️⃣ Respuesta final
   return {
@@ -458,7 +473,7 @@ async getVentasDiarias(desde?: string, hasta?: string) {
     cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
     rango: { desde: inicio, hasta: fin },
     grafico,
-    detalles, // 👈 usado por tu tabla en Angular
+    detalles,
   };
 }
 
