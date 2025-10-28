@@ -294,7 +294,7 @@ let OrdersService = class OrdersService {
         }
         return order;
     }
-    async getVentasDiarias(desde, hasta) {
+    async getVentasDiarias(desde, hasta, orderType) {
         let inicio;
         let fin;
         if (!desde && !hasta) {
@@ -306,23 +306,29 @@ let OrdersService = class OrdersService {
             inicio = new Date(desde);
             fin = new Date(hasta);
         }
-        const totales = await this.orderRepository
+        const totalesQuery = this.orderRepository
             .createQueryBuilder('order')
             .select('SUM(order.total)', 'total_ventas')
             .addSelect('COUNT(order.id)', 'cantidad_pedidos')
             .where('order.status = :status', { status: 'Pagado' })
-            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-            .getRawOne();
-        const grafico = await this.orderRepository
+            .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+        if (orderType) {
+            totalesQuery.andWhere('order.orderType = :orderType', { orderType });
+        }
+        const totales = await totalesQuery.getRawOne();
+        const graficoQuery = this.orderRepository
             .createQueryBuilder('order')
             .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
             .addSelect('SUM(order.total)', 'total')
             .where('order.status = :status', { status: 'Pagado' })
             .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
             .groupBy('hora')
-            .orderBy('hora', 'ASC')
-            .getRawMany();
-        const detalles = await this.orderRepository
+            .orderBy('hora', 'ASC');
+        if (orderType) {
+            graficoQuery.andWhere('order.orderType = :orderType', { orderType });
+        }
+        const grafico = await graficoQuery.getRawMany();
+        const detallesQuery = this.orderRepository
             .createQueryBuilder('order')
             .select([
             'order.id AS id',
@@ -335,8 +341,11 @@ let OrdersService = class OrdersService {
             .leftJoin('order.mesa', 'mesa')
             .where('order.status = :status', { status: 'Pagado' })
             .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-            .orderBy('order.createdAt', 'DESC')
-            .getRawMany();
+            .orderBy('order.createdAt', 'DESC');
+        if (orderType) {
+            detallesQuery.andWhere('order.orderType = :orderType', { orderType });
+        }
+        const detalles = await detallesQuery.getRawMany();
         return {
             totalVentas: Number(totales?.total_ventas || 0),
             cantidadPedidos: Number(totales?.cantidad_pedidos || 0),

@@ -50,7 +50,7 @@ export declare class OrdersController {
     }>;
     aceptarVenta(id: number): Promise<Order>;
     cancelarVenta(id: number): Promise<Order>;
-    getVentasDiarias(desde?: string, hasta?: string): Promise<{
+    getVentasDiarias(desde?: string, hasta?: string, orderType?: string): Promise<{
         totalVentas: number;
         cantidadPedidos: number;
         rango: {
