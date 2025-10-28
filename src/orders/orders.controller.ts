@@ -124,4 +124,26 @@ async getVentasDiarias(
   return this.ordersService.getVentasDiarias(desde, hasta, orderType);
 }
 
+@Get('ventas/diarias')
+  async getVentasDiariasxMesa(
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+    @Query('mesaId') mesaId?: number,
+  ) {
+    return this.ordersService.getVentasDiariasxMesa(desde, hasta, mesaId);
+  }
+
+  @Patch('cancelar')
+  async cancelarVentas(
+    @Query('fecha') fecha?: string, // formato YYYY-MM-DD
+    @Query('mesaId') mesaId?: number,
+  ) {
+    if (!fecha && !mesaId) {
+      throw new BadRequestException('Debe especificar al menos una fecha o una mesa.');
+    }
+
+    return this.ordersService.cancelarVentas(fecha, mesaId);
+  }
+
+
 }
