@@ -561,34 +561,34 @@ export class OrdersService {
 
 
   private sanitizeOrder(order: Order) {
-    return {
-      id: order.id,
-      orderType: order.orderType,
-      detalle_venta: order.detalle_venta,
-      status: order.status,
-      paymentMethod: order.paymentMethod,
-      total: order.total,
-      numeroVenta: order.numeroVenta,
-      propina: order.propina,
-      createdAt: order.createdAt,
-      customer: order.customer
-        ? {
+  return {
+    id: order.id,
+    orderType: order.orderType,
+    detalle_venta: order.detalle_venta,
+    status: order.status,
+    paymentMethod: order.paymentMethod,
+    total: order.total,
+    numeroVenta: order.numeroVenta,
+    propina: order.propina,
+    createdAt: order.createdAt,
+    customer: order.customer
+      ? {
           id: order.customer.id,
           name: order.customer.customerName,
           email: order.customer.customerEmail,
           phone: order.customer.customerPhone,
         }
-        : null,
-      products: order.orderProducts?.map(p => ({
-        productId: p.product.id,
-        name: p.product.name,
-        cantidad: p.cantidad,
-        precioUnitario: p.precioUnitario,
-        subtotal: p.subtotal,
-      })),
-      mesa: order.mesa ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa } : null,
-    };
-  }
+      : null,
+    products: order.orderProducts?.map(p => ({
+      productId: p.product.id,
+      name: p.product.name,
+      cantidad: p.cantidad,
+      precioUnitario: p.precioUnitario,
+      subtotal: p.subtotal,
+    })) || [], // 🔹 asegura que siempre sea un array
+    mesa: order.mesa ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa } : null,
+  };
+}
 
 
 
