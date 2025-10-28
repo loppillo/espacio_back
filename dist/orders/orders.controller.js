@@ -208,7 +208,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getVentasDiarias", null);
 __decorate([
-    (0, common_1.Get)('ventas/diarias'),
+    (0, common_1.Get)('ventas/diariasMesa'),
     __param(0, (0, common_1.Query)('desde')),
     __param(1, (0, common_1.Query)('hasta')),
     __param(2, (0, common_1.Query)('mesaId')),
