@@ -11,7 +11,34 @@ export declare class OrdersController {
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
     obtenerPendientes(): Promise<Order[]>;
-    create(createOrderDto: CreateOrderDto): Promise<Order>;
+    create(createOrderDto: CreateOrderDto): Promise<{
+        id: number;
+        orderType: string;
+        detalle_venta: string;
+        status: string;
+        paymentMethod: string;
+        total: number;
+        numeroVenta: number;
+        propina: number;
+        createdAt: Date;
+        customer: {
+            id: number;
+            name: string;
+            email: string;
+            phone: string;
+        };
+        products: {
+            productId: number;
+            name: string;
+            cantidad: number;
+            precioUnitario: number;
+            subtotal: number;
+        }[];
+        mesa: {
+            id: number;
+            numero_mesa: string;
+        };
+    }>;
     getHistorialPorMesa(mesaId: number): Promise<{
         numeroVenta: number;
         mesaId: number;
@@ -29,7 +56,34 @@ export declare class OrdersController {
             subtotal: number;
         }[];
     }[]>;
-    creates(createOrderDto: CreateSOrderDto): Promise<Order>;
+    creates(createOrderDto: CreateSOrderDto): Promise<{
+        id: number;
+        orderType: string;
+        detalle_venta: string;
+        status: string;
+        paymentMethod: string;
+        total: number;
+        numeroVenta: number;
+        propina: number;
+        createdAt: Date;
+        customer: {
+            id: number;
+            name: string;
+            email: string;
+            phone: string;
+        };
+        products: {
+            productId: number;
+            name: string;
+            cantidad: number;
+            precioUnitario: number;
+            subtotal: number;
+        }[];
+        mesa: {
+            id: number;
+            numero_mesa: string;
+        };
+    }>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
     update(id: string, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;

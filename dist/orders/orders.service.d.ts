@@ -20,8 +20,62 @@ export declare class OrdersService {
     private readonly productsOrdersRepository;
     private ordersGateway;
     constructor(orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway);
-    create(createOrderDto: CreateOrderDto): Promise<Order>;
-    creates(createOrderDto: CreateSOrderDto): Promise<Order>;
+    create(createOrderDto: CreateOrderDto): Promise<{
+        id: number;
+        orderType: string;
+        detalle_venta: string;
+        status: string;
+        paymentMethod: string;
+        total: number;
+        numeroVenta: number;
+        propina: number;
+        createdAt: Date;
+        customer: {
+            id: number;
+            name: string;
+            email: string;
+            phone: string;
+        };
+        products: {
+            productId: number;
+            name: string;
+            cantidad: number;
+            precioUnitario: number;
+            subtotal: number;
+        }[];
+        mesa: {
+            id: number;
+            numero_mesa: string;
+        };
+    }>;
+    creates(createOrderDto: CreateSOrderDto): Promise<{
+        id: number;
+        orderType: string;
+        detalle_venta: string;
+        status: string;
+        paymentMethod: string;
+        total: number;
+        numeroVenta: number;
+        propina: number;
+        createdAt: Date;
+        customer: {
+            id: number;
+            name: string;
+            email: string;
+            phone: string;
+        };
+        products: {
+            productId: number;
+            name: string;
+            cantidad: number;
+            precioUnitario: number;
+            subtotal: number;
+        }[];
+        mesa: {
+            id: number;
+            numero_mesa: string;
+        };
+    }>;
     findAll(): Promise<Order[]>;
     findOne(id: number): Promise<Order>;
     update(id: number, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;
@@ -70,4 +124,5 @@ export declare class OrdersService {
     cancelar(id: number): Promise<{
         message: string;
     }>;
+    private sanitizeOrder;
 }

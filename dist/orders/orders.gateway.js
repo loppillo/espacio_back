@@ -15,8 +15,7 @@ const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 let OrdersGateway = class OrdersGateway {
     notifyNewOrder(order) {
-        const payload = this.sanitizeOrder(order);
-        this.server.emit('newOrder', payload);
+        this.server.emit('newOrder', order);
     }
     notifyOrderUpdated(order) {
         const payload = this.sanitizeOrder(order);

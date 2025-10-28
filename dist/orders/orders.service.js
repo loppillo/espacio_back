@@ -89,8 +89,8 @@ let OrdersService = class OrdersService {
         }
         newOrder.total = total + (propina || 0);
         const savedOrder = await this.orderRepository.save(newOrder);
-        this.ordersGateway.notifyNewOrder(savedOrder);
-        return savedOrder;
+        this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
+        return this.sanitizeOrder(savedOrder);
     }
     async creates(createOrderDto) {
         const { products, customerId, newCustomer, propina } = createOrderDto;
@@ -147,8 +147,8 @@ let OrdersService = class OrdersService {
         }
         newOrder.total = total + (propina || 0);
         const savedOrder = await this.orderRepository.save(newOrder);
-        this.ordersGateway.notifyNewOrder(savedOrder);
-        return savedOrder;
+        this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
+        return this.sanitizeOrder(savedOrder);
     }
     async findAll() {
         return await this.orderRepository.find();
@@ -420,6 +420,35 @@ let OrdersService = class OrdersService {
         order.status = 'Cancelado';
         await this.orderRepository.save(order);
         return { message: `Venta ${id} cancelada correctamente` };
+    }
+    sanitizeOrder(order) {
+        return {
+            id: order.id,
+            orderType: order.orderType,
+            detalle_venta: order.detalle_venta,
+            status: order.status,
+            paymentMethod: order.paymentMethod,
+            total: order.total,
+            numeroVenta: order.numeroVenta,
+            propina: order.propina,
+            createdAt: order.createdAt,
+            customer: order.customer
+                ? {
+                    id: order.customer.id,
+                    name: order.customer.customerName,
+                    email: order.customer.customerEmail,
+                    phone: order.customer.customerPhone,
+                }
+                : null,
+            products: order.orderProducts?.map(p => ({
+                productId: p.product.id,
+                name: p.product.name,
+                cantidad: p.cantidad,
+                precioUnitario: p.precioUnitario,
+                subtotal: p.subtotal,
+            })),
+            mesa: order.mesa ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa } : null,
+        };
     }
 };
 exports.OrdersService = OrdersService;
