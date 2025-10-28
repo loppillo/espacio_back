@@ -37,16 +37,12 @@ let OrdersService = class OrdersService {
     }
     async create(createOrderDto) {
         const { products, propina, mesaId, orderType } = createOrderDto;
+        let mesa = null;
         if (orderType !== 'delivery') {
             if (!mesaId || isNaN(Number(mesaId))) {
                 throw new common_1.BadRequestException('La mesa es obligatoria');
             }
-        }
-        let mesa = null;
-        if (orderType !== 'delivery') {
-            mesa = await this.mesaRepository.findOne({
-                where: { id: Number(mesaId) },
-            });
+            mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
             if (!mesa)
                 throw new common_1.BadRequestException('La mesa no se encuentra');
             if (mesa.status === 'ocupada') {
@@ -56,23 +52,23 @@ let OrdersService = class OrdersService {
             await this.mesaRepository.save(mesa);
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
         }
-        const lastOrder = await this.orderRepository.findOne({
-            where: {},
-            order: { id: 'DESC' },
-        });
-        const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+        const { max } = await this.orderRepository
+            .createQueryBuilder('order')
+            .select('MAX(order.numeroVenta)', 'max')
+            .getRawOne();
+        const nextNumeroVenta = (max || 0) + 1;
         const newOrder = this.orderRepository.create({
             detalle_venta: createOrderDto.detalle_venta,
             tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
-            propina,
-            status: createOrderDto.status,
+            propina: propina ?? 0,
+            status: createOrderDto.status || 'activo',
             orderType,
-            paymentMethod: createOrderDto.paymentMethod,
+            paymentMethod: createOrderDto.paymentMethod || 'pendiente',
             mesa,
             numeroVenta: nextNumeroVenta,
             total: 0,
+            orderProducts: [],
         });
-        newOrder.orderProducts = [];
         let total = 0;
         for (const p of products) {
             const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
@@ -85,6 +81,7 @@ let OrdersService = class OrdersService {
             orderProduct.cantidad = p.cantidad;
             orderProduct.precioUnitario = productEntity.price;
             orderProduct.subtotal = subtotal;
+            orderProduct.order = newOrder;
             newOrder.orderProducts.push(orderProduct);
         }
         newOrder.total = total + (propina || 0);
@@ -118,11 +115,11 @@ let OrdersService = class OrdersService {
         if (foundProducts.length !== productIds.length) {
             throw new common_1.BadRequestException('Uno o más productos no se encuentran');
         }
-        const lastOrder = await this.orderRepository.findOne({
-            where: {},
-            order: { id: 'DESC' },
-        });
-        const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+        const { max } = await this.orderRepository
+            .createQueryBuilder('order')
+            .select('MAX(order.numeroVenta)', 'max')
+            .getRawOne();
+        const nextNumeroVenta = (max || 0) + 1;
         const newOrder = this.orderRepository.create({
             detalle_venta: createOrderDto.detalle_venta,
             status: createOrderDto.status || 'activo',
