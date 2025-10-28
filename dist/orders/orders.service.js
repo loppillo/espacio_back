@@ -446,7 +446,7 @@ let OrdersService = class OrdersService {
                 cantidad: p.cantidad,
                 precioUnitario: p.precioUnitario,
                 subtotal: p.subtotal,
-            })),
+            })) || [],
             mesa: order.mesa ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa } : null,
         };
     }
