@@ -38,171 +38,171 @@ export class OrdersService {
 
 
   async create(createOrderDto: CreateOrderDto) {
-  const { products, propina, mesaId, orderType } = createOrderDto;
+    const { products, propina, mesaId, orderType } = createOrderDto;
 
-  // ✅ Si no es delivery, se requiere mesa válida
-  if (orderType !== 'delivery') {
-    if (!mesaId || isNaN(Number(mesaId))) {
-      throw new BadRequestException('La mesa es obligatoria');
+    // ✅ Si no es delivery, se requiere mesa válida
+    if (orderType !== 'delivery') {
+      if (!mesaId || isNaN(Number(mesaId))) {
+        throw new BadRequestException('La mesa es obligatoria');
+      }
     }
-  }
 
-  let mesa = null;
+    let mesa = null;
 
-  // ✅ Si es para mesa, validar y marcar como ocupada
-  if (orderType !== 'delivery') {
-    mesa = await this.mesaRepository.findOne({
-      where: { id: Number(mesaId) },
+    // ✅ Si es para mesa, validar y marcar como ocupada
+    if (orderType !== 'delivery') {
+      mesa = await this.mesaRepository.findOne({
+        where: { id: Number(mesaId) },
+      });
+
+      if (!mesa) throw new BadRequestException('La mesa no se encuentra');
+
+      if (mesa.status === 'ocupada') {
+        throw new BadRequestException('⛔ La mesa está ocupada, no puedes agregar más productos.');
+      }
+
+      // ✅ Cambiar estado a ocupada
+      mesa.status = 'ocupada';
+      await this.mesaRepository.save(mesa);
+
+      // ✅ Emitir actualización en tiempo real
+      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    }
+
+    // ✅ Obtener correlativo venta
+    const lastOrder = await this.orderRepository.findOne({
+      where: {},
+      order: { id: 'DESC' },
+    });
+    const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+
+    const newOrder = this.orderRepository.create({
+      detalle_venta: createOrderDto.detalle_venta,
+      tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
+      propina,
+      status: createOrderDto.status,
+      orderType,
+      paymentMethod: createOrderDto.paymentMethod,
+      mesa,
+      numeroVenta: nextNumeroVenta,
+      total: 0,
     });
 
-    if (!mesa) throw new BadRequestException('La mesa no se encuentra');
+    newOrder.orderProducts = [];
+    let total = 0;
 
-    if (mesa.status === 'ocupada') {
-      throw new BadRequestException('⛔ La mesa está ocupada, no puedes agregar más productos.');
+    for (const p of products) {
+      const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
+      if (!productEntity) throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
+
+      const subtotal = productEntity.price * p.cantidad;
+      total += subtotal;
+
+      const orderProduct = new ProductsOrders();
+      orderProduct.product = productEntity;
+      orderProduct.cantidad = p.cantidad;
+      orderProduct.precioUnitario = productEntity.price;
+      orderProduct.subtotal = subtotal;
+
+      newOrder.orderProducts.push(orderProduct);
     }
 
-    // ✅ Cambiar estado a ocupada
-    mesa.status = 'ocupada';
-    await this.mesaRepository.save(mesa);
+    newOrder.total = total + (propina || 0);
 
-    // ✅ Emitir actualización en tiempo real
-    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    const savedOrder = await this.orderRepository.save(newOrder);
+
+    // ✅ Emitir evento WebSocket de nueva orden
+    this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
+
+    return this.sanitizeOrder(savedOrder);
   }
-
-  // ✅ Obtener correlativo venta
-  const lastOrder = await this.orderRepository.findOne({
-    where: {},
-    order: { id: 'DESC' },
-  });
-  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-
-  const newOrder = this.orderRepository.create({
-    detalle_venta: createOrderDto.detalle_venta,
-    tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
-    propina,
-    status: createOrderDto.status,
-    orderType,
-    paymentMethod: createOrderDto.paymentMethod,
-    mesa,
-    numeroVenta: nextNumeroVenta,
-    total: 0,
-  });
-
-  newOrder.orderProducts = [];
-  let total = 0;
-
-  for (const p of products) {
-    const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
-    if (!productEntity) throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
-
-    const subtotal = productEntity.price * p.cantidad;
-    total += subtotal;
-
-    const orderProduct = new ProductsOrders();
-    orderProduct.product = productEntity;
-    orderProduct.cantidad = p.cantidad;
-    orderProduct.precioUnitario = productEntity.price;
-    orderProduct.subtotal = subtotal;
-
-    newOrder.orderProducts.push(orderProduct);
-  }
-
-  newOrder.total = total + (propina || 0);
-
-  const savedOrder = await this.orderRepository.save(newOrder);
-
-  // ✅ Emitir evento WebSocket de nueva orden
-  this.ordersGateway.notifyNewOrder(savedOrder);
-
-  return savedOrder;
-}
 
 
 
 
 
   async creates(createOrderDto: CreateSOrderDto) {
-  const { products, customerId, newCustomer, propina } = createOrderDto;
+    const { products, customerId, newCustomer, propina } = createOrderDto;
 
-  // ✅ 1️⃣ Validar o crear cliente
-  let customer = null;
+    // ✅ 1️⃣ Validar o crear cliente
+    let customer = null;
 
-  if (customerId) {
-    customer = await this.customerRepository.findOneBy({ id: customerId });
-    if (!customer) throw new BadRequestException('El cliente no se encuentra');
-  } else if (newCustomer) {
-    if (!newCustomer.customerName) {
-      throw new BadRequestException('El nombre del cliente es obligatorio');
+    if (customerId) {
+      customer = await this.customerRepository.findOneBy({ id: customerId });
+      if (!customer) throw new BadRequestException('El cliente no se encuentra');
+    } else if (newCustomer) {
+      if (!newCustomer.customerName) {
+        throw new BadRequestException('El nombre del cliente es obligatorio');
+      }
+
+      customer = this.customerRepository.create({
+        customerName: newCustomer.customerName,
+        customerEmail: newCustomer.customerEmail || '',
+        customerAddress: newCustomer.customerAddress || '',
+        customerPhone: newCustomer.customerPhone || '',
+      });
+
+      await this.customerRepository.save(customer);
     }
 
-    customer = this.customerRepository.create({
-      customerName: newCustomer.customerName,
-      customerEmail: newCustomer.customerEmail || '',
-      customerAddress: newCustomer.customerAddress || '',
-      customerPhone: newCustomer.customerPhone || '',
+    // ✅ 2️⃣ Validar productos
+    const productIds = products.map(p => p.id);
+    const foundProducts = await this.productRepository.findBy({ id: In(productIds) });
+
+    if (foundProducts.length !== productIds.length) {
+      throw new BadRequestException('Uno o más productos no se encuentran');
+    }
+
+    // ✅ 3️⃣ Buscar último numeroVenta
+    const lastOrder = await this.orderRepository.findOne({
+      where: {},
+      order: { id: 'DESC' },
+    });
+    const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
+
+    // ✅ 4️⃣ Crear Orden sin guardar aún
+    const newOrder = this.orderRepository.create({
+      detalle_venta: createOrderDto.detalle_venta,
+      status: createOrderDto.status || 'activo',
+      orderType: createOrderDto.orderType || 'local',
+      paymentMethod: createOrderDto.paymentMethod || 'pendiente',
+      customer,
+      propina: propina ?? 0,
+      numeroVenta: nextNumeroVenta,
+      orderProducts: [],
     });
 
-    await this.customerRepository.save(customer);
+    let total = 0;
+
+    // ✅ 5️⃣ Mapear productos correctamente
+    for (const p of products) {
+      const productEntity = foundProducts.find(fp => fp.id === p.id);
+      const subtotal = productEntity.price * p.cantidad;
+      total += subtotal;
+
+      const orderProduct = new ProductsOrders();
+      orderProduct.product = productEntity;
+      orderProduct.cantidad = p.cantidad;
+      orderProduct.precioUnitario = productEntity.price;
+      orderProduct.subtotal = subtotal;
+
+      // 🔥 Necesario para que TypeORM lo guarde correctamente
+      orderProduct.order = newOrder;
+
+      newOrder.orderProducts.push(orderProduct);
+    }
+
+    // ✅ 6️⃣ Total final
+    newOrder.total = total + (propina || 0);
+
+    // ✅ 7️⃣ Guardar primero y luego notificar el evento
+    const savedOrder = await this.orderRepository.save(newOrder);
+
+    // 🚀 Emitir la orden **sanitizada**
+    this.ordersGateway.notifyNewOrder(this.sanitizeOrder(savedOrder));
+
+    return this.sanitizeOrder(savedOrder); // también devuelve al frontend
   }
-
-  // ✅ 2️⃣ Validar productos
-  const productIds = products.map(p => p.id);
-  const foundProducts = await this.productRepository.findBy({ id: In(productIds) });
-
-  if (foundProducts.length !== productIds.length) {
-    throw new BadRequestException('Uno o más productos no se encuentran');
-  }
-
-  // ✅ 3️⃣ Buscar último numeroVenta
-  const lastOrder = await this.orderRepository.findOne({
-    where: {},
-    order: { id: 'DESC' },
-  });
-  const nextNumeroVenta = (lastOrder?.numeroVenta || 0) + 1;
-
-  // ✅ 4️⃣ Crear Orden sin guardar aún
-  const newOrder = this.orderRepository.create({
-    detalle_venta: createOrderDto.detalle_venta,
-    status: createOrderDto.status || 'activo',
-    orderType: createOrderDto.orderType || 'local',
-    paymentMethod: createOrderDto.paymentMethod || 'pendiente',
-    customer,
-    propina: propina ?? 0,
-    numeroVenta: nextNumeroVenta,
-    orderProducts: [],
-  });
-
-  let total = 0;
-
-  // ✅ 5️⃣ Mapear productos correctamente
-  for (const p of products) {
-    const productEntity = foundProducts.find(fp => fp.id === p.id);
-    const subtotal = productEntity.price * p.cantidad;
-    total += subtotal;
-
-    const orderProduct = new ProductsOrders();
-    orderProduct.product = productEntity;
-    orderProduct.cantidad = p.cantidad;
-    orderProduct.precioUnitario = productEntity.price;
-    orderProduct.subtotal = subtotal;
-
-    // 🔥 Necesario para que TypeORM lo guarde correctamente
-    orderProduct.order = newOrder;
-
-    newOrder.orderProducts.push(orderProduct);
-  }
-
-  // ✅ 6️⃣ Total final
-  newOrder.total = total + (propina || 0);
-
-  // ✅ 7️⃣ Guardar primero y luego notificar el evento
-  const savedOrder = await this.orderRepository.save(newOrder);
-
-  // 🔥 Notificar **después** de grabar correctamente
-  this.ordersGateway.notifyNewOrder(savedOrder);
-
-  return savedOrder;
-}
 
 
   async findAll() {
@@ -304,180 +304,180 @@ export class OrdersService {
     return updatedOrder;
   }
 
-async getHistorialPorMesa(mesaId: number) {
-  const pedidos = await this.orderRepository.find({
-    where: { mesaId }, // ✅ usa la columna directa
-    relations: ['orderProducts', 'orderProducts.product'],
-    order: { createdAt: 'DESC' },
-  });
-
-  if (!pedidos.length) {
-    console.warn('⚠️ No se encontraron pedidos para la mesa', mesaId);
-    return [];
-  }
-
-  return pedidos.map(pedido => {
-    const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
-    return {
-      numeroVenta: pedido.numeroVenta,
-      mesaId: pedido.mesaId,
-      status: pedido.status,
-      estado: pedido.estado,
-      createdAt: pedido.createdAt,
-      propina: pedido.propina,
-      totalProductos,
-      totalPedido: totalProductos + (pedido.propina || 0),
-      products: pedido.orderProducts.map(op => ({
-        id: op.product.id,
-        nombre: op.product.name,
-        cantidad: op.cantidad,
-        precio: op.precioUnitario,
-        subtotal: op.subtotal,
-      })),
-    };
-  });
-}
-
-
-async obtenerPendientes(): Promise<Order[]> {
-  return await this.orderRepository
-    .createQueryBuilder('order')
-    .leftJoinAndSelect('order.mesa', 'mesa')
-    .leftJoinAndSelect('order.customer', 'customer') // ✅ Cliente Delivery
-    .leftJoinAndSelect('order.orderProducts', 'orderProducts')
-    .leftJoinAndSelect('orderProducts.product', 'product')
-    .where('order.status = :status', { status: 'pendiente' })
-    .orderBy('order.createdAt', 'ASC')
-    .getMany();
-}
-
-async aceptarVenta(orderId: number): Promise<Order> {
-  const order = await this.orderRepository.findOne({
-    where: { id: orderId },
-    relations: ['mesa'] // Relación con la mesa
-  });
-  if (!order) throw new NotFoundException('Pedido no encontrado');
-
-  // Marcar pedido como Pagado
-  order.status = 'Pagado';
-  await this.orderRepository.save(order);
-
-  // Actualizar status de la mesa
-  const mesa = order.mesa;
-  if (mesa) {
-    // Revisar si hay otros pedidos activos en la mesa
-    const pedidosActivos = await this.orderRepository.count({
-      where: { mesaId: mesa.id, status: 'Activo' }
+  async getHistorialPorMesa(mesaId: number) {
+    const pedidos = await this.orderRepository.find({
+      where: { mesaId }, // ✅ usa la columna directa
+      relations: ['orderProducts', 'orderProducts.product'],
+      order: { createdAt: 'DESC' },
     });
-    mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
-    await this.mesaRepository.save(mesa);
 
-    // Emitir evento para frontend
-    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    if (!pedidos.length) {
+      console.warn('⚠️ No se encontraron pedidos para la mesa', mesaId);
+      return [];
+    }
+
+    return pedidos.map(pedido => {
+      const totalProductos = pedido.orderProducts.reduce((sum, op) => sum + op.subtotal, 0);
+      return {
+        numeroVenta: pedido.numeroVenta,
+        mesaId: pedido.mesaId,
+        status: pedido.status,
+        estado: pedido.estado,
+        createdAt: pedido.createdAt,
+        propina: pedido.propina,
+        totalProductos,
+        totalPedido: totalProductos + (pedido.propina || 0),
+        products: pedido.orderProducts.map(op => ({
+          id: op.product.id,
+          nombre: op.product.name,
+          cantidad: op.cantidad,
+          precio: op.precioUnitario,
+          subtotal: op.subtotal,
+        })),
+      };
+    });
   }
 
-  return order;
-}
 
-async cancelarVenta(orderId: number): Promise<Order> {
-  const order = await this.orderRepository.findOne({
-    where: { id: orderId },
-    relations: ['mesa'], // ✅ Para traer la mesa asociada
-  });
-
-  if (!order) {
-    throw new NotFoundException('Pedido no encontrado');
+  async obtenerPendientes(): Promise<Order[]> {
+    return await this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.mesa', 'mesa')
+      .leftJoinAndSelect('order.customer', 'customer') // ✅ Cliente Delivery
+      .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+      .leftJoinAndSelect('orderProducts.product', 'product')
+      .where('order.status = :status', { status: 'pendiente' })
+      .orderBy('order.createdAt', 'ASC')
+      .getMany();
   }
 
-  // ✅ Cambiar estado del pedido
-  order.status = 'Cancelado';
-  await this.orderRepository.save(order);
+  async aceptarVenta(orderId: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa'] // Relación con la mesa
+    });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
 
-  // ✅ Verificamos si hay mesa asociada
-  if (order.mesa) {
-    order.mesa.status = 'Disponible'; // ✅ Liberar mesa
-    await this.mesaRepository.save(order.mesa);
+    // Marcar pedido como Pagado
+    order.status = 'Pagado';
+    await this.orderRepository.save(order);
+
+    // Actualizar status de la mesa
+    const mesa = order.mesa;
+    if (mesa) {
+      // Revisar si hay otros pedidos activos en la mesa
+      const pedidosActivos = await this.orderRepository.count({
+        where: { mesaId: mesa.id, status: 'Activo' }
+      });
+      mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
+      await this.mesaRepository.save(mesa);
+
+      // Emitir evento para frontend
+      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    }
+
+    return order;
   }
 
-  return order;
-}
+  async cancelarVenta(orderId: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa'], // ✅ Para traer la mesa asociada
+    });
 
-async getVentasDiarias(desde?: string, hasta?: string, orderType?: string) {
-  let inicio: Date;
-  let fin: Date;
+    if (!order) {
+      throw new NotFoundException('Pedido no encontrado');
+    }
 
-  if (!desde && !hasta) {
-    const hoy = new Date();
-    inicio = new Date(hoy.setHours(0, 0, 0, 0));
-    fin = new Date(hoy.setHours(23, 59, 59, 999));
-  } else {
-    inicio = new Date(desde);
-    fin = new Date(hasta);
+    // ✅ Cambiar estado del pedido
+    order.status = 'Cancelado';
+    await this.orderRepository.save(order);
+
+    // ✅ Verificamos si hay mesa asociada
+    if (order.mesa) {
+      order.mesa.status = 'Disponible'; // ✅ Liberar mesa
+      await this.mesaRepository.save(order.mesa);
+    }
+
+    return order;
   }
 
-  // 🧾 1️⃣ Totales generales
-  const totalesQuery = this.orderRepository
-    .createQueryBuilder('order')
-    .select('SUM(order.total)', 'total_ventas')
-    .addSelect('COUNT(order.id)', 'cantidad_pedidos')
-    .where('order.status = :status', { status: 'Pagado' })
-    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+  async getVentasDiarias(desde?: string, hasta?: string, orderType?: string) {
+    let inicio: Date;
+    let fin: Date;
 
-  if (orderType) {
-    totalesQuery.andWhere('order.orderType = :orderType', { orderType });
+    if (!desde && !hasta) {
+      const hoy = new Date();
+      inicio = new Date(hoy.setHours(0, 0, 0, 0));
+      fin = new Date(hoy.setHours(23, 59, 59, 999));
+    } else {
+      inicio = new Date(desde);
+      fin = new Date(hasta);
+    }
+
+    // 🧾 1️⃣ Totales generales
+    const totalesQuery = this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.total)', 'total_ventas')
+      .addSelect('COUNT(order.id)', 'cantidad_pedidos')
+      .where('order.status = :status', { status: 'Pagado' })
+      .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+
+    if (orderType) {
+      totalesQuery.andWhere('order.orderType = :orderType', { orderType });
+    }
+
+    const totales = await totalesQuery.getRawOne();
+
+    // 📊 2️⃣ Ventas agrupadas por hora (para Chart.js)
+    const graficoQuery = this.orderRepository
+      .createQueryBuilder('order')
+      .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
+      .addSelect('SUM(order.total)', 'total')
+      .where('order.status = :status', { status: 'Pagado' })
+      .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+      .groupBy('hora')
+      .orderBy('hora', 'ASC');
+
+    if (orderType) {
+      graficoQuery.andWhere('order.orderType = :orderType', { orderType });
+    }
+
+    const grafico = await graficoQuery.getRawMany();
+
+    // 🧾 3️⃣ Detalle de ventas individuales (para la tabla)
+    const detallesQuery = this.orderRepository
+      .createQueryBuilder('order')
+      .select([
+        'order.id AS id',
+        'order.total AS total',
+        'order.orderType AS orderType',
+        'order.paymentMethod AS paymentMethod',
+        'order.createdAt AS createdAt',
+        'mesa.numero_mesa AS numero_mesa',
+      ])
+      .leftJoin('order.mesa', 'mesa')
+      .where('order.status = :status', { status: 'Pagado' })
+      .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+      .orderBy('order.createdAt', 'DESC');
+
+    if (orderType) {
+      detallesQuery.andWhere('order.orderType = :orderType', { orderType });
+    }
+
+    const detalles = await detallesQuery.getRawMany();
+
+    // 📋 4️⃣ Respuesta final
+    return {
+      totalVentas: Number(totales?.total_ventas || 0),
+      cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
+      rango: { desde: inicio, hasta: fin },
+      grafico,
+      detalles,
+    };
   }
 
-  const totales = await totalesQuery.getRawOne();
-
-  // 📊 2️⃣ Ventas agrupadas por hora (para Chart.js)
-  const graficoQuery = this.orderRepository
-    .createQueryBuilder('order')
-    .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
-    .addSelect('SUM(order.total)', 'total')
-    .where('order.status = :status', { status: 'Pagado' })
-    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-    .groupBy('hora')
-    .orderBy('hora', 'ASC');
-
-  if (orderType) {
-    graficoQuery.andWhere('order.orderType = :orderType', { orderType });
-  }
-
-  const grafico = await graficoQuery.getRawMany();
-
-  // 🧾 3️⃣ Detalle de ventas individuales (para la tabla)
-  const detallesQuery = this.orderRepository
-    .createQueryBuilder('order')
-    .select([
-      'order.id AS id',
-      'order.total AS total',
-      'order.orderType AS orderType',
-      'order.paymentMethod AS paymentMethod',
-      'order.createdAt AS createdAt',
-      'mesa.numero_mesa AS numero_mesa',
-    ])
-    .leftJoin('order.mesa', 'mesa')
-    .where('order.status = :status', { status: 'Pagado' })
-    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-    .orderBy('order.createdAt', 'DESC');
-
-  if (orderType) {
-    detallesQuery.andWhere('order.orderType = :orderType', { orderType });
-  }
-
-  const detalles = await detallesQuery.getRawMany();
-
-  // 📋 4️⃣ Respuesta final
-  return {
-    totalVentas: Number(totales?.total_ventas || 0),
-    cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
-    rango: { desde: inicio, hasta: fin },
-    grafico,
-    detalles,
-  };
-}
-
- async getVentasDiariasxMesa(desde?: string, hasta?: string, mesaId?: number) {
+  async getVentasDiariasxMesa(desde?: string, hasta?: string, mesaId?: number) {
     let inicio: Date;
     let fin: Date;
 
@@ -542,21 +542,54 @@ async getVentasDiarias(desde?: string, hasta?: string, orderType?: string) {
   }
 
   async cancelar(id: number) {
-  const order = await this.orderRepository.findOne({ where: { id } });
+    const order = await this.orderRepository.findOne({ where: { id } });
 
-  if (!order) {
-    throw new NotFoundException('La venta no existe');
+    if (!order) {
+      throw new NotFoundException('La venta no existe');
+    }
+
+    if (order.status === 'Cancelado') {
+      throw new BadRequestException('La venta ya está cancelada');
+    }
+
+    order.status = 'Cancelado';
+    await this.orderRepository.save(order);
+
+    return { message: `Venta ${id} cancelada correctamente` };
   }
 
-  if (order.status === 'Cancelado') {
-    throw new BadRequestException('La venta ya está cancelada');
+
+
+  private sanitizeOrder(order: Order) {
+    return {
+      id: order.id,
+      orderType: order.orderType,
+      detalle_venta: order.detalle_venta,
+      status: order.status,
+      paymentMethod: order.paymentMethod,
+      total: order.total,
+      numeroVenta: order.numeroVenta,
+      propina: order.propina,
+      createdAt: order.createdAt,
+      customer: order.customer
+        ? {
+          id: order.customer.id,
+          name: order.customer.customerName,
+          email: order.customer.customerEmail,
+          phone: order.customer.customerPhone,
+        }
+        : null,
+      products: order.orderProducts?.map(p => ({
+        productId: p.product.id,
+        name: p.product.name,
+        cantidad: p.cantidad,
+        precioUnitario: p.precioUnitario,
+        subtotal: p.subtotal,
+      })),
+      mesa: order.mesa ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa } : null,
+    };
   }
 
-  order.status = 'Cancelado';
-  await this.orderRepository.save(order);
-
-  return { message: `Venta ${id} cancelada correctamente` };
-}
 
 
 }

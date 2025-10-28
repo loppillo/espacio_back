@@ -3,6 +3,22 @@ import { Server } from 'socket.io';
 import { Injectable } from '@nestjs/common';
 import { Order } from './entities/order.entity';
 
+export interface OrderDTO {
+  id: number;
+  orderType: string;
+  detalle_venta: string;
+  status: string;
+  paymentMethod: string;
+  total: number;
+  numeroVenta: number;
+  propina: number;
+  createdAt: Date;
+  customer: { id: number; name: string; email: string; phone: string } | null;
+  products: { productId: number; name: string; cantidad: number; precioUnitario: number; subtotal: number }[];
+  mesa: { id: number; numero_mesa: string } | null;
+}
+
+
 
 @WebSocketGateway({
   cors: {
@@ -15,10 +31,9 @@ export class OrdersGateway {
   server: Server;
 
   // Emitir nuevo pedido
-  notifyNewOrder(order: Order) {
-    const payload = this.sanitizeOrder(order);
-    this.server.emit('newOrder', payload);
-  }
+ notifyNewOrder(order: OrderDTO) {
+  this.server.emit('newOrder', order);
+}
 
   // Emitir actualización de pedido
   notifyOrderUpdated(order: Order) {
