@@ -86,7 +86,11 @@ let OrdersService = class OrdersService {
         }
         newOrder.total = total + (propina || 0);
         const savedOrder = await this.orderRepository.save(newOrder);
-        const sanitized = this.sanitizeOrder(savedOrder);
+        const fullOrder = await this.orderRepository.findOne({
+            where: { id: savedOrder.id },
+            relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product'],
+        });
+        const sanitized = this.sanitizeOrder(fullOrder);
         this.ordersGateway.notifyNewOrder(sanitized);
         return sanitized;
     }
@@ -123,11 +127,12 @@ let OrdersService = class OrdersService {
         const newOrder = this.orderRepository.create({
             detalle_venta: createOrderDto.detalle_venta,
             status: createOrderDto.status || 'activo',
-            orderType: createOrderDto.orderType || 'local',
+            orderType: createOrderDto.orderType || 'delivery',
             paymentMethod: createOrderDto.paymentMethod || 'pendiente',
             customer,
             propina: propina ?? 0,
             numeroVenta: nextNumeroVenta,
+            total: 0,
             orderProducts: [],
         });
         let total = 0;
@@ -145,7 +150,11 @@ let OrdersService = class OrdersService {
         }
         newOrder.total = total + (propina || 0);
         const savedOrder = await this.orderRepository.save(newOrder);
-        const sanitized = this.sanitizeOrder(savedOrder);
+        const fullOrder = await this.orderRepository.findOne({
+            where: { id: savedOrder.id },
+            relations: ['customer', 'orderProducts', 'orderProducts.product'],
+        });
+        const sanitized = this.sanitizeOrder(fullOrder);
         this.ordersGateway.notifyNewOrder(sanitized);
         return sanitized;
     }
