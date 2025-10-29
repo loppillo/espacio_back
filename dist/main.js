@@ -30,6 +30,8 @@ const path_1 = require("path");
 const common_1 = require("@nestjs/common");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const expressApp = app.getHttpAdapter().getInstance();
+    expressApp.set('trust proxy', true);
     app.setGlobalPrefix("api/v1");
     app.enableCors({
         origin: ['https://espacioboulevardlinares.cl', 'http://localhost:4200'],
