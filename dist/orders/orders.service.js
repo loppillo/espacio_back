@@ -25,7 +25,8 @@ const mesa_entity_1 = require("../mesas/entities/mesa.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
 const orders_gateway_1 = require("./orders.gateway");
 let OrdersService = class OrdersService {
-    constructor(orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, productsOrdersRepository, ordersGateway) {
+    constructor(dataSource, orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, productsOrdersRepository, ordersGateway) {
+        this.dataSource = dataSource;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
@@ -36,66 +37,74 @@ let OrdersService = class OrdersService {
         this.ordersGateway = ordersGateway;
     }
     async create(createOrderDto) {
-        const { products, propina, mesaId, orderType } = createOrderDto;
-        let mesa = null;
-        if (orderType !== 'delivery') {
-            if (!mesaId || isNaN(Number(mesaId))) {
-                throw new common_1.BadRequestException('La mesa es obligatoria');
+        const { products, propina = 0, mesaId, orderType } = createOrderDto;
+        return await this.dataSource.transaction(async (manager) => {
+            let mesa = null;
+            if (orderType !== 'delivery') {
+                if (!mesaId || isNaN(Number(mesaId))) {
+                    throw new common_1.BadRequestException('La mesa es obligatoria');
+                }
+                mesa = await manager.findOne(mesa_entity_1.Mesa, { where: { id: Number(mesaId) } });
+                if (!mesa)
+                    throw new common_1.BadRequestException('La mesa no se encuentra');
+                if (mesa.status === 'ocupada') {
+                    throw new common_1.BadRequestException('⛔ La mesa está ocupada.');
+                }
+                mesa.status = 'ocupada';
+                await manager.save(mesa);
             }
-            mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
-            if (!mesa)
-                throw new common_1.BadRequestException('La mesa no se encuentra');
-            if (mesa.status === 'ocupada') {
-                throw new common_1.BadRequestException('⛔ La mesa está ocupada, no puedes agregar más productos.');
+            const { max } = await manager
+                .createQueryBuilder(order_entity_1.Order, 'order')
+                .select('MAX(order.numeroVenta)', 'max')
+                .getRawOne();
+            const nextNumeroVenta = (max || 0) + 1;
+            const newOrder = manager.create(order_entity_1.Order, {
+                detalle_venta: createOrderDto.detalle_venta,
+                tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
+                propina,
+                status: createOrderDto.status || 'pendiente',
+                orderType,
+                paymentMethod: createOrderDto.paymentMethod || 'pendiente',
+                mesa,
+                numeroVenta: nextNumeroVenta,
+                total: 0,
+            });
+            const productIds = products.map(p => p.id);
+            const productEntities = await manager.find(product_entity_1.Product, { where: { id: (0, typeorm_1.In)(productIds) } });
+            if (productEntities.length !== products.length) {
+                throw new common_1.BadRequestException('Uno o más productos no existen');
             }
-            mesa.status = 'ocupada';
-            await this.mesaRepository.save(mesa);
-            this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-        }
-        const { max } = await this.orderRepository
-            .createQueryBuilder('order')
-            .select('MAX(order.numeroVenta)', 'max')
-            .getRawOne();
-        const nextNumeroVenta = (max || 0) + 1;
-        const newOrder = this.orderRepository.create({
-            detalle_venta: createOrderDto.detalle_venta,
-            tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
-            propina: propina ?? 0,
-            status: createOrderDto.status || 'activo',
-            orderType,
-            paymentMethod: createOrderDto.paymentMethod || 'pendiente',
-            mesa,
-            numeroVenta: nextNumeroVenta,
-            total: 0,
-            orderProducts: [],
+            let total = 0;
+            const orderProducts = products.map(p => {
+                const productEntity = productEntities.find(pe => pe.id === p.id);
+                const subtotal = productEntity.price * p.cantidad;
+                total += subtotal;
+                const op = new products_order_entity_1.ProductsOrders();
+                op.product = productEntity;
+                op.cantidad = p.cantidad;
+                op.precioUnitario = productEntity.price;
+                op.subtotal = subtotal;
+                op.order = newOrder;
+                return op;
+            });
+            newOrder.total = total + propina;
+            newOrder.orderProducts = orderProducts;
+            const savedOrder = await manager.save(order_entity_1.Order, newOrder);
+            const fullOrder = await manager.findOne(order_entity_1.Order, {
+                where: { id: savedOrder.id },
+                relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product'],
+            });
+            const sanitized = this.sanitizeOrder(fullOrder);
+            setImmediate(() => {
+                if (mesa)
+                    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+                this.ordersGateway.notifyNewOrder(sanitized);
+            });
+            return sanitized;
         });
-        let total = 0;
-        for (const p of products) {
-            const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
-            if (!productEntity)
-                throw new common_1.BadRequestException(`Producto con id ${p.id} no encontrado`);
-            const subtotal = productEntity.price * p.cantidad;
-            total += subtotal;
-            const orderProduct = new products_order_entity_1.ProductsOrders();
-            orderProduct.product = productEntity;
-            orderProduct.cantidad = p.cantidad;
-            orderProduct.precioUnitario = productEntity.price;
-            orderProduct.subtotal = subtotal;
-            orderProduct.order = newOrder;
-            newOrder.orderProducts.push(orderProduct);
-        }
-        newOrder.total = total + (propina || 0);
-        const savedOrder = await this.orderRepository.save(newOrder);
-        const fullOrder = await this.orderRepository.findOne({
-            where: { id: savedOrder.id },
-            relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product'],
-        });
-        const sanitized = this.sanitizeOrder(fullOrder);
-        this.ordersGateway.notifyNewOrder(sanitized);
-        return sanitized;
     }
     async creates(createOrderDto) {
-        const { products, customerId, newCustomer, propina } = createOrderDto;
+        const { products, customerId, newCustomer, propina = 0 } = createOrderDto;
         let customer = null;
         if (customerId) {
             customer = await this.customerRepository.findOneBy({ id: customerId });
@@ -103,11 +112,11 @@ let OrdersService = class OrdersService {
                 throw new common_1.BadRequestException('El cliente no se encuentra');
         }
         else if (newCustomer) {
-            if (!newCustomer.customerName) {
+            if (!newCustomer.customerName?.trim()) {
                 throw new common_1.BadRequestException('El nombre del cliente es obligatorio');
             }
             customer = this.customerRepository.create({
-                customerName: newCustomer.customerName,
+                customerName: newCustomer.customerName.trim(),
                 customerEmail: newCustomer.customerEmail || '',
                 customerAddress: newCustomer.customerAddress || '',
                 customerPhone: newCustomer.customerPhone || '',
@@ -115,8 +124,8 @@ let OrdersService = class OrdersService {
             await this.customerRepository.save(customer);
         }
         const productIds = products.map(p => p.id);
-        const foundProducts = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
-        if (foundProducts.length !== productIds.length) {
+        const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
+        if (productEntities.length !== products.length) {
             throw new common_1.BadRequestException('Uno o más productos no se encuentran');
         }
         const { max } = await this.orderRepository
@@ -126,36 +135,36 @@ let OrdersService = class OrdersService {
         const nextNumeroVenta = (max || 0) + 1;
         const newOrder = this.orderRepository.create({
             detalle_venta: createOrderDto.detalle_venta,
-            status: createOrderDto.status || 'activo',
+            status: createOrderDto.status || 'pendiente',
             orderType: createOrderDto.orderType || 'delivery',
             paymentMethod: createOrderDto.paymentMethod || 'pendiente',
             customer,
-            propina: propina ?? 0,
+            propina,
             numeroVenta: nextNumeroVenta,
             total: 0,
-            orderProducts: [],
         });
         let total = 0;
-        for (const p of products) {
-            const productEntity = foundProducts.find(fp => fp.id === p.id);
+        const orderProducts = products.map(p => {
+            const productEntity = productEntities.find(pe => pe.id === p.id);
             const subtotal = productEntity.price * p.cantidad;
             total += subtotal;
-            const orderProduct = new products_order_entity_1.ProductsOrders();
-            orderProduct.product = productEntity;
-            orderProduct.cantidad = p.cantidad;
-            orderProduct.precioUnitario = productEntity.price;
-            orderProduct.subtotal = subtotal;
-            orderProduct.order = newOrder;
-            newOrder.orderProducts.push(orderProduct);
-        }
-        newOrder.total = total + (propina || 0);
+            const op = new products_order_entity_1.ProductsOrders();
+            op.product = productEntity;
+            op.cantidad = p.cantidad;
+            op.precioUnitario = productEntity.price;
+            op.subtotal = subtotal;
+            op.order = newOrder;
+            return op;
+        });
+        newOrder.total = total + propina;
+        newOrder.orderProducts = orderProducts;
         const savedOrder = await this.orderRepository.save(newOrder);
         const fullOrder = await this.orderRepository.findOne({
             where: { id: savedOrder.id },
             relations: ['customer', 'orderProducts', 'orderProducts.product'],
         });
         const sanitized = this.sanitizeOrder(fullOrder);
-        this.ordersGateway.notifyNewOrder(sanitized);
+        setImmediate(() => this.ordersGateway.notifyNewOrder(sanitized));
         return sanitized;
     }
     async findAll() {
@@ -467,14 +476,16 @@ let OrdersService = class OrdersService {
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_2.InjectRepository)(order_entity_1.Order)),
-    __param(1, (0, typeorm_2.InjectRepository)(user_entity_1.User)),
-    __param(2, (0, typeorm_2.InjectRepository)(customer_entity_1.Customer)),
-    __param(3, (0, typeorm_2.InjectRepository)(product_entity_1.Product)),
-    __param(4, (0, typeorm_2.InjectRepository)(propina_entity_1.Propina)),
-    __param(5, (0, typeorm_2.InjectRepository)(mesa_entity_1.Mesa)),
-    __param(6, (0, typeorm_2.InjectRepository)(products_order_entity_1.ProductsOrders)),
-    __metadata("design:paramtypes", [typeorm_1.Repository,
+    __param(0, (0, typeorm_2.InjectDataSource)()),
+    __param(1, (0, typeorm_2.InjectRepository)(order_entity_1.Order)),
+    __param(2, (0, typeorm_2.InjectRepository)(user_entity_1.User)),
+    __param(3, (0, typeorm_2.InjectRepository)(customer_entity_1.Customer)),
+    __param(4, (0, typeorm_2.InjectRepository)(product_entity_1.Product)),
+    __param(5, (0, typeorm_2.InjectRepository)(propina_entity_1.Propina)),
+    __param(6, (0, typeorm_2.InjectRepository)(mesa_entity_1.Mesa)),
+    __param(7, (0, typeorm_2.InjectRepository)(products_order_entity_1.ProductsOrders)),
+    __metadata("design:paramtypes", [typeorm_1.DataSource,
+        typeorm_1.Repository,
         typeorm_1.Repository,
         typeorm_1.Repository,
         typeorm_1.Repository,
