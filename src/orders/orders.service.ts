@@ -42,7 +42,7 @@ async create(createOrderDto: CreateOrderDto) {
   const { products, propina = 0, mesaId, orderType } = createOrderDto;
   let mesa = null;
 
-  // ✅ Validar mesa solo si no es delivery
+  // Validar mesa si no es delivery
   if (orderType !== 'delivery') {
     if (!mesaId || isNaN(Number(mesaId))) {
       throw new BadRequestException('La mesa es obligatoria');
@@ -58,14 +58,14 @@ async create(createOrderDto: CreateOrderDto) {
     await this.mesaRepository.save(mesa);
   }
 
-  // ✅ Obtener correlativo de venta
+  // Obtener número de venta
   const { max } = await this.orderRepository
     .createQueryBuilder('order')
     .select('MAX(order.numeroVenta)', 'max')
     .getRawOne();
   const nextNumeroVenta = (max || 0) + 1;
 
-  // ✅ Crear orden base
+  // Crear orden base
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
     tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
@@ -78,7 +78,7 @@ async create(createOrderDto: CreateOrderDto) {
     total: 0,
   });
 
-  // ✅ Cargar productos en lote
+  // Cargar productos en lote
   const productIds = products.map(p => p.id);
   const productEntities = await this.productRepository.findBy({ id: In(productIds) });
 
@@ -86,7 +86,7 @@ async create(createOrderDto: CreateOrderDto) {
     throw new BadRequestException('Uno o más productos no existen');
   }
 
-  // ✅ Generar detalles de orden
+  // Generar detalles de orden
   let total = 0;
   const orderProducts = products.map(p => {
     const productEntity = productEntities.find(pe => pe.id === p.id)!;
@@ -105,10 +105,10 @@ async create(createOrderDto: CreateOrderDto) {
   newOrder.total = total + propina;
   newOrder.orderProducts = orderProducts;
 
-  // ✅ Guardar orden
+  // Guardar orden
   const savedOrder = await this.orderRepository.save(newOrder);
 
-  // ✅ Recargar con relaciones necesarias
+  // Recargar con relaciones completas
   const fullOrder = await this.orderRepository.findOne({
     where: { id: savedOrder.id },
     relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product'],
@@ -116,13 +116,12 @@ async create(createOrderDto: CreateOrderDto) {
 
   const sanitized = this.sanitizeOrder(fullOrder);
 
-  // 🔔 Emitir eventos WebSocket de forma asíncrona
+  // 🔔 Emitir eventos WebSocket de manera asíncrona
   Promise.resolve().then(() => {
     if (mesa) this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
     this.ordersGateway.notifyNewOrder(sanitized);
   });
 
-  // ✅ Retornar respuesta inmediata al cliente
   return sanitized;
 }
 
@@ -130,23 +129,21 @@ async create(createOrderDto: CreateOrderDto) {
 
 
 
-
-async creates(createOrderDto: CreateSOrderDto) {
+async creates(createOrderDto: CreateOrderDto) {
   const { products, propina = 0, orderType = 'delivery' } = createOrderDto;
 
-  // ✅ Validar que sea delivery
+  // Solo delivery
   if (orderType !== 'delivery') {
     throw new BadRequestException('Este método solo permite pedidos de delivery.');
   }
 
-  // ✅ Obtener correlativo de venta
+  // Número de venta
   const { max } = await this.orderRepository
     .createQueryBuilder('order')
     .select('MAX(order.numeroVenta)', 'max')
     .getRawOne();
   const nextNumeroVenta = (max || 0) + 1;
 
-  // ✅ Crear orden base (sin mesa)
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
     propina,
@@ -157,7 +154,7 @@ async creates(createOrderDto: CreateSOrderDto) {
     total: 0,
   });
 
-  // ✅ Cargar productos en lote
+  // Productos en lote
   const productIds = products.map(p => p.id);
   const productEntities = await this.productRepository.findBy({ id: In(productIds) });
 
@@ -165,7 +162,6 @@ async creates(createOrderDto: CreateSOrderDto) {
     throw new BadRequestException('Uno o más productos no existen');
   }
 
-  // ✅ Generar detalles de orden
   let total = 0;
   const orderProducts = products.map(p => {
     const productEntity = productEntities.find(pe => pe.id === p.id)!;
@@ -184,10 +180,8 @@ async creates(createOrderDto: CreateSOrderDto) {
   newOrder.total = total + propina;
   newOrder.orderProducts = orderProducts;
 
-  // ✅ Guardar orden
   const savedOrder = await this.orderRepository.save(newOrder);
 
-  // ✅ Recargar con relaciones necesarias
   const fullOrder = await this.orderRepository.findOne({
     where: { id: savedOrder.id },
     relations: ['customer', 'orderProducts', 'orderProducts.product'],
@@ -195,14 +189,14 @@ async creates(createOrderDto: CreateSOrderDto) {
 
   const sanitized = this.sanitizeOrder(fullOrder);
 
-  // 🔔 Emitir evento WebSocket sin bloquear
+  // 🔔 WebSocket asincrónico
   Promise.resolve().then(() => {
     this.ordersGateway.notifyNewOrder(sanitized);
   });
 
-  // ✅ Retornar respuesta inmediata
   return sanitized;
 }
+
 
 
 
