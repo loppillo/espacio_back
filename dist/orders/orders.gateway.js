@@ -16,21 +16,21 @@ const common_1 = require("@nestjs/common");
 let OrdersGateway = class OrdersGateway {
     notifyNewOrder(order) {
         const payload = this.sanitizeOrder(order);
-        this.server.to('mesero').emit('newOrder', payload);
+        this.server.to('garzon').emit('newOrder', payload);
         this.server.to('admin').emit('newOrder', payload);
     }
     notifyOrderUpdated(order) {
         const payload = this.sanitizeOrder(order);
-        this.server.to('mesero').emit('orderStatusUpdated', payload);
+        this.server.to('garzon').emit('orderStatusUpdated', payload);
         this.server.to('admin').emit('orderStatusUpdated', payload);
     }
     notifyMesaUpdated(mesaId, status) {
-        this.server.to('mesero').emit('mesaStatusUpdated', { mesaId, status });
+        this.server.to('garzon').emit('mesaStatusUpdated', { mesaId, status });
         this.server.to('admin').emit('mesaStatusUpdated', { mesaId, status });
     }
     handleJoinRoom(client, payload) {
-        if (payload.role === 'mesero')
-            client.join('mesero');
+        if (payload.role === 'garzon')
+            client.join('garzon');
         if (payload.role === 'admin')
             client.join('admin');
     }
