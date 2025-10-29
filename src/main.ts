@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix("api/v1");
 app.enableCors({
-  origin: 'https://espacioboulevardlinares.cl',
+  origin: ['https://espacioboulevardlinares.cl', 'http://localhost:4200'],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   allowedHeaders: 'Authorization,Content-Type',
 });
