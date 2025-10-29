@@ -56,6 +56,7 @@ async create(createOrderDto: CreateOrderDto) {
     mesa.status = 'ocupada';
     await this.mesaRepository.save(mesa);
 
+    // 🔔 Notificar cambio de estado de mesa
     this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
   }
 
@@ -64,10 +65,9 @@ async create(createOrderDto: CreateOrderDto) {
     .createQueryBuilder('order')
     .select('MAX(order.numeroVenta)', 'max')
     .getRawOne();
-
   const nextNumeroVenta = (max || 0) + 1;
 
-  // ✅ Crear orden
+  // ✅ Crear orden base
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
     tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
@@ -83,7 +83,7 @@ async create(createOrderDto: CreateOrderDto) {
 
   let total = 0;
 
-  // ✅ Mapear productos
+  // ✅ Agregar productos
   for (const p of products) {
     const productEntity = await this.productRepository.findOne({ where: { id: p.id } });
     if (!productEntity) throw new BadRequestException(`Producto con id ${p.id} no encontrado`);
@@ -96,22 +96,30 @@ async create(createOrderDto: CreateOrderDto) {
     orderProduct.cantidad = p.cantidad;
     orderProduct.precioUnitario = productEntity.price;
     orderProduct.subtotal = subtotal;
-    orderProduct.order = newOrder; // 🔹 necesario para TypeORM
+    orderProduct.order = newOrder;
 
     newOrder.orderProducts.push(orderProduct);
   }
 
+  // ✅ Total final
   newOrder.total = total + (propina || 0);
 
   // ✅ Guardar orden
   const savedOrder = await this.orderRepository.save(newOrder);
 
+  // 🔹 Volver a consultar la orden con todas las relaciones
+  const fullOrder = await this.orderRepository.findOne({
+    where: { id: savedOrder.id },
+    relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product'],
+  });
+
   // 🔹 Sanitize y emitir evento WebSocket
-  const sanitized = this.sanitizeOrder(savedOrder);
+  const sanitized = this.sanitizeOrder(fullOrder);
   this.ordersGateway.notifyNewOrder(sanitized);
 
   return sanitized; // DTO limpio para frontend
 }
+
 
 
 
@@ -147,29 +155,29 @@ async creates(createOrderDto: CreateSOrderDto) {
     throw new BadRequestException('Uno o más productos no se encuentran');
   }
 
-  // 3️⃣ Calcular el próximo numeroVenta
+  // 3️⃣ Calcular el próximo número de venta
   const { max } = await this.orderRepository
     .createQueryBuilder('order')
     .select('MAX(order.numeroVenta)', 'max')
     .getRawOne();
-
   const nextNumeroVenta = (max || 0) + 1;
 
-  // 4️⃣ Crear Orden
+  // 4️⃣ Crear nueva orden
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
     status: createOrderDto.status || 'activo',
-    orderType: createOrderDto.orderType || 'local',
+    orderType: createOrderDto.orderType || 'delivery',
     paymentMethod: createOrderDto.paymentMethod || 'pendiente',
     customer,
     propina: propina ?? 0,
     numeroVenta: nextNumeroVenta,
+    total: 0,
     orderProducts: [],
   });
 
   let total = 0;
 
-  // 5️⃣ Mapear productos
+  // 5️⃣ Asociar productos
   for (const p of products) {
     const productEntity = foundProducts.find(fp => fp.id === p.id);
     const subtotal = productEntity.price * p.cantidad;
@@ -185,18 +193,24 @@ async creates(createOrderDto: CreateSOrderDto) {
     newOrder.orderProducts.push(orderProduct);
   }
 
-  // 6️⃣ Total final
+  // 6️⃣ Calcular total final
   newOrder.total = total + (propina || 0);
 
-  // 7️⃣ Guardar y emitir
+  // 7️⃣ Guardar orden
   const savedOrder = await this.orderRepository.save(newOrder);
 
-  const sanitized = this.sanitizeOrder(savedOrder);
+  // ⚠️ Volvemos a cargar la orden con relaciones completas
+  const fullOrder = await this.orderRepository.findOne({
+    where: { id: savedOrder.id },
+    relations: ['customer', 'orderProducts', 'orderProducts.product'],
+  });
+
+  // 8️⃣ Sanitizar y emitir al frontend
+  const sanitized = this.sanitizeOrder(fullOrder);
   this.ordersGateway.notifyNewOrder(sanitized);
 
   return sanitized;
 }
-
 
   async findAll() {
     return await this.orderRepository.find();
