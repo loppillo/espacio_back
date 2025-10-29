@@ -5,23 +5,30 @@ import { join } from 'path';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-
   const app = await NestFactory.create(AppModule);
+
+  // Acceder a la instancia de Express directamente
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', true); // ✅ aquí funciona
+
   app.setGlobalPrefix("api/v1");
-app.enableCors({
-  origin: ['https://espacioboulevardlinares.cl', 'http://localhost:4200'],
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  allowedHeaders: 'Authorization,Content-Type',
-});
+
+  app.enableCors({
+    origin: ['https://espacioboulevardlinares.cl', 'http://localhost:4200'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Authorization,Content-Type',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      
-    })
+    }),
   );
+
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
- await app.listen(3000, '0.0.0.0');
+  await app.listen(3000, '0.0.0.0');
 }
 bootstrap();
+
