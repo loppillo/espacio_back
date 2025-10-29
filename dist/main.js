@@ -32,7 +32,7 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.setGlobalPrefix("api/v1");
     app.enableCors({
-        origin: 'https://espacioboulevardlinares.cl',
+        origin: ['https://espacioboulevardlinares.cl', 'http://localhost:4200'],
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         allowedHeaders: 'Authorization,Content-Type',
     });
