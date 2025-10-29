@@ -1,5 +1,5 @@
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
 import { Order } from './entities/order.entity';
 
@@ -46,20 +46,28 @@ export class OrdersGateway {
   server: Server;
 
 notifyNewOrder(order: any) {
-  const sanitized = this.sanitizeOrder(order);
-  this.server.emit('newOrder', sanitized);
+  const payload = this.sanitizeOrder(order);
+  // Enviar solo a meseros y admins
+  this.server.to('mesero').emit('newOrder', payload);
+  this.server.to('admin').emit('newOrder', payload);
 }
 
-  // Emitir actualización de pedido
-  notifyOrderUpdated(order: Order) {
-    const payload = this.sanitizeOrder(order);
-    this.server.emit('orderStatusUpdated', payload);
-  }
+notifyOrderUpdated(order: Order) {
+  const payload = this.sanitizeOrder(order);
+  this.server.to('mesero').emit('orderStatusUpdated', payload);
+  this.server.to('admin').emit('orderStatusUpdated', payload);
+}
 
-  // Emitir actualización de mesa
-  notifyMesaUpdated(mesaId: number, status: string) {
-    this.server.emit('mesaStatusUpdated', { mesaId, status });
-  }
+notifyMesaUpdated(mesaId: number, status: string) {
+  this.server.to('mesero').emit('mesaStatusUpdated', { mesaId, status });
+  this.server.to('admin').emit('mesaStatusUpdated', { mesaId, status });
+}
+
+  @SubscribeMessage('joinRoom')
+handleJoinRoom(client: Socket, payload: { role: string }) {
+  if (payload.role === 'mesero') client.join('mesero');
+  if (payload.role === 'admin') client.join('admin');
+}
 
   // Evitar referencias circulares y objetos grandes
 private sanitizeOrder(order: Order): OrderDTO {
