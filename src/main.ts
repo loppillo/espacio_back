@@ -8,7 +8,11 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix("api/v1");
-  app.enableCors();
+app.enableCors({
+  origin: 'https://espacioboulevardlinares.cl',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  allowedHeaders: 'Authorization,Content-Type',
+});
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
