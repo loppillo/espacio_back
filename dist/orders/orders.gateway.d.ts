@@ -1,4 +1,4 @@
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { Order } from './entities/order.entity';
 export interface OrderDTO {
     id: number;
@@ -36,5 +36,8 @@ export declare class OrdersGateway {
     notifyNewOrder(order: any): void;
     notifyOrderUpdated(order: Order): void;
     notifyMesaUpdated(mesaId: number, status: string): void;
+    handleJoinRoom(client: Socket, payload: {
+        role: string;
+    }): void;
     private sanitizeOrder;
 }

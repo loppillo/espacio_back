@@ -15,15 +15,24 @@ const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 let OrdersGateway = class OrdersGateway {
     notifyNewOrder(order) {
-        const sanitized = this.sanitizeOrder(order);
-        this.server.emit('newOrder', sanitized);
+        const payload = this.sanitizeOrder(order);
+        this.server.to('mesero').emit('newOrder', payload);
+        this.server.to('admin').emit('newOrder', payload);
     }
     notifyOrderUpdated(order) {
         const payload = this.sanitizeOrder(order);
-        this.server.emit('orderStatusUpdated', payload);
+        this.server.to('mesero').emit('orderStatusUpdated', payload);
+        this.server.to('admin').emit('orderStatusUpdated', payload);
     }
     notifyMesaUpdated(mesaId, status) {
-        this.server.emit('mesaStatusUpdated', { mesaId, status });
+        this.server.to('mesero').emit('mesaStatusUpdated', { mesaId, status });
+        this.server.to('admin').emit('mesaStatusUpdated', { mesaId, status });
+    }
+    handleJoinRoom(client, payload) {
+        if (payload.role === 'mesero')
+            client.join('mesero');
+        if (payload.role === 'admin')
+            client.join('admin');
     }
     sanitizeOrder(order) {
         return {
@@ -65,6 +74,12 @@ __decorate([
     (0, websockets_1.WebSocketServer)(),
     __metadata("design:type", socket_io_1.Server)
 ], OrdersGateway.prototype, "server", void 0);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('joinRoom'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", void 0)
+], OrdersGateway.prototype, "handleJoinRoom", null);
 exports.OrdersGateway = OrdersGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
