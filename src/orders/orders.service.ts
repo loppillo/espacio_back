@@ -129,7 +129,7 @@ async create(createOrderDto: CreateOrderDto) {
 
 
 
-async creates(createOrderDto: CreateOrderDto) {
+async creates(createOrderDto: CreateSOrderDto) {
   const { products, propina = 0, orderType = 'delivery' } = createOrderDto;
 
   // Solo delivery
