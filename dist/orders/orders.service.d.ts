@@ -9,7 +9,7 @@ import { Propina } from 'src/propina/entities/propina.entity';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
-import { OrderDTO, OrdersGateway } from './orders.gateway';
+import { OrdersGateway } from './orders.gateway';
 export declare class OrdersService {
     private dataSource;
     private readonly orderRepository;
@@ -21,8 +21,8 @@ export declare class OrdersService {
     private readonly productsOrdersRepository;
     private ordersGateway;
     constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway);
-    create(createOrderDto: CreateOrderDto): Promise<OrderDTO>;
-    creates(createOrderDto: CreateSOrderDto): Promise<OrderDTO>;
+    create(createOrderDto: CreateOrderDto): Promise<Order>;
+    creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
     findOne(id: number): Promise<Order>;
     update(id: number, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;
@@ -72,4 +72,5 @@ export declare class OrdersService {
         message: string;
     }>;
     private sanitizeOrder;
+    private generarNumeroVenta;
 }

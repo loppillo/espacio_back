@@ -36,5 +36,5 @@ export declare class OrdersGateway {
     notifyNewOrder(order: any): void;
     notifyOrderUpdated(order: Order): void;
     notifyMesaUpdated(mesaId: number, status: string): void;
-    private sanitizeOrder;
+    sanitizeOrder(order: Order): OrderDTO;
 }

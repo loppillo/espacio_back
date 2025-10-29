@@ -11,7 +11,7 @@ export declare class OrdersController {
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
     obtenerPendientes(): Promise<Order[]>;
-    create(createOrderDto: CreateOrderDto): Promise<import("./orders.gateway").OrderDTO>;
+    create(createOrderDto: CreateOrderDto): Promise<Order>;
     getHistorialPorMesa(mesaId: number): Promise<{
         numeroVenta: number;
         mesaId: number;
@@ -29,7 +29,7 @@ export declare class OrdersController {
             subtotal: number;
         }[];
     }[]>;
-    creates(createOrderDto: CreateSOrderDto): Promise<import("./orders.gateway").OrderDTO>;
+    creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
     update(id: string, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;
