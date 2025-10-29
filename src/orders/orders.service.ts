@@ -39,91 +39,80 @@ export class OrdersService {
 
 
 async create(createOrderDto: CreateOrderDto) {
-  const { products, propina = 0, mesaId, orderType } = createOrderDto;
-  let mesa = null;
+  const { products, propina, mesaId, orderType } = createOrderDto;
 
-  // Validar mesa si no es delivery
-  if (orderType !== 'delivery') {
-    if (!mesaId || isNaN(Number(mesaId))) {
-      throw new BadRequestException('La mesa es obligatoria');
-    }
+  // Validar mesa
+  const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
+  if (!mesa) throw new BadRequestException('La mesa no existe');
 
-    mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
-    if (!mesa) throw new BadRequestException('La mesa no se encuentra');
-    if (mesa.status === 'ocupada') {
-      throw new BadRequestException('⛔ La mesa está ocupada.');
-    }
-
-    mesa.status = 'ocupada';
-    await this.mesaRepository.save(mesa);
-  }
-
-  // Obtener número de venta
-  const { max } = await this.orderRepository
-    .createQueryBuilder('order')
-    .select('MAX(order.numeroVenta)', 'max')
-    .getRawOne();
-  const nextNumeroVenta = (max || 0) + 1;
-
-  // Crear orden base
+  // Crear pedido base
   const newOrder = this.orderRepository.create({
-    detalle_venta: createOrderDto.detalle_venta,
-    tableNumber: orderType !== 'delivery' ? createOrderDto.tableNumber : null,
-    propina,
-    status: createOrderDto.status || 'pendiente',
+    tableNumber: Number(mesa.numero_mesa),
     orderType,
-    paymentMethod: createOrderDto.paymentMethod || 'pendiente',
-    mesa,
-    numeroVenta: nextNumeroVenta,
+    estado: 'activo',
+    status: 'pendiente',
+    propina,
     total: 0,
+    paymentMethod: 'pendiente',
+    numeroVenta: await this.generarNumeroVenta(),
+    mesa,
   });
 
-  // Cargar productos en lote
-  const productIds = products.map(p => p.id);
-  const productEntities = await this.productRepository.findBy({ id: In(productIds) });
-
-  if (productEntities.length !== products.length) {
-    throw new BadRequestException('Uno o más productos no existen');
-  }
-
-  // Generar detalles de orden
-  let total = 0;
-  const orderProducts = products.map(p => {
-    const productEntity = productEntities.find(pe => pe.id === p.id)!;
-    const subtotal = productEntity.price * p.cantidad;
-    total += subtotal;
-
-    const op = new ProductsOrders();
-    op.product = productEntity;
-    op.cantidad = p.cantidad;
-    op.precioUnitario = productEntity.price;
-    op.subtotal = subtotal;
-    op.order = newOrder;
-    return op;
-  });
-
-  newOrder.total = total + propina;
-  newOrder.orderProducts = orderProducts;
-
-  // Guardar orden
+  // Guardar pedido base
   const savedOrder = await this.orderRepository.save(newOrder);
 
-  // Recargar con relaciones completas
+  // Asociar productos
+  const orderProducts = [];
+  let total = 0;
+
+  for (const item of products) {
+    const product = await this.productRepository.findOne({ where: { id: item.id } });
+    if (!product) continue;
+
+    const subtotal = product.price * item.cantidad;
+    total += subtotal;
+
+    orderProducts.push(
+      this.productsOrdersRepository.create({
+        order: savedOrder,
+        product,
+        cantidad: item.cantidad,
+        precioUnitario: product.price,
+        subtotal,
+      })
+    );
+  }
+
+  // Guardar detalle de productos
+  await this.productsOrdersRepository.save(orderProducts);
+
+  // Actualizar total y propina
+  savedOrder.total = total + (propina || 0);
+  await this.orderRepository.save(savedOrder);
+
+  // Actualizar estado de la mesa
+  mesa.status = 'ocupada';
+  await this.mesaRepository.save(mesa);
+
+  // Recargar pedido completo con todas las relaciones
   const fullOrder = await this.orderRepository.findOne({
     where: { id: savedOrder.id },
-    relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product'],
+    relations: {
+      mesa: true,
+      customer: true,
+      orderProducts: { product: true },
+    },
   });
 
-  const sanitized = this.sanitizeOrder(fullOrder);
-
-  // 🔔 Emitir eventos WebSocket de manera asíncrona
+  // Emitir por WebSocket
   Promise.resolve().then(() => {
-    if (mesa) this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-    this.ordersGateway.notifyNewOrder(sanitized);
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
   });
 
-  return sanitized;
+  return fullOrder;
 }
+
 
 
 
@@ -555,41 +544,70 @@ async creates(createOrderDto: CreateSOrderDto) {
 
 
 
-  private sanitizeOrder(order: Order): OrderDTO {
-    return {
-      id: order.id,
-      tableNumber: order.tableNumber ?? null,
-      orderType: order.orderType,
-      detalle_venta: order.detalle_venta ?? null,
-      estado: order.estado,
-      propina: order.propina,
-      status: order.status,
-      total: order.total,
-      createdAt: order.createdAt,
-      paymentMethod: order.paymentMethod ?? null,
-      numeroVenta: order.numeroVenta,
-      mesa: order.mesa
-        ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa }
-        : null,
-      customer: order.customer
-        ? {
+  private sanitizeOrder(order: Order): any {
+  if (!order) return null;
+
+  return {
+    id: order.id,
+    tableNumber: order.tableNumber ?? null,
+    orderType: order.orderType ?? 'local',
+    detalle_venta: order.detalle_venta ?? null,
+    estado: order.estado ?? 'activo',
+    propina: order.propina ?? 0,
+    status: order.status ?? 'pendiente',
+    total: order.total ?? 0,
+    createdAt: order.createdAt ?? new Date(),
+    paymentMethod: order.paymentMethod ?? 'pendiente',
+    numeroVenta: order.numeroVenta ?? null,
+
+    // Mesa simplificada
+    mesaId: order.mesa?.id ?? null,
+    mesa: order.mesa
+      ? {
+          id: order.mesa.id,
+          numero_mesa: order.mesa.numero_mesa,
+          status: order.mesa.status,
+        }
+      : null,
+
+    // Cliente
+    customer: order.customer
+      ? {
           id: order.customer.id,
           name: order.customer.customerName,
           email: order.customer.customerEmail,
           phone: order.customer.customerPhone,
         }
-        : null,
-      products: order.orderProducts?.map(op => ({
-        productId: op.product.id,
-        name: op.product.name,
-        cantidad: op.cantidad,
-        precioUnitario: op.precioUnitario,
-        subtotal: op.subtotal,
-        imageUrl: op.product.imageUrl ?? undefined,
-      })) || [],
-    };
-  }
+      : null,
 
+    // Productos
+    orderProducts: order.orderProducts?.map(op => ({
+      orderId: op.order?.id ?? order.id,
+      productId: op.product?.id ?? null,
+      cantidad: op.cantidad,
+      precioUnitario: op.precioUnitario,
+      subtotal: op.subtotal,
+      product: op.product
+        ? {
+            id: op.product.id,
+            name: op.product.name,
+            description: op.product.description,
+            price: op.product.price,
+            imageUrl: op.product.imageUrl ?? null,
+          }
+        : null,
+    })) ?? [],
+  };
+}
+
+private async generarNumeroVenta(): Promise<number> {
+  const { max } = await this.orderRepository
+    .createQueryBuilder('order')
+    .select('MAX(order.numeroVenta)', 'max')
+    .getRawOne();
+
+  return (max || 0) + 1;
+}
 
 
 }

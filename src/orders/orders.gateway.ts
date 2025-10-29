@@ -63,7 +63,7 @@ notifyNewOrder(order: any) {
 
   
   // Evitar referencias circulares y objetos grandes
-private sanitizeOrder(order: Order): OrderDTO {
+ sanitizeOrder(order: Order): OrderDTO {
   return {
     id: order.id,
     tableNumber: order.tableNumber ?? null,
