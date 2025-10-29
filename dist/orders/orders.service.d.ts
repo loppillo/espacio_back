@@ -6,6 +6,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { Propina } from 'src/propina/entities/propina.entity';
+import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 import { OrderDTO, OrdersGateway } from './orders.gateway';
@@ -21,7 +22,7 @@ export declare class OrdersService {
     private ordersGateway;
     constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway);
     create(createOrderDto: CreateOrderDto): Promise<OrderDTO>;
-    creates(createOrderDto: CreateOrderDto): Promise<OrderDTO>;
+    creates(createOrderDto: CreateSOrderDto): Promise<OrderDTO>;
     findAll(): Promise<Order[]>;
     findOne(id: number): Promise<Order>;
     update(id: number, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;
