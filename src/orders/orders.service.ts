@@ -188,10 +188,14 @@ async creates(createOrderDto: CreateSOrderDto) {
 
 
 
-
-  async findAll() {
-    return await this.orderRepository.find();
-  }
+async findAll() {
+  return await this.orderRepository
+    .createQueryBuilder('order')
+    .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+    .leftJoinAndSelect('orderProducts.product', 'product')
+    .orderBy('product.price', 'ASC') // o 'DESC' si querés descendente
+    .getMany();
+}
 
   async findOne(id: number) {
     return await this.orderRepository.findOneBy({ id });
