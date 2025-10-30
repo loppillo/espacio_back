@@ -139,7 +139,12 @@ let OrdersService = class OrdersService {
         return sanitized;
     }
     async findAll() {
-        return await this.orderRepository.find();
+        return await this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+            .leftJoinAndSelect('orderProducts.product', 'product')
+            .orderBy('product.price', 'ASC')
+            .getMany();
     }
     async findOne(id) {
         return await this.orderRepository.findOneBy({ id });
