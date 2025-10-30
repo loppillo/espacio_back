@@ -47,7 +47,7 @@ buscarProductos(
 @Get('buscars')
 buscarProducto(
   @Query('nombre') nombre?: string,
-  @Query('categorias') categorias?: string // puede ser "1,2,3"
+  @Query('categorias') categorias?: string
 ) {
   const categoryIds = categorias
     ? categorias.split(',').map((id) => parseInt(id, 10))

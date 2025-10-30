@@ -264,9 +264,9 @@ async buscarPorNombres(
     query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
   }
 
-  // Obtener todos los productos filtrados, sin paginación
   const productos = await query
-    .orderBy('product.id', 'DESC')
+    .orderBy('product.price', 'ASC') // 👈 menor a mayor
+    .addOrderBy('product.id', 'DESC') // opcional, para mantener consistencia
     .getMany();
 
   return productos.map((producto) => ({
@@ -284,7 +284,6 @@ async buscarPorNombres(
     })),
   }));
 }
-
 
 
   
