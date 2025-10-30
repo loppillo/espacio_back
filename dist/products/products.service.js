@@ -198,7 +198,8 @@ let ProductsService = class ProductsService {
             query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
         }
         const productos = await query
-            .orderBy('product.id', 'DESC')
+            .orderBy('product.price', 'ASC')
+            .addOrderBy('product.id', 'DESC')
             .getMany();
         return productos.map((producto) => ({
             id: producto.id,
