@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { CategoriaGastoService } from './categoria-gasto.service';
 import { CreateCategoriaGastoDto } from './dto/create-categoria-gasto.dto';
 import { UpdateCategoriaGastoDto } from './dto/update-categoria-gasto.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/roles/roles.guard';
 
 @Controller('categoria-gasto')
 export class CategoriaGastoController {
