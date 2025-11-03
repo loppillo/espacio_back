@@ -22,6 +22,8 @@ const typeorm_1 = require("@nestjs/typeorm");
 const order_entity_1 = require("./entities/order.entity");
 const typeorm_2 = require("typeorm");
 const print_service_1 = require("./print/print.service");
+const jwt_auth_guard_1 = require("../auth/guard/jwt-auth.guard");
+const roles_guard_1 = require("../roles/roles.guard");
 let OrdersController = class OrdersController {
     constructor(ordersService, orderRepository, printService) {
         this.ordersService = ordersService;
@@ -105,12 +107,14 @@ let OrdersController = class OrdersController {
 exports.OrdersController = OrdersController;
 __decorate([
     (0, common_1.Get)('pendientes'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "obtenerPendientes", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_order_dto_1.CreateOrderDto]),
@@ -118,6 +122,7 @@ __decorate([
 ], OrdersController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)('historial/:mesaId'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('mesaId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -125,6 +130,7 @@ __decorate([
 ], OrdersController.prototype, "getHistorialPorMesa", null);
 __decorate([
     (0, common_1.Post)('s'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_sorder_1.CreateSOrderDto]),
@@ -132,12 +138,14 @@ __decorate([
 ], OrdersController.prototype, "creates", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -145,6 +153,7 @@ __decorate([
 ], OrdersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -153,6 +162,7 @@ __decorate([
 ], OrdersController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -160,6 +170,7 @@ __decorate([
 ], OrdersController.prototype, "remove", null);
 __decorate([
     (0, common_1.Patch)(':id/cancelar'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -167,6 +178,7 @@ __decorate([
 ], OrdersController.prototype, "cancelarOrden", null);
 __decorate([
     (0, common_1.Get)('ventas/por-dia'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('fecha')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -174,6 +186,7 @@ __decorate([
 ], OrdersController.prototype, "obtenerVentasPorDia", null);
 __decorate([
     (0, common_1.Delete)(':orderId/productos/:productId'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('orderId', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Param)('productId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
@@ -182,6 +195,7 @@ __decorate([
 ], OrdersController.prototype, "eliminarProducto", null);
 __decorate([
     (0, common_1.Post)('imprimir/factura'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -189,6 +203,7 @@ __decorate([
 ], OrdersController.prototype, "print", null);
 __decorate([
     (0, common_1.Patch)(':id/aceptar'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -196,6 +211,7 @@ __decorate([
 ], OrdersController.prototype, "aceptarVenta", null);
 __decorate([
     (0, common_1.Patch)(':id/cancelar'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -203,6 +219,7 @@ __decorate([
 ], OrdersController.prototype, "cancelarVenta", null);
 __decorate([
     (0, common_1.Get)('ventas/diarias'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('desde')),
     __param(1, (0, common_1.Query)('hasta')),
     __param(2, (0, common_1.Query)('orderType')),
@@ -212,6 +229,7 @@ __decorate([
 ], OrdersController.prototype, "getVentasDiarias", null);
 __decorate([
     (0, common_1.Get)('ventas/diariasMesa'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('desde')),
     __param(1, (0, common_1.Query)('hasta')),
     __param(2, (0, common_1.Query)('mesaId')),
@@ -221,6 +239,7 @@ __decorate([
 ], OrdersController.prototype, "getVentasDiariasxMesa", null);
 __decorate([
     (0, common_1.Patch)('cancelar'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('fecha')),
     __param(1, (0, common_1.Query)('mesaId')),
     __metadata("design:type", Function),
@@ -229,6 +248,7 @@ __decorate([
 ], OrdersController.prototype, "cancelarVentas", null);
 __decorate([
     (0, common_1.Patch)(':id/cancelar'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
