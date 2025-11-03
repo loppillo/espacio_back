@@ -70,7 +70,7 @@ let OrdersGateway = class OrdersGateway {
             doc.image(qrBuffer, { align: 'center', width: 100 });
             doc.end();
             await new Promise(resolve => doc.on('finish', resolve));
-            await (0, pdf_to_printer_1.print)(filePath, { printer: 'Nombre_de_tu_impresora' });
+            await (0, pdf_to_printer_1.print)(filePath, { printer: 'POS-80' });
             return { status: 'ok', message: 'Impresión enviada' };
         }
         catch (err) {
