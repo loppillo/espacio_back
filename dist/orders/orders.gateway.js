@@ -39,42 +39,29 @@ exports.OrdersGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
-const path_1 = require("path");
 const pdf_to_printer_1 = require("pdf-to-printer");
 const PDFDocument = __importStar(require("pdfkit"));
 const fs = __importStar(require("fs"));
-const QRCode = __importStar(require("qrcode"));
 let OrdersGateway = class OrdersGateway {
     async handlePrint(data) {
         try {
-            const filePath = (0, path_1.join)(__dirname, 'ticket.pdf');
+            const filePath = `ticket-${Date.now()}.pdf`;
             const doc = new PDFDocument({ size: [250, 400], margin: 10 });
             doc.pipe(fs.createWriteStream(filePath));
-            if (data.logoPath) {
-                doc.image(data.logoPath, 70, 10, { width: 100 });
-            }
-            doc.moveDown(5);
             doc.fontSize(14).text('TICKET DE PEDIDO', { align: 'center', underline: true });
             doc.moveDown();
             doc.fontSize(12).text(`Mesa: ${data.mesa}`);
-            doc.text(`Fecha: ${new Date().toLocaleString()}`);
             doc.text(`Total: $${data.total}`);
             doc.moveDown();
             data.items.forEach(item => {
                 doc.text(`${item.cantidad} x ${item.nombre} - $${item.precio}`);
             });
-            doc.moveDown();
-            const qrData = `Mesa: ${data.mesa}\nTotal: ${data.total}\nItems:\n${data.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')}`;
-            const qrImage = await QRCode.toDataURL(qrData);
-            const qrBuffer = Buffer.from(qrImage.split(',')[1], 'base64');
-            doc.image(qrBuffer, { align: 'center', width: 100 });
             doc.end();
             await new Promise(resolve => doc.on('finish', resolve));
-            await (0, pdf_to_printer_1.print)(filePath, { printer: 'POS-80' });
-            return { status: 'ok', message: 'Impresión enviada' };
+            await (0, pdf_to_printer_1.print)(filePath, { printer: 'Nombre_de_tu_impresora' });
+            return { status: 'ok', message: 'Ticket impreso correctamente' };
         }
         catch (err) {
-            console.error('Error al imprimir:', err);
             return { status: 'error', message: err.message };
         }
     }
