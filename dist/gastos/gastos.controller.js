@@ -15,8 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GastosController = void 0;
 const common_1 = require("@nestjs/common");
 const gastos_service_1 = require("./gastos.service");
-const jwt_auth_guard_1 = require("../auth/guard/jwt-auth.guard");
-const roles_guard_1 = require("../roles/roles.guard");
 let GastosController = class GastosController {
     constructor(expensesService) {
         this.expensesService = expensesService;
@@ -55,7 +53,6 @@ let GastosController = class GastosController {
 exports.GastosController = GastosController;
 __decorate([
     (0, common_1.Get)('balances'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('start')),
     __param(1, (0, common_1.Query)('end')),
     __metadata("design:type", Function),
@@ -64,7 +61,6 @@ __decorate([
 ], GastosController.prototype, "getBalance", null);
 __decorate([
     (0, common_1.Get)('balancesA'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('anio')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -72,7 +68,6 @@ __decorate([
 ], GastosController.prototype, "getBalancePorAnio", null);
 __decorate([
     (0, common_1.Get)('ventas-diarias'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('fecha')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -80,7 +75,6 @@ __decorate([
 ], GastosController.prototype, "getBalanceDiario", null);
 __decorate([
     (0, common_1.Get)('mensual'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('anio', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -88,21 +82,18 @@ __decorate([
 ], GastosController.prototype, "getMensual", null);
 __decorate([
     (0, common_1.Get)('anual'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], GastosController.prototype, "getAnual", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], GastosController.prototype, "getAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -110,7 +101,6 @@ __decorate([
 ], GastosController.prototype, "getOne", null);
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -118,7 +108,6 @@ __decorate([
 ], GastosController.prototype, "crearGasto", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
