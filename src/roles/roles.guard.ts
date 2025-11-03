@@ -4,16 +4,29 @@ import { Reflector } from '@nestjs/core';
 @Injectable()
 export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-  const request = context.switchToHttp().getRequest();
-  const user = request.user;
-  if (!user) return false; // nadie logeado no entra
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+    const path = request.route.path;
 
-  // Admin solo /admin
-  if (request.route.path.startsWith('/admin') && user.role !== 'admin') return false;
+    // Rutas públicas que cualquiera puede acceder
+    const publicRoutes = [
+      '/user',
+      '/home',
+      '/menu',
+      '/about',
+      '/contact'
+    ];
+    if (publicRoutes.includes(path)) return true;
 
-  // Garzon o admin solo /garzon
-  if (request.route.path.startsWith('/garzon') && !['garzon', 'admin'].includes(user.role)) return false;
+    // Admin solo /admin
+    if (path.startsWith('/admin')) return user?.role === 'admin';
 
-  return true;
-}
+    // Garzon o admin solo /garzon
+    if (path.startsWith('/garzon') || path.startsWith('/mesa')) {
+      return user && ['garzon', 'admin'].includes(user.role);
+    }
+
+    // Resto de rutas protegidas: solo usuarios logueados
+    return !!user;
+  }
 }
