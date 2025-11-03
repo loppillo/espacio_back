@@ -50,59 +50,34 @@ export interface OrderDTO {
 export class OrdersGateway {
   @WebSocketServer()
   server: Server;
-
-
-  @SubscribeMessage('printTicket')
+@SubscribeMessage('printTicket')
   async handlePrint(@MessageBody() data: any) {
     try {
-      // Ruta temporal para PDF
-      const filePath = join(__dirname, 'ticket.pdf');
-      const doc = new PDFDocument({ size: [250, 400], margin: 10 }); // Tamaño tipo ticket
+      const filePath = `ticket-${Date.now()}.pdf`;
+      const doc = new PDFDocument({ size: [250, 400], margin: 10 });
       doc.pipe(fs.createWriteStream(filePath));
 
-      // Logo (opcional)
-      if (data.logoPath) {
-        doc.image(data.logoPath, 70, 10, { width: 100 });
-      }
-      doc.moveDown(5);
-
-      // Encabezado
       doc.fontSize(14).text('TICKET DE PEDIDO', { align: 'center', underline: true });
       doc.moveDown();
-
       doc.fontSize(12).text(`Mesa: ${data.mesa}`);
-      doc.text(`Fecha: ${new Date().toLocaleString()}`);
       doc.text(`Total: $${data.total}`);
       doc.moveDown();
 
-      // Items del pedido
       data.items.forEach(item => {
         doc.text(`${item.cantidad} x ${item.nombre} - $${item.precio}`);
       });
-      doc.moveDown();
-
-      // Código QR con resumen del pedido
-      const qrData = `Mesa: ${data.mesa}\nTotal: ${data.total}\nItems:\n${data.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')}`;
-      const qrImage = await QRCode.toDataURL(qrData);
-      const qrBuffer = Buffer.from(qrImage.split(',')[1], 'base64');
-      doc.image(qrBuffer, { align: 'center', width: 100 });
 
       doc.end();
 
-      // Esperar a que el PDF se genere
       await new Promise(resolve => doc.on('finish', resolve));
 
-      // Imprimir automáticamente (nombre de tu impresora)
-      await print(filePath, { printer: 'POS-80' });
+      await print(filePath, { printer: 'Nombre_de_tu_impresora' });
 
-      return { status: 'ok', message: 'Impresión enviada' };
-
+      return { status: 'ok', message: 'Ticket impreso correctamente' };
     } catch (err) {
-      console.error('Error al imprimir:', err);
       return { status: 'error', message: err.message };
     }
   }
-
 
 
 notifyNewOrder(order: any) {
