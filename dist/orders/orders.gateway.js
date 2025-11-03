@@ -58,7 +58,7 @@ let OrdersGateway = class OrdersGateway {
             });
             doc.end();
             await new Promise(resolve => doc.on('finish', resolve));
-            await (0, pdf_to_printer_1.print)(filePath, { printer: 'Nombre_de_tu_impresora' });
+            await (0, pdf_to_printer_1.print)(filePath, { printer: 'POS-80' });
             return { status: 'ok', message: 'Ticket impreso correctamente' };
         }
         catch (err) {
