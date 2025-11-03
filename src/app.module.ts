@@ -36,13 +36,6 @@ imports: [
 
  UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule],
   controllers: [AppController],
-  providers: [AppService, {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard, // primero JWT
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,   // luego Roles
-    },],
+  providers: [AppService],
 })
 export class AppModule {}
