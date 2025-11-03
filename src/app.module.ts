@@ -16,6 +16,9 @@ import { AuthModule } from './auth/auth/auth.module';
 import { ProductsOrdersModule } from './products-orders/products-orders.module';
 import { HorariosModule } from './horarios/horarios.module';
 import { Horario } from './horarios/entities/horario.entity';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/guard/jwt-auth.guard';
+import { RolesGuard } from './roles/roles.guard';
 
 
 @Module({
@@ -33,6 +36,13 @@ imports: [
 
  UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // primero JWT
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,   // luego Roles
+    },],
 })
 export class AppModule {}
