@@ -93,7 +93,7 @@ export class OrdersGateway {
       await new Promise(resolve => doc.on('finish', resolve));
 
       // Imprimir automáticamente (nombre de tu impresora)
-      await print(filePath, { printer: 'Nombre_de_tu_impresora' });
+      await print(filePath, { printer: 'POS-80' });
 
       return { status: 'ok', message: 'Impresión enviada' };
 
