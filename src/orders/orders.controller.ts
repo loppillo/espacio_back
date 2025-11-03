@@ -18,20 +18,17 @@ export class OrdersController {
   ) { }
 
   @Get('pendientes')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async obtenerPendientes() {
     return this.ordersService.obtenerPendientes();
   }
 
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   create(@Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(createOrderDto);
   }
 
   @Get('historial/:mesaId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
     console.log('🧩 Mesa ID recibido:', mesaId);
     return this.ordersService.getHistorialPorMesa(+mesaId);
@@ -39,43 +36,36 @@ export class OrdersController {
 
 
   @Post('s')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   creates(@Body() createOrderDto: CreateSOrderDto) {
     return this.ordersService.creates(createOrderDto);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   findAll() {
     return this.ordersService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(+id, updateOrderDto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   remove(@Param('id') id: string) {
     return this.ordersService.remove(+id);
   }
 
   @Patch(':id/cancelar')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   cancelarOrden(@Param('id') id: number) {
     return this.ordersService.cancelarOrden(id);
   }
 
   @Get('ventas/por-dia')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async obtenerVentasPorDia(@Query('fecha') fecha: string) {
     if (!fecha) {
       throw new BadRequestException('Debe proporcionar una fecha en formato YYYY-MM-DD');
@@ -102,7 +92,6 @@ export class OrdersController {
 
 
   @Delete(':orderId/productos/:productId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async eliminarProducto(
     @Param('orderId', ParseIntPipe) orderId: number,
     @Param('productId', ParseIntPipe) productId: number,
@@ -112,27 +101,23 @@ export class OrdersController {
   }
 
   @Post('imprimir/factura')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async print(@Body() body: any) {
     return this.printService.printFactura(body);
   }
 
   // Aceptar una venta (cambia status => 'Aceptado')
   @Patch(':id/aceptar')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async aceptarVenta(@Param('id') id: number) {
     return this.ordersService.aceptarVenta(+id);
   }
 
   // Cancelar venta (opcional) - status => 'Cancelado' o 'Anulado'
   @Patch(':id/cancelar')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async cancelarVenta(@Param('id') id: number) {
     return this.ordersService.cancelarVenta(+id);
   }
 
   @Get('ventas/diarias')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async getVentasDiarias(
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
@@ -142,7 +127,6 @@ export class OrdersController {
   }
 
   @Get('ventas/diariasMesa')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async getVentasDiariasxMesa(
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
@@ -152,7 +136,6 @@ export class OrdersController {
   }
 
   @Patch('cancelar')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async cancelarVentas(
     @Query('fecha') fecha?: string, // formato YYYY-MM-DD
     @Query('mesaId') mesaId?: number,
@@ -167,7 +150,6 @@ export class OrdersController {
 
 
   @Patch(':id/cancelar')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   async cancelar(@Param('id') id: number) {
     return this.ordersService.cancelar(id);
   }
