@@ -17,8 +17,6 @@ const common_1 = require("@nestjs/common");
 const create_mesa_dto_1 = require("./dto/create-mesa.dto");
 const update_mesa_dto_1 = require("./dto/update-mesa.dto");
 const mesas_service_1 = require("./mesas.service");
-const jwt_auth_guard_1 = require("../auth/guard/jwt-auth.guard");
-const roles_guard_1 = require("../roles/roles.guard");
 let MesaController = class MesaController {
     constructor(mesaService) {
         this.mesaService = mesaService;
@@ -72,7 +70,6 @@ let MesaController = class MesaController {
 exports.MesaController = MesaController;
 __decorate([
     (0, common_1.Get)(':id/detalle-actual'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -80,7 +77,6 @@ __decorate([
 ], MesaController.prototype, "getDetalleMesaActual", null);
 __decorate([
     (0, common_1.Get)('historial'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('mesaId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -88,14 +84,12 @@ __decorate([
 ], MesaController.prototype, "getHistorialPorMesas", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], MesaController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('/obtener/:id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -103,7 +97,6 @@ __decorate([
 ], MesaController.prototype, "obtenerMesaPorId", null);
 __decorate([
     (0, common_1.Get)('/detalle/:id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -111,7 +104,6 @@ __decorate([
 ], MesaController.prototype, "getDetalleMesa", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -119,7 +111,6 @@ __decorate([
 ], MesaController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_mesa_dto_1.CreateMesaDto]),
@@ -127,7 +118,6 @@ __decorate([
 ], MesaController.prototype, "create", null);
 __decorate([
     (0, common_1.Put)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -136,7 +126,6 @@ __decorate([
 ], MesaController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -144,7 +133,6 @@ __decorate([
 ], MesaController.prototype, "remove", null);
 __decorate([
     (0, common_1.Put)(':id/estado'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('status')),
     __metadata("design:type", Function),
@@ -153,7 +141,6 @@ __decorate([
 ], MesaController.prototype, "actualizarEstadoMesa", null);
 __decorate([
     (0, common_1.Patch)(':id/pagar'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -161,7 +148,6 @@ __decorate([
 ], MesaController.prototype, "marcarPedidoPagado", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -169,7 +155,6 @@ __decorate([
 ], MesaController.prototype, "getMesa", null);
 __decorate([
     (0, common_1.Post)(':id/nuevo-pedido'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -177,7 +162,6 @@ __decorate([
 ], MesaController.prototype, "crearNuevoPedido", null);
 __decorate([
     (0, common_1.Get)(':id/pedidos'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Query)('numeroVenta')),
     __metadata("design:type", Function),
@@ -186,7 +170,6 @@ __decorate([
 ], MesaController.prototype, "getPedidosActuales", null);
 __decorate([
     (0, common_1.Get)('ventas/detalle-mesa'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __param(0, (0, common_1.Query)('mesaId')),
     __param(1, (0, common_1.Query)('fecha')),
     __metadata("design:type", Function),
