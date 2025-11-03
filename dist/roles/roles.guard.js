@@ -12,13 +12,22 @@ let RolesGuard = class RolesGuard {
     canActivate(context) {
         const request = context.switchToHttp().getRequest();
         const user = request.user;
-        if (!user)
-            return false;
-        if (request.route.path.startsWith('/admin') && user.role !== 'admin')
-            return false;
-        if (request.route.path.startsWith('/garzon') && !['garzon', 'admin'].includes(user.role))
-            return false;
-        return true;
+        const path = request.route.path;
+        const publicRoutes = [
+            '/user',
+            '/home',
+            '/menu',
+            '/about',
+            '/contact'
+        ];
+        if (publicRoutes.includes(path))
+            return true;
+        if (path.startsWith('/admin'))
+            return user?.role === 'admin';
+        if (path.startsWith('/garzon') || path.startsWith('/mesa')) {
+            return user && ['garzon', 'admin'].includes(user.role);
+        }
+        return !!user;
     }
 };
 exports.RolesGuard = RolesGuard;
