@@ -3,13 +3,24 @@ import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
-
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.get<string[]>('role', context.getHandler());
-    if (!requiredRoles) return true; // si el endpoint no tiene @Roles, lo deja pasar
+    const request = context.switchToHttp().getRequest();
+    const user = request.user; // cargado por JwtAuthGuard
 
-    const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.includes(user?.role);
+    const path = request.route.path; // ruta actual
+    const method = request.method;
+
+    // ejemplo simple: bloquea /admin si no es admin
+    if (path.startsWith('/admin') && user?.role !== 'admin') {
+      return false;
+    }
+
+    // bloquea /garzon si no es garzon o admin
+    if (path.startsWith('/garzon') && !['garzon', 'admin'].includes(user?.role)) {
+      return false;
+    }
+
+    // el resto de rutas son accesibles
+    return true;
   }
 }
