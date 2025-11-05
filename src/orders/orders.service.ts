@@ -65,24 +65,23 @@ async create(createOrderDto: CreateOrderDto) {
   let total = 0;
   const orderProducts = [];
 
-  for (const item of products) {
-    const product = await this.productRepository.findOne({ where: { id: item.id } });
-    if (!product) continue;
+ for (const item of products) {
+  const product = await this.productRepository.findOne({ where: { id: item.id } });
+  if (!product) continue;
 
-    const subtotal = product.price * item.cantidad;
-    total += subtotal;
+  const subtotal = product.price * item.cantidad;
+  total += subtotal;
 
-    const orderProduct = this.productsOrdersRepository.create({
-      order: savedOrder,     // 🔑 asociamos correctamente
-      product,
-      cantidad: item.cantidad,
-      precioUnitario: product.price,
-      subtotal
-    });
+  const po = this.productsOrdersRepository.create({
+    order: savedOrder, // <--- OK si savedOrder ya tiene ID
+    product,
+    cantidad: item.cantidad,
+    precioUnitario: product.price,
+    subtotal,
+  });
 
-    orderProducts.push(orderProduct);
-  }
-
+  orderProducts.push(po);
+}
   // Guardar los detalles de productos
   await this.productsOrdersRepository.save(orderProducts);
 
