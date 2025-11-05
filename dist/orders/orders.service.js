@@ -37,7 +37,7 @@ let OrdersService = class OrdersService {
         this.ordersGateway = ordersGateway;
     }
     async create(createOrderDto) {
-        const { products, propina, mesaId, orderType } = createOrderDto;
+        const { products, propina = 0, mesaId, orderType } = createOrderDto;
         const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
         if (!mesa)
             throw new common_1.BadRequestException('La mesa no existe');
@@ -53,34 +53,31 @@ let OrdersService = class OrdersService {
             mesa,
         });
         const savedOrder = await this.orderRepository.save(newOrder);
-        const orderProducts = [];
         let total = 0;
+        const orderProducts = [];
         for (const item of products) {
             const product = await this.productRepository.findOne({ where: { id: item.id } });
             if (!product)
                 continue;
             const subtotal = product.price * item.cantidad;
             total += subtotal;
-            orderProducts.push(this.productsOrdersRepository.create({
+            const orderProduct = this.productsOrdersRepository.create({
                 order: savedOrder,
                 product,
                 cantidad: item.cantidad,
                 precioUnitario: product.price,
-                subtotal,
-            }));
+                subtotal
+            });
+            orderProducts.push(orderProduct);
         }
         await this.productsOrdersRepository.save(orderProducts);
-        savedOrder.total = total + (propina || 0);
+        savedOrder.total = total + propina;
         await this.orderRepository.save(savedOrder);
         mesa.status = 'ocupada';
         await this.mesaRepository.save(mesa);
         const fullOrder = await this.orderRepository.findOne({
             where: { id: savedOrder.id },
-            relations: {
-                mesa: true,
-                customer: true,
-                orderProducts: { product: true },
-            },
+            relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product']
         });
         Promise.resolve().then(() => {
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
@@ -107,6 +104,7 @@ let OrdersService = class OrdersService {
             numeroVenta: nextNumeroVenta,
             total: 0,
         });
+        const savedOrder = await this.orderRepository.save(newOrder);
         const productIds = products.map(p => p.id);
         const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
         if (productEntities.length !== products.length) {
@@ -117,17 +115,18 @@ let OrdersService = class OrdersService {
             const productEntity = productEntities.find(pe => pe.id === p.id);
             const subtotal = productEntity.price * p.cantidad;
             total += subtotal;
-            const op = new products_order_entity_1.ProductsOrders();
-            op.product = productEntity;
-            op.cantidad = p.cantidad;
-            op.precioUnitario = productEntity.price;
-            op.subtotal = subtotal;
-            op.order = newOrder;
+            const op = this.productsOrdersRepository.create({
+                product: productEntity,
+                cantidad: p.cantidad,
+                precioUnitario: productEntity.price,
+                subtotal,
+                order: savedOrder,
+            });
             return op;
         });
-        newOrder.total = total + propina;
-        newOrder.orderProducts = orderProducts;
-        const savedOrder = await this.orderRepository.save(newOrder);
+        await this.productsOrdersRepository.save(orderProducts);
+        savedOrder.total = total + propina;
+        await this.orderRepository.save(savedOrder);
         const fullOrder = await this.orderRepository.findOne({
             where: { id: savedOrder.id },
             relations: ['customer', 'orderProducts', 'orderProducts.product'],
@@ -262,10 +261,10 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(order);
         const mesa = order.mesa;
         if (mesa) {
-            const pedidosActivos = await this.orderRepository.count({
-                where: { mesaId: mesa.id, status: 'Activo' }
+            const pedidosPendientes = await this.orderRepository.count({
+                where: { mesaId: mesa.id, status: 'pendiente' }
             });
-            mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
+            mesa.status = pedidosPendientes > 0 ? 'Ocupada' : 'Libre';
             await this.mesaRepository.save(mesa);
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
         }
