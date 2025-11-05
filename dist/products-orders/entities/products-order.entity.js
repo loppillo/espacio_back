@@ -17,7 +17,7 @@ let ProductsOrders = class ProductsOrders {
 };
 exports.ProductsOrders = ProductsOrders;
 __decorate([
-    (0, typeorm_1.PrimaryColumn)(),
+    (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
 ], ProductsOrders.prototype, "orderId", void 0);
 __decorate([
