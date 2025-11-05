@@ -39,14 +39,15 @@ export class OrdersService {
 
 
 async create(createOrderDto: CreateOrderDto) {
-  const { products, propina = 0, mesaId, orderType } = createOrderDto;
+  const { products, propina, mesaId, orderType } = createOrderDto;
 
-  // 🔹 Validar mesa
+  // Validar mesa
   const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
   if (!mesa) throw new BadRequestException('La mesa no existe');
 
-  // 🔹 Crear pedido base
+  // Crear pedido base
   const newOrder = this.orderRepository.create({
+    tableNumber: Number(mesa.numero_mesa),
     orderType,
     estado: 'activo',
     status: 'pendiente',
@@ -57,12 +58,12 @@ async create(createOrderDto: CreateOrderDto) {
     mesa,
   });
 
-  // 🔹 Guardar pedido base primero para obtener ID
+  // Guardar pedido base
   const savedOrder = await this.orderRepository.save(newOrder);
 
-  // 🔹 Asociar productos y calcular total
+  // Asociar productos
+  const orderProducts = [];
   let total = 0;
-  const orderProducts: ProductsOrders[] = [];
 
   for (const item of products) {
     const product = await this.productRepository.findOne({ where: { id: item.id } });
@@ -71,29 +72,29 @@ async create(createOrderDto: CreateOrderDto) {
     const subtotal = product.price * item.cantidad;
     total += subtotal;
 
-    const orderProduct = this.productsOrdersRepository.create({
-      order: savedOrder,      // 🔹 relación Order
-      product,                // 🔹 relación Product
-      cantidad: item.cantidad,
-      precioUnitario: product.price,
-      subtotal,
-    });
-
-    orderProducts.push(orderProduct);
+    orderProducts.push(
+      this.productsOrdersRepository.create({
+        order: savedOrder,
+        product,
+        cantidad: item.cantidad,
+        precioUnitario: product.price,
+        subtotal,
+      })
+    );
   }
 
-  // 🔹 Guardar todos los productos
+  // Guardar detalle de productos
   await this.productsOrdersRepository.save(orderProducts);
 
-  // 🔹 Actualizar total y propina
-  savedOrder.total = total + propina;
+  // Actualizar total y propina
+  savedOrder.total = total + (propina || 0);
   await this.orderRepository.save(savedOrder);
 
-  // 🔹 Actualizar estado de la mesa
+  // Actualizar estado de la mesa
   mesa.status = 'ocupada';
   await this.mesaRepository.save(mesa);
 
-  // 🔹 Cargar pedido completo con relaciones
+  // Recargar pedido completo con todas las relaciones
   const fullOrder = await this.orderRepository.findOne({
     where: { id: savedOrder.id },
     relations: {
@@ -103,7 +104,7 @@ async create(createOrderDto: CreateOrderDto) {
     },
   });
 
-  // 🔹 Emitir WebSocket para frontend
+  // Emitir por WebSocket
   Promise.resolve().then(() => {
     this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
     this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
@@ -111,6 +112,7 @@ async create(createOrderDto: CreateOrderDto) {
 
   return fullOrder;
 }
+
 
 
 
@@ -124,14 +126,13 @@ async creates(createOrderDto: CreateSOrderDto) {
     throw new BadRequestException('Este método solo permite pedidos de delivery.');
   }
 
-  // 1️⃣ Número de venta
+  // Número de venta
   const { max } = await this.orderRepository
     .createQueryBuilder('order')
     .select('MAX(order.numeroVenta)', 'max')
     .getRawOne();
   const nextNumeroVenta = (max || 0) + 1;
 
-  // 2️⃣ Crear la orden base
   const newOrder = this.orderRepository.create({
     detalle_venta: createOrderDto.detalle_venta,
     propina,
@@ -139,13 +140,10 @@ async creates(createOrderDto: CreateSOrderDto) {
     orderType,
     paymentMethod: createOrderDto.paymentMethod || 'pendiente',
     numeroVenta: nextNumeroVenta,
-    total: 0, // se actualizará luego
+    total: 0,
   });
 
-  // Guardar la orden primero para generar ID
-  const savedOrder = await this.orderRepository.save(newOrder);
-
-  // 3️⃣ Buscar productos en base a los IDs
+  // Productos en lote
   const productIds = products.map(p => p.id);
   const productEntities = await this.productRepository.findBy({ id: In(productIds) });
 
@@ -153,32 +151,26 @@ async creates(createOrderDto: CreateSOrderDto) {
     throw new BadRequestException('Uno o más productos no existen');
   }
 
-  // 4️⃣ Crear los detalles de productos con relación a la orden guardada
   let total = 0;
   const orderProducts = products.map(p => {
     const productEntity = productEntities.find(pe => pe.id === p.id)!;
     const subtotal = productEntity.price * p.cantidad;
     total += subtotal;
 
-    const op = this.productsOrdersRepository.create({
-      product: productEntity,
-      cantidad: p.cantidad,
-      precioUnitario: productEntity.price,
-      subtotal,
-      order: savedOrder,  // 🔑 ahora sí tiene ID
-    });
-
+    const op = new ProductsOrders();
+    op.product = productEntity;
+    op.cantidad = p.cantidad;
+    op.precioUnitario = productEntity.price;
+    op.subtotal = subtotal;
+    op.order = newOrder;
     return op;
   });
 
-  // Guardar detalles de productos
-  await this.productsOrdersRepository.save(orderProducts);
+  newOrder.total = total + propina;
+  newOrder.orderProducts = orderProducts;
 
-  // 5️⃣ Actualizar total en la orden y guardar
-  savedOrder.total = total + propina;
-  await this.orderRepository.save(savedOrder);
+  const savedOrder = await this.orderRepository.save(newOrder);
 
-  // 6️⃣ Traer la orden completa con todas las relaciones
   const fullOrder = await this.orderRepository.findOne({
     where: { id: savedOrder.id },
     relations: ['customer', 'orderProducts', 'orderProducts.product'],
@@ -186,7 +178,7 @@ async creates(createOrderDto: CreateSOrderDto) {
 
   const sanitized = this.sanitizeOrder(fullOrder);
 
-  // 7️⃣ Emitir actualización por WebSocket
+  // 🔔 WebSocket asincrónico
   Promise.resolve().then(() => {
     this.ordersGateway.notifyNewOrder(sanitized);
   });
@@ -350,31 +342,30 @@ async findAll() {
   async aceptarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },
-      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+      relations: ['mesa'] // Relación con la mesa
     });
     if (!order) throw new NotFoundException('Pedido no encontrado');
 
-    // Marcar pedido como pagado
-    order.status = 'pagado';
+    // Marcar pedido como Pagado
+    order.status = 'Pagado';
     await this.orderRepository.save(order);
 
-    // Actualizar estado de la mesa
+    // Actualizar status de la mesa
     const mesa = order.mesa;
     if (mesa) {
-      const pedidosPendientes = await this.orderRepository.count({
-        where: { mesaId: mesa.id, status: 'pendiente' },
+      // Revisar si hay otros pedidos activos en la mesa
+      const pedidosActivos = await this.orderRepository.count({
+        where: { mesaId: mesa.id, status: 'Activo' }
       });
-      mesa.status = pedidosPendientes > 0 ? 'ocupada' : 'libre';
+      mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
       await this.mesaRepository.save(mesa);
+
+      // Emitir evento para frontend
       this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
     }
 
-    // Emitir a caja/cocina
-    this.ordersGateway.notifyOrderAccepted(order);
-
     return order;
   }
-
 
   async cancelarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
