@@ -39,74 +39,86 @@ export class OrdersService {
 
 
 async create(createOrderDto: CreateOrderDto) {
-  const { products, propina = 0, mesaId, orderType } = createOrderDto;
+  
+const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
 
-  // Validar mesa
-  const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
-  if (!mesa) throw new BadRequestException('La mesa no existe');
+    // Validar mesa
+    let mesa: Mesa | null = null;
+    if (mesaId) {
+      mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+      if (!mesa) throw new BadRequestException('Mesa no existe');
+    }
 
-  // 1️⃣ Crear la orden base
-  const newOrder = this.orderRepository.create({
-    tableNumber: Number(mesa.numero_mesa),
-    orderType,
-    estado: 'activo',
-    status: 'pendiente',
-    propina,
-    total: 0, // se actualizará luego
-    paymentMethod: 'pendiente',
-    numeroVenta: await this.generarNumeroVenta(),
-    mesa,
-  });
+    // Generar número de venta
+    const { max } = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('MAX(order.numeroVenta)', 'max')
+      .getRawOne();
+    const nextNumeroVenta = (max || 0) + 1;
 
-  // Guardar la orden primero para generar ID
-  const savedOrder = await this.orderRepository.save(newOrder);
+    // Crear pedido
+    const newOrder = this.orderRepository.create({
+      mesa,
+      orderType,
+      status: 'pendiente',
+      propina,
+      total: 0,
+      numeroVenta: nextNumeroVenta,
+      paymentMethod: 'pendiente',
+    });
 
-  // 2️⃣ Crear los productos asociados
-  let total = 0;
-  const orderProducts = [];
+    // Guardar primero la orden para generar ID
+    const savedOrder = await this.orderRepository.save(newOrder);
 
- for (const item of products) {
-  const product = await this.productRepository.findOne({ where: { id: item.id } });
-  if (!product) continue;
+    // Asegurarse de que savedOrder es un solo objeto (no un array)
+    // Si save() retorna un array, tomar el primer elemento
+    const orderObj = Array.isArray(savedOrder) ? savedOrder[0] : savedOrder;
 
-  const subtotal = product.price * item.cantidad;
-  total += subtotal;
+    // Traer productos
+    const productIds = products.map(p => p.id);
+    const productEntities = await this.productRepository.findBy({ id: In(productIds) });
 
-  const po = this.productsOrdersRepository.create({
-    order: savedOrder, // <--- OK si savedOrder ya tiene ID
-    product,
-    cantidad: item.cantidad,
-    precioUnitario: product.price,
-    subtotal,
-  });
+    // Crear detalle de productos con referencia al pedido guardado
+    let total = 0;
+    const orderProducts = products.map(p => {
+      const productEntity = productEntities.find(pe => pe.id === p.id)!;
+      const subtotal = productEntity.price * p.cantidad;
+      total += subtotal;
 
-  orderProducts.push(po);
+      return this.productsOrdersRepository.create({
+        orderId: orderObj.id,
+        product: productEntity,
+        cantidad: p.cantidad,
+        precioUnitario: productEntity.price,
+        subtotal,
+      });
+    });
+
+    // Guardar productos del pedido
+    await this.productsOrdersRepository.save(orderProducts);
+
+    // Actualizar total
+    orderObj.total = total + propina;
+    orderObj.orderProducts = orderProducts;
+    await this.orderRepository.save(orderObj);
+   
+
+    // Marcar mesa ocupada
+    if (mesa) {
+      mesa.status = 'ocupada';
+    // Recargar pedido completo
+    const fullOrder = await this.orderRepository.findOne({
+      where: { id: orderObj.id },
+      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+    });
+
+    // Emitir WebSocket a cocina y caja
+    this.ordersGateway.notifyNewOrder(fullOrder);
+
+    return fullOrder!;
+  }
 }
-  // Guardar los detalles de productos
-  await this.productsOrdersRepository.save(orderProducts);
 
-  // 3️⃣ Actualizar total con propina
-  savedOrder.total = total + propina;
-  await this.orderRepository.save(savedOrder);
-
-  // 4️⃣ Actualizar estado de la mesa
-  mesa.status = 'ocupada';
-  await this.mesaRepository.save(mesa);
-
-  // 5️⃣ Traer la orden completa con relaciones
-  const fullOrder = await this.orderRepository.findOne({
-    where: { id: savedOrder.id },
-    relations: ['mesa', 'customer', 'orderProducts', 'orderProducts.product']
-  });
-
-  // 6️⃣ Emitir actualizaciones por WebSocket
-  Promise.resolve().then(() => {
-    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-    this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
-  });
-
-  return fullOrder;
-}
 
 
 
@@ -345,33 +357,32 @@ async findAll() {
   }
 
   async aceptarVenta(orderId: number): Promise<Order> {
-  const order = await this.orderRepository.findOne({
-    where: { id: orderId },
-    relations: ['mesa', 'orderProducts', 'orderProducts.product']
-  });
-  if (!order) throw new NotFoundException('Pedido no encontrado');
-
-  // Marcar pedido como Pagado
-  order.status = 'Pagado';
-  await this.orderRepository.save(order);
-
-  // Actualizar status de la mesa
-  const mesa = order.mesa;
-  if (mesa) {
-    const pedidosPendientes = await this.orderRepository.count({
-      where: { mesaId: mesa.id, status: 'pendiente' }
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
     });
-    mesa.status = pedidosPendientes > 0 ? 'Ocupada' : 'Libre';
-    await this.mesaRepository.save(mesa);
+    if (!order) throw new NotFoundException('Pedido no encontrado');
 
-    // Emitir evento para frontend
-    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    // Marcar pedido como pagado
+    order.status = 'pagado';
+    await this.orderRepository.save(order);
 
-   
+    // Actualizar estado de la mesa
+    const mesa = order.mesa;
+    if (mesa) {
+      const pedidosPendientes = await this.orderRepository.count({
+        where: { mesaId: mesa.id, status: 'pendiente' },
+      });
+      mesa.status = pedidosPendientes > 0 ? 'ocupada' : 'libre';
+      await this.mesaRepository.save(mesa);
+      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    }
+
+    // Emitir a caja/cocina
+    this.ordersGateway.notifyOrderAccepted(order);
+
+    return order;
   }
-
-  return order;
-}
 
 
   async cancelarVenta(orderId: number): Promise<Order> {
