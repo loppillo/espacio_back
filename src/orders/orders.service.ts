@@ -110,10 +110,7 @@ async create(createOrderDto: CreateOrderDto) {
     this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
   });
 
-  // 🖨️ Emitir impresión automática
-  Promise.resolve().then(() => {
-    this.ordersGateway.emitirTicketPedido(fullOrder);
-  });
+
 
   return fullOrder;
 }
@@ -187,10 +184,6 @@ async creates(createOrderDto: CreateSOrderDto) {
     this.ordersGateway.notifyNewOrder(sanitized);
   });
 
-  // 🖨️ Emitir impresión automática para delivery
-  Promise.resolve().then(() => {
-    this.ordersGateway.emitirTicketPedido(fullOrder);
-  });
 
   return sanitized;
 }
@@ -350,8 +343,8 @@ async findAll() {
 
   async aceptarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['mesa'] // Relación con la mesa
+        where: { id: orderId },
+       relations: ['mesa', 'orderProducts', 'orderProducts.product']
     });
     if (!order) throw new NotFoundException('Pedido no encontrado');
 
