@@ -39,87 +39,78 @@ export class OrdersService {
 
 
 async create(createOrderDto: CreateOrderDto) {
-  
-const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
+  const { products, propina = 0, mesaId, orderType } = createOrderDto;
 
-    // Validar mesa
-    let mesa: Mesa | null = null;
-    if (mesaId) {
-      mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
-      if (!mesa) throw new BadRequestException('Mesa no existe');
-    }
+  // 🔹 Validar mesa
+  const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
+  if (!mesa) throw new BadRequestException('La mesa no existe');
 
-    // Generar número de venta
-    const { max } = await this.orderRepository
-      .createQueryBuilder('order')
-      .select('MAX(order.numeroVenta)', 'max')
-      .getRawOne();
-    const nextNumeroVenta = (max || 0) + 1;
+  // 🔹 Crear pedido base
+  const newOrder = this.orderRepository.create({
+    orderType,
+    estado: 'activo',
+    status: 'pendiente',
+    propina,
+    total: 0,
+    paymentMethod: 'pendiente',
+    numeroVenta: await this.generarNumeroVenta(),
+    mesa,
+  });
 
-    // Crear pedido
-    const newOrder = this.orderRepository.create({
-      mesa,
-      orderType,
-      status: 'pendiente',
-      propina,
-      total: 0,
-      numeroVenta: nextNumeroVenta,
-      paymentMethod: 'pendiente',
+  // 🔹 Guardar pedido base primero para obtener ID
+  const savedOrder = await this.orderRepository.save(newOrder);
+
+  // 🔹 Asociar productos y calcular total
+  let total = 0;
+  const orderProducts: ProductsOrders[] = [];
+
+  for (const item of products) {
+    const product = await this.productRepository.findOne({ where: { id: item.id } });
+    if (!product) continue;
+
+    const subtotal = product.price * item.cantidad;
+    total += subtotal;
+
+    const orderProduct = this.productsOrdersRepository.create({
+      order: savedOrder,      // 🔹 relación Order
+      product,                // 🔹 relación Product
+      cantidad: item.cantidad,
+      precioUnitario: product.price,
+      subtotal,
     });
 
-    // Guardar primero la orden para generar ID
-    const savedOrder = await this.orderRepository.save(newOrder);
-
-    // Asegurarse de que savedOrder es un solo objeto (no un array)
-    // Si save() retorna un array, tomar el primer elemento
-    const orderObj = Array.isArray(savedOrder) ? savedOrder[0] : savedOrder;
-
-    // Traer productos
-    const productIds = products.map(p => p.id);
-    const productEntities = await this.productRepository.findBy({ id: In(productIds) });
-
-    // Crear detalle de productos con referencia al pedido guardado
-    let total = 0;
-    const orderProducts = products.map(p => {
-      const productEntity = productEntities.find(pe => pe.id === p.id)!;
-      const subtotal = productEntity.price * p.cantidad;
-      total += subtotal;
-
-      return this.productsOrdersRepository.create({
-        orderId: orderObj.id,
-        product: productEntity,
-        cantidad: p.cantidad,
-        precioUnitario: productEntity.price,
-        subtotal,
-      });
-    });
-
-    // Guardar productos del pedido
-    await this.productsOrdersRepository.save(orderProducts);
-
-    // Actualizar total
-    orderObj.total = total + propina;
-    orderObj.orderProducts = orderProducts;
-    await this.orderRepository.save(orderObj);
-   
-
-    // Marcar mesa ocupada
-    if (mesa) {
-      mesa.status = 'ocupada';
-    // Recargar pedido completo
-    const fullOrder = await this.orderRepository.findOne({
-      where: { id: orderObj.id },
-      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
-    });
-
-    // Emitir WebSocket a cocina y caja
-    this.ordersGateway.notifyNewOrder(fullOrder);
-
-    return fullOrder!;
+    orderProducts.push(orderProduct);
   }
+
+  // 🔹 Guardar todos los productos
+  await this.productsOrdersRepository.save(orderProducts);
+
+  // 🔹 Actualizar total y propina
+  savedOrder.total = total + propina;
+  await this.orderRepository.save(savedOrder);
+
+  // 🔹 Actualizar estado de la mesa
+  mesa.status = 'ocupada';
+  await this.mesaRepository.save(mesa);
+
+  // 🔹 Cargar pedido completo con relaciones
+  const fullOrder = await this.orderRepository.findOne({
+    where: { id: savedOrder.id },
+    relations: {
+      mesa: true,
+      customer: true,
+      orderProducts: { product: true },
+    },
+  });
+
+  // 🔹 Emitir WebSocket para frontend
+  Promise.resolve().then(() => {
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
+  });
+
+  return fullOrder;
 }
-
-
 
 
 
