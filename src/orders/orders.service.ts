@@ -323,32 +323,32 @@ async findAll() {
   }
 
   async aceptarVenta(orderId: number): Promise<Order> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['mesa'] // Relación con la mesa
+  const order = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['mesa', 'orderProducts', 'orderProducts.product']
+  });
+  if (!order) throw new NotFoundException('Pedido no encontrado');
+
+  order.status = 'Pagado';
+  await this.orderRepository.save(order);
+
+  // Actualizar mesa
+  const mesa = order.mesa;
+  if (mesa) {
+    const pendientes = await this.orderRepository.count({
+      where: { mesaId: mesa.id, status: 'pendiente' }
     });
-    if (!order) throw new NotFoundException('Pedido no encontrado');
-
-    // Marcar pedido como Pagado
-    order.status = 'Pagado';
-    await this.orderRepository.save(order);
-
-    // Actualizar status de la mesa
-    const mesa = order.mesa;
-    if (mesa) {
-      // Revisar si hay otros pedidos activos en la mesa
-      const pedidosActivos = await this.orderRepository.count({
-        where: { mesaId: mesa.id, status: 'Activo' }
-      });
-      mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
-      await this.mesaRepository.save(mesa);
-
-      // Emitir evento para frontend
-      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-    }
-
-    return order;
+    mesa.status = pendientes > 0 ? 'Ocupada' : 'Libre';
+    await this.mesaRepository.save(mesa);
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
   }
+
+  // 🔄 Recargar order con relaciones
+  return this.orderRepository.findOne({
+    where: { id: order.id },
+    relations: ['mesa', 'orderProducts', 'orderProducts.product']
+  });
+}
 
   async cancelarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
