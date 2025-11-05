@@ -71,10 +71,8 @@ async create(createOrderDto: CreateOrderDto) {
     total += subtotal;
 
     const op = this.productsOrdersRepository.create({
-      order: savedOrder,
-      product,
-      orderId: savedOrder.id,
-      productId: product.id,
+      order: savedOrder,   // ⚠️ Esto rellena orderId automáticamente
+      product,             // ⚠️ Esto rellena productId automáticamente
       cantidad: item.cantidad,
       precioUnitario: product.price,
       subtotal,
@@ -93,12 +91,12 @@ async create(createOrderDto: CreateOrderDto) {
   mesa.status = 'ocupada';
   await this.mesaRepository.save(mesa);
 
+  // Devolver pedido completo con relaciones
   return this.orderRepository.findOne({
     where: { id: savedOrder.id },
     relations: ['mesa', 'orderProducts', 'orderProducts.product'],
   });
 }
-
 
 
 
