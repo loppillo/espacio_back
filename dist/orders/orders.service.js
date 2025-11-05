@@ -37,11 +37,12 @@ let OrdersService = class OrdersService {
         this.ordersGateway = ordersGateway;
     }
     async create(createOrderDto) {
-        const { products, propina = 0, mesaId, orderType } = createOrderDto;
+        const { products, propina, mesaId, orderType } = createOrderDto;
         const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
         if (!mesa)
             throw new common_1.BadRequestException('La mesa no existe');
         const newOrder = this.orderRepository.create({
+            tableNumber: Number(mesa.numero_mesa),
             orderType,
             estado: 'activo',
             status: 'pendiente',
@@ -52,25 +53,24 @@ let OrdersService = class OrdersService {
             mesa,
         });
         const savedOrder = await this.orderRepository.save(newOrder);
-        let total = 0;
         const orderProducts = [];
+        let total = 0;
         for (const item of products) {
             const product = await this.productRepository.findOne({ where: { id: item.id } });
             if (!product)
                 continue;
             const subtotal = product.price * item.cantidad;
             total += subtotal;
-            const orderProduct = this.productsOrdersRepository.create({
+            orderProducts.push(this.productsOrdersRepository.create({
                 order: savedOrder,
                 product,
                 cantidad: item.cantidad,
                 precioUnitario: product.price,
                 subtotal,
-            });
-            orderProducts.push(orderProduct);
+            }));
         }
         await this.productsOrdersRepository.save(orderProducts);
-        savedOrder.total = total + propina;
+        savedOrder.total = total + (propina || 0);
         await this.orderRepository.save(savedOrder);
         mesa.status = 'ocupada';
         await this.mesaRepository.save(mesa);
@@ -107,7 +107,6 @@ let OrdersService = class OrdersService {
             numeroVenta: nextNumeroVenta,
             total: 0,
         });
-        const savedOrder = await this.orderRepository.save(newOrder);
         const productIds = products.map(p => p.id);
         const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
         if (productEntities.length !== products.length) {
@@ -118,18 +117,17 @@ let OrdersService = class OrdersService {
             const productEntity = productEntities.find(pe => pe.id === p.id);
             const subtotal = productEntity.price * p.cantidad;
             total += subtotal;
-            const op = this.productsOrdersRepository.create({
-                product: productEntity,
-                cantidad: p.cantidad,
-                precioUnitario: productEntity.price,
-                subtotal,
-                order: savedOrder,
-            });
+            const op = new products_order_entity_1.ProductsOrders();
+            op.product = productEntity;
+            op.cantidad = p.cantidad;
+            op.precioUnitario = productEntity.price;
+            op.subtotal = subtotal;
+            op.order = newOrder;
             return op;
         });
-        await this.productsOrdersRepository.save(orderProducts);
-        savedOrder.total = total + propina;
-        await this.orderRepository.save(savedOrder);
+        newOrder.total = total + propina;
+        newOrder.orderProducts = orderProducts;
+        const savedOrder = await this.orderRepository.save(newOrder);
         const fullOrder = await this.orderRepository.findOne({
             where: { id: savedOrder.id },
             relations: ['customer', 'orderProducts', 'orderProducts.product'],
@@ -256,22 +254,21 @@ let OrdersService = class OrdersService {
     async aceptarVenta(orderId) {
         const order = await this.orderRepository.findOne({
             where: { id: orderId },
-            relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+            relations: ['mesa']
         });
         if (!order)
             throw new common_1.NotFoundException('Pedido no encontrado');
-        order.status = 'pagado';
+        order.status = 'Pagado';
         await this.orderRepository.save(order);
         const mesa = order.mesa;
         if (mesa) {
-            const pedidosPendientes = await this.orderRepository.count({
-                where: { mesaId: mesa.id, status: 'pendiente' },
+            const pedidosActivos = await this.orderRepository.count({
+                where: { mesaId: mesa.id, status: 'Activo' }
             });
-            mesa.status = pedidosPendientes > 0 ? 'ocupada' : 'libre';
+            mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
             await this.mesaRepository.save(mesa);
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
         }
-        this.ordersGateway.notifyOrderAccepted(order);
         return order;
     }
     async cancelarVenta(orderId) {
