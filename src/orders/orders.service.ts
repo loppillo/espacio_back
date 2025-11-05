@@ -39,10 +39,11 @@ export class OrdersService {
 
 
 async create(createOrderDto: CreateOrderDto) {
-  const { products, propina = 0, mesaId, orderType } = createOrderDto;
+  const { products, propina, mesaId, orderType } = createOrderDto;
 
-  const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
-  if (!mesa) throw new BadRequestException('Mesa no existe');
+  // Validar mesa
+  const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
+  if (!mesa) throw new BadRequestException('La mesa no existe');
 
   // Crear pedido base
   const newOrder = this.orderRepository.create({
@@ -57,11 +58,12 @@ async create(createOrderDto: CreateOrderDto) {
     mesa,
   });
 
+  // Guardar pedido base
   const savedOrder = await this.orderRepository.save(newOrder);
 
-  // Crear relación productos-orden
+  // Asociar productos
+  const orderProducts = [];
   let total = 0;
-  const orderProducts: ProductsOrders[] = [];
 
   for (const item of products) {
     const product = await this.productRepository.findOne({ where: { id: item.id } });
@@ -70,32 +72,44 @@ async create(createOrderDto: CreateOrderDto) {
     const subtotal = product.price * item.cantidad;
     total += subtotal;
 
-    const op = this.productsOrdersRepository.create({
-      order: savedOrder,   // ⚠️ Esto rellena orderId automáticamente
-      product,             // ⚠️ Esto rellena productId automáticamente
-      cantidad: item.cantidad,
-      precioUnitario: product.price,
-      subtotal,
-    });
-
-    orderProducts.push(op);
+    orderProducts.push(
+      this.productsOrdersRepository.create({
+        order: savedOrder,
+        product,
+        cantidad: item.cantidad,
+        precioUnitario: product.price,
+        subtotal,
+      })
+    );
   }
 
+  // Guardar detalle de productos
   await this.productsOrdersRepository.save(orderProducts);
 
-  // Actualizar total
-  savedOrder.total = total + propina;
+  // Actualizar total y propina
+  savedOrder.total = total + (propina || 0);
   await this.orderRepository.save(savedOrder);
 
   // Actualizar estado de la mesa
   mesa.status = 'ocupada';
   await this.mesaRepository.save(mesa);
 
-  // Devolver pedido completo con relaciones
-  return this.orderRepository.findOne({
+  // Recargar pedido completo con todas las relaciones
+  const fullOrder = await this.orderRepository.findOne({
     where: { id: savedOrder.id },
-    relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+    relations: {
+      customer: true,
+      orderProducts: { product: true },
+    },
   });
+  fullOrder.mesa = mesa;
+  // Emitir por WebSocket
+  Promise.resolve().then(() => {
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
+  });
+
+  return fullOrder;
 }
 
 
@@ -237,41 +251,45 @@ async findAll() {
   }
 
   // Eliminar un producto de una orden específica
- async eliminarProducto(orderId: number, productId: number) {
-  // Buscar la relación
-  const orderProduct = await this.productsOrdersRepository.findOne({
-    where: { orderId, productId },
-    relations: ['order', 'product'],
-  });
+  async eliminarProducto(orderId: number, productId: number) {
+    // 1️⃣ Buscar la relación producto-orden
+    const orderProduct = await this.productsOrdersRepository.findOne({
+      where: { orderId, productId },
+      relations: ['product', 'order'],
+    });
 
-  if (!orderProduct) throw new NotFoundException('El producto no está en la orden');
+    if (!orderProduct) {
+      throw new NotFoundException('El producto no está en la orden');
+    }
 
-  // Eliminar
-  await this.productsOrdersRepository.remove(orderProduct);
+    // 2️⃣ Eliminar el producto de la orden
+    await this.productsOrdersRepository.delete({ orderId, productId });
 
-  // Recalcular total
-  const remainingProducts = await this.productsOrdersRepository.find({ where: { orderId } });
-  const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
+    // 3️⃣ Obtener productos restantes
+    const remainingProducts = await this.productsOrdersRepository.find({
+      where: { orderId },
+    });
 
-  const order = await this.orderRepository.findOne({
-    where: { id: orderId },
-    relations: ['orderProducts'],
-  });
+    // 4️⃣ Recalcular total
+    const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
 
-  order.total = newTotal;
-  if (remainingProducts.length === 0) {
-    order.status = 'vacío';
-    order.propina = 0;
+    // 5️⃣ Opcional: actualizar status o propina si no quedan productos
+    const updatedOrder = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['orderProducts'],
+    });
+
+    updatedOrder.total = newTotal;
+    if (remainingProducts.length === 0) {
+      updatedOrder.status = 'vacío'; // o 'cancelado', según tu lógica
+      updatedOrder.propina = 0;
+    }
+
+    await this.orderRepository.save(updatedOrder);
+
+    // 6️⃣ Devolver la orden actualizada completa
+    return updatedOrder;
   }
-
-  await this.orderRepository.save(order);
-
-  return this.orderRepository.findOne({
-    where: { id: orderId },
-    relations: ['orderProducts', 'orderProducts.product'],
-  });
-}
-
 
   async getHistorialPorMesa(mesaId: number) {
     const pedidos = await this.orderRepository.find({
@@ -321,32 +339,32 @@ async findAll() {
   }
 
   async aceptarVenta(orderId: number): Promise<Order> {
-  const order = await this.orderRepository.findOne({
-    where: { id: orderId },
-    relations: ['mesa', 'orderProducts', 'orderProducts.product']
-  });
-  if (!order) throw new NotFoundException('Pedido no encontrado');
-
-  order.status = 'Pagado';
-  await this.orderRepository.save(order);
-
-  // Actualizar mesa
-  const mesa = order.mesa;
-  if (mesa) {
-    const pendientes = await this.orderRepository.count({
-      where: { mesaId: mesa.id, status: 'pendiente' }
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa'] // Relación con la mesa
     });
-    mesa.status = pendientes > 0 ? 'Ocupada' : 'Libre';
-    await this.mesaRepository.save(mesa);
-    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-  }
+    if (!order) throw new NotFoundException('Pedido no encontrado');
 
-  // 🔄 Recargar order con relaciones
-  return this.orderRepository.findOne({
-    where: { id: order.id },
-    relations: ['mesa', 'orderProducts', 'orderProducts.product']
-  });
-}
+    // Marcar pedido como Pagado
+    order.status = 'Pagado';
+    await this.orderRepository.save(order);
+
+    // Actualizar status de la mesa
+    const mesa = order.mesa;
+    if (mesa) {
+      // Revisar si hay otros pedidos activos en la mesa
+      const pedidosActivos = await this.orderRepository.count({
+        where: { mesaId: mesa.id, status: 'Activo' }
+      });
+      mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
+      await this.mesaRepository.save(mesa);
+
+      // Emitir evento para frontend
+      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    }
+
+    return order;
+  }
 
   async cancelarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({

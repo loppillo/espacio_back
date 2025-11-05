@@ -96,10 +96,7 @@ notifyNewOrder(order: any) {
     this.server.emit('mesaStatusUpdated', { mesaId, status });
   }
 
-    notifyOrderAccepted(order: Order) {
-    const payload = this.sanitizeOrder(order);
-    this.server.emit('orderAccepted', payload); // evento exclusivo
-  }
+  
  
 
 
