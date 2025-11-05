@@ -64,8 +64,6 @@ let OrdersService = class OrdersService {
             const op = this.productsOrdersRepository.create({
                 order: savedOrder,
                 product,
-                orderId: savedOrder.id,
-                productId: product.id,
                 cantidad: item.cantidad,
                 precioUnitario: product.price,
                 subtotal,
