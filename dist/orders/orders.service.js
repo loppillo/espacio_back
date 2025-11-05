@@ -86,9 +86,6 @@ let OrdersService = class OrdersService {
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
             this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
         });
-        Promise.resolve().then(() => {
-            this.ordersGateway.emitirTicketPedido(fullOrder);
-        });
         return fullOrder;
     }
     async creates(createOrderDto) {
@@ -138,9 +135,6 @@ let OrdersService = class OrdersService {
         const sanitized = this.sanitizeOrder(fullOrder);
         Promise.resolve().then(() => {
             this.ordersGateway.notifyNewOrder(sanitized);
-        });
-        Promise.resolve().then(() => {
-            this.ordersGateway.emitirTicketPedido(fullOrder);
         });
         return sanitized;
     }
@@ -260,7 +254,7 @@ let OrdersService = class OrdersService {
     async aceptarVenta(orderId) {
         const order = await this.orderRepository.findOne({
             where: { id: orderId },
-            relations: ['mesa']
+            relations: ['mesa', 'orderProducts', 'orderProducts.product']
         });
         if (!order)
             throw new common_1.NotFoundException('Pedido no encontrado');

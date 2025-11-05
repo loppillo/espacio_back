@@ -33,7 +33,10 @@ export interface OrderDTO {
 }
 export declare class OrdersGateway {
     server: Server;
-    emitirTicketPedido(pedido: any): void;
+    handlePrint(data: any): Promise<{
+        status: string;
+        message: any;
+    }>;
     notifyNewOrder(order: any): void;
     notifyOrderUpdated(order: Order): void;
     notifyMesaUpdated(mesaId: number, status: string): void;
