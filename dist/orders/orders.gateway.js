@@ -76,10 +76,6 @@ let OrdersGateway = class OrdersGateway {
     notifyMesaUpdated(mesaId, status) {
         this.server.emit('mesaStatusUpdated', { mesaId, status });
     }
-    notifyOrderAccepted(order) {
-        const payload = this.sanitizeOrder(order);
-        this.server.emit('orderAccepted', payload);
-    }
     sanitizeOrder(order) {
         return {
             id: order.id,
