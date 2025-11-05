@@ -86,6 +86,9 @@ let OrdersService = class OrdersService {
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
             this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
         });
+        Promise.resolve().then(() => {
+            this.ordersGateway.emitirTicketPedido(fullOrder);
+        });
         return fullOrder;
     }
     async creates(createOrderDto) {
@@ -135,6 +138,9 @@ let OrdersService = class OrdersService {
         const sanitized = this.sanitizeOrder(fullOrder);
         Promise.resolve().then(() => {
             this.ordersGateway.notifyNewOrder(sanitized);
+        });
+        Promise.resolve().then(() => {
+            this.ordersGateway.emitirTicketPedido(fullOrder);
         });
         return sanitized;
     }
