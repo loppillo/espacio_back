@@ -248,7 +248,7 @@ let OrdersService = class OrdersService {
     async aceptarVenta(orderId) {
         const order = await this.orderRepository.findOne({
             where: { id: orderId },
-            relations: ['mesa']
+            relations: ['mesa', 'orderProducts', 'orderProducts.product']
         });
         if (!order)
             throw new common_1.NotFoundException('Pedido no encontrado');
@@ -256,14 +256,17 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(order);
         const mesa = order.mesa;
         if (mesa) {
-            const pedidosActivos = await this.orderRepository.count({
-                where: { mesaId: mesa.id, status: 'Activo' }
+            const pendientes = await this.orderRepository.count({
+                where: { mesaId: mesa.id, status: 'pendiente' }
             });
-            mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
+            mesa.status = pendientes > 0 ? 'Ocupada' : 'Libre';
             await this.mesaRepository.save(mesa);
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
         }
-        return order;
+        return this.orderRepository.findOne({
+            where: { id: order.id },
+            relations: ['mesa', 'orderProducts', 'orderProducts.product']
+        });
     }
     async cancelarVenta(orderId) {
         const order = await this.orderRepository.findOne({
