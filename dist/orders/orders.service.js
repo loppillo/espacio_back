@@ -61,14 +61,14 @@ let OrdersService = class OrdersService {
                 continue;
             const subtotal = product.price * item.cantidad;
             total += subtotal;
-            const orderProduct = this.productsOrdersRepository.create({
+            const po = this.productsOrdersRepository.create({
                 order: savedOrder,
                 product,
                 cantidad: item.cantidad,
                 precioUnitario: product.price,
-                subtotal
+                subtotal,
             });
-            orderProducts.push(orderProduct);
+            orderProducts.push(po);
         }
         await this.productsOrdersRepository.save(orderProducts);
         savedOrder.total = total + propina;
