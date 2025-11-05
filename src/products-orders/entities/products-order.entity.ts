@@ -1,10 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, PrimaryColumn } from 'typeorm';
 import { Order } from 'src/orders/entities/order.entity';
 import { Product } from 'src/products/entities/product.entity';
-
 @Entity('order_products')
 export class ProductsOrders {
-  @PrimaryGeneratedColumn()
+  @PrimaryColumn()
   orderId: number;
 
   @PrimaryColumn()
@@ -14,9 +13,7 @@ export class ProductsOrders {
   @JoinColumn({ name: 'orderId' })
   order: Order;
 
-  @ManyToOne(() => Product, product => product.orderProducts, {
-  onDelete: 'CASCADE', // 🔹 Esta línea hace la magia
-})
+  @ManyToOne(() => Product, product => product.orderProducts, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'productId' })
   product: Product;
 
