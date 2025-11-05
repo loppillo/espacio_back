@@ -104,15 +104,19 @@ async create(createOrderDto: CreateOrderDto) {
     },
   });
 
-  // Emitir por WebSocket
+  // Emitir por WebSocket (actualizaciones visuales)
   Promise.resolve().then(() => {
     this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
     this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
   });
 
+  // 🖨️ Emitir impresión automática
+  Promise.resolve().then(() => {
+    this.ordersGateway.emitirTicketPedido(fullOrder);
+  });
+
   return fullOrder;
 }
-
 
 
 
@@ -178,9 +182,14 @@ async creates(createOrderDto: CreateSOrderDto) {
 
   const sanitized = this.sanitizeOrder(fullOrder);
 
-  // 🔔 WebSocket asincrónico
+  // 🔔 Emitir actualización por WebSocket
   Promise.resolve().then(() => {
     this.ordersGateway.notifyNewOrder(sanitized);
+  });
+
+  // 🖨️ Emitir impresión automática para delivery
+  Promise.resolve().then(() => {
+    this.ordersGateway.emitirTicketPedido(fullOrder);
   });
 
   return sanitized;

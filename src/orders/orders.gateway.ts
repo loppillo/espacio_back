@@ -50,33 +50,24 @@ export interface OrderDTO {
 export class OrdersGateway {
   @WebSocketServer()
   server: Server;
-@SubscribeMessage('printTicket')
-  async handlePrint(@MessageBody() data: any) {
-    try {
-      const filePath = `ticket-${Date.now()}.pdf`;
-      const doc = new PDFDocument({ size: [250, 400], margin: 10 });
-      doc.pipe(fs.createWriteStream(filePath));
 
-      doc.fontSize(14).text('TICKET DE PEDIDO', { align: 'center', underline: true });
-      doc.moveDown();
-      doc.fontSize(12).text(`Mesa: ${data.mesa}`);
-      doc.text(`Total: $${data.total}`);
-      doc.moveDown();
 
-      data.items.forEach(item => {
-        doc.text(`${item.cantidad} x ${item.nombre} - $${item.precio}`);
-      });
+  // Cuando se crea o actualiza un pedido y quieras disparar la impresión:
+  emitirTicketPedido(pedido: any) {
+    const data = {
+      mesa: pedido.mesa?.numero || pedido.mesa || '—',
+      total: pedido.total || 0,
+      productos: pedido.detalle?.map((d: any) => ({
+        nombre: d.producto?.nombre || '',
+        cantidad: d.cantidad,
+        precio: d.precio || 0,
+      })) || [],
+    };
 
-      doc.end();
+    // Emitimos a todos los clientes conectados
+    this.server.emit('printTicket', data);
 
-      await new Promise(resolve => doc.on('finish', resolve));
-
-      await print(filePath, { printer: 'POS-80' });
-
-      return { status: 'ok', message: 'Ticket impreso correctamente' };
-    } catch (err) {
-      return { status: 'error', message: err.message };
-    }
+    console.log('🖨️ Ticket emitido vía WebSocket:', data);
   }
 
 
