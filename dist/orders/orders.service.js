@@ -37,7 +37,7 @@ let OrdersService = class OrdersService {
         this.ordersGateway = ordersGateway;
     }
     async create(createOrderDto) {
-        const { products, propina, mesaId, orderType } = createOrderDto;
+        const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
         const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
         if (!mesa)
             throw new common_1.BadRequestException('La mesa no existe');
@@ -46,47 +46,46 @@ let OrdersService = class OrdersService {
             orderType,
             estado: 'activo',
             status: 'pendiente',
+            paymentMethod: '',
             propina,
             total: 0,
-            paymentMethod: 'pendiente',
             numeroVenta: await this.generarNumeroVenta(),
             mesa,
         });
-        const savedOrder = await this.orderRepository.save(newOrder);
-        const orderProducts = [];
-        let total = 0;
-        for (const item of products) {
-            const product = await this.productRepository.findOne({ where: { id: item.id } });
-            if (!product)
-                continue;
-            const subtotal = product.price * item.cantidad;
-            total += subtotal;
-            orderProducts.push(this.productsOrdersRepository.create({
-                order: savedOrder,
-                product,
-                cantidad: item.cantidad,
-                precioUnitario: product.price,
-                subtotal,
-            }));
+        let savedOrder = await this.orderRepository.save(newOrder);
+        const productIds = products.map(p => p.id);
+        const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
+        if (productEntities.length !== products.length) {
+            throw new common_1.BadRequestException('Uno o más productos no existen');
         }
+        let total = 0;
+        const orderProducts = products.map(p => {
+            const productEntity = productEntities.find(pe => pe.id === p.id);
+            const subtotal = productEntity.price * p.cantidad;
+            total += subtotal;
+            return this.productsOrdersRepository.create({
+                order: savedOrder,
+                product: productEntity,
+                cantidad: p.cantidad,
+                precioUnitario: productEntity.price,
+                subtotal,
+            });
+        });
         await this.productsOrdersRepository.save(orderProducts);
-        savedOrder.total = total + (propina || 0);
+        savedOrder.total = total + propina;
         await this.orderRepository.save(savedOrder);
         mesa.status = 'ocupada';
         await this.mesaRepository.save(mesa);
         const fullOrder = await this.orderRepository.findOne({
             where: { id: savedOrder.id },
-            relations: {
-                customer: true,
-                orderProducts: { product: true },
-            },
+            relations: ['customer', 'orderProducts', 'orderProducts.product', 'mesa'],
         });
-        fullOrder.mesa = mesa;
+        const sanitized = this.sanitizeOrder(fullOrder);
         Promise.resolve().then(() => {
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-            this.ordersGateway.notifyNewOrder(this.ordersGateway.sanitizeOrder(fullOrder));
+            this.ordersGateway.notifyNewOrder(sanitized);
         });
-        return fullOrder;
+        return sanitized;
     }
     async creates(createOrderDto) {
         const { products, propina = 0, orderType = 'delivery' } = createOrderDto;
