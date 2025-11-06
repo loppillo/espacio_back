@@ -377,13 +377,18 @@ async obtenerPendientes(): Promise<Order[]> {
     .orderBy('order.createdAt', 'ASC')
     .getMany();
 
-console.log(
-  '🔥 Pedido 2 (si existe):',
-  await this.orderRepository.findOne({ where: { id: 2 } })
-);
+  // Mostrar los primeros 4 pedidos si existen
+  for (let i = 0; i < 4; i++) {
+    if (orders[i]) {
+      console.log(`🔥 Pedido ${i + 1}:`, orders[i]);
+    } else {
+      console.log(`⚠️ Pedido ${i + 1} no existe`);
+    }
+  }
 
   return orders;
 }
+
 
   async aceptarVenta(orderId: number): Promise<Order> {
   const order = await this.orderRepository.findOne({
