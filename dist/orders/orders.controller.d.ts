@@ -10,7 +10,7 @@ export declare class OrdersController {
     private readonly orderRepository;
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
-    obtenerPendientes(): Promise<Order[]>;
+    obtenerPendientes(): Promise<any[]>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
     getHistorialPorMesa(mesaId: number): Promise<{
         numeroVenta: number;

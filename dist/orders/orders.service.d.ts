@@ -50,7 +50,7 @@ export declare class OrdersService {
             subtotal: number;
         }[];
     }[]>;
-    obtenerPendientes(): Promise<Order[]>;
+    obtenerPendientes(): Promise<any[]>;
     aceptarVenta(orderId: number): Promise<Order>;
     cancelarVenta(orderId: number): Promise<Order>;
     getVentasDiarias(desde?: string, hasta?: string, orderType?: string): Promise<{

@@ -262,7 +262,7 @@ let OrdersService = class OrdersService {
         });
     }
     async obtenerPendientes() {
-        return await this.orderRepository
+        const orders = await this.orderRepository
             .createQueryBuilder('order')
             .leftJoinAndSelect('order.mesa', 'mesa')
             .leftJoinAndSelect('order.customer', 'customer')
@@ -271,6 +271,7 @@ let OrdersService = class OrdersService {
             .where('order.status = :status', { status: 'pendiente' })
             .orderBy('order.createdAt', 'ASC')
             .getMany();
+        return orders.map(o => this.sanitizeOrder(o));
     }
     async aceptarVenta(orderId) {
         const order = await this.orderRepository.findOne({
@@ -464,21 +465,12 @@ let OrdersService = class OrdersService {
                     phone: order.customer.customerPhone,
                 }
                 : null,
-            orderProducts: order.orderProducts?.map(op => ({
-                orderId: op.order?.id ?? order.id,
-                productId: op.product?.id ?? null,
+            items: order.orderProducts?.map(op => ({
+                name: op.product.name,
                 cantidad: op.cantidad,
-                precioUnitario: op.precioUnitario,
+                precio: op.precioUnitario,
                 subtotal: op.subtotal,
-                product: op.product
-                    ? {
-                        id: op.product.id,
-                        name: op.product.name,
-                        description: op.product.description,
-                        price: op.product.price,
-                        imageUrl: op.product.imageUrl ?? null,
-                    }
-                    : null,
+                imageUrl: op.product.imageUrl ?? null,
             })) ?? [],
         };
     }
