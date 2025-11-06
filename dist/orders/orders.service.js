@@ -258,14 +258,11 @@ let OrdersService = class OrdersService {
         });
         if (!order)
             throw new common_1.NotFoundException('Pedido no encontrado');
-        order.status = 'Pagado';
+        order.status = 'pendiente';
         await this.orderRepository.save(order);
         const mesa = order.mesa;
         if (mesa) {
-            const pedidosActivos = await this.orderRepository.count({
-                where: { mesaId: mesa.id, status: 'Activo' }
-            });
-            mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
+            mesa.status = 'Ocupada';
             await this.mesaRepository.save(mesa);
             this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
         }
