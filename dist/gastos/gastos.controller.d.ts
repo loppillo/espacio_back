@@ -22,4 +22,5 @@ export declare class GastosController {
     getOne(id: number): Promise<Gasto>;
     crearGasto(body: Partial<Gasto>): Promise<Gasto>;
     remove(id: number): Promise<void>;
+    estadisticas(type?: 'ingreso' | 'egreso', periodo?: 'dia' | 'mes' | 'anio', valor?: string): Promise<{}>;
 }

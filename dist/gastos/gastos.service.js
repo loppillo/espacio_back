@@ -220,6 +220,32 @@ let GastosService = class GastosService {
         const gasto = this.expenseRepository.create(data);
         return await this.expenseRepository.save(gasto);
     }
+    async estadisticas(filtro) {
+        const qb = this.expenseRepository.createQueryBuilder('gasto');
+        if (filtro.type) {
+            qb.andWhere('gasto.type = :type', { type: filtro.type });
+        }
+        if (filtro.periodo === 'dia') {
+            qb.andWhere("DATE(gasto.createdAt) = :valor", { valor: filtro.valor });
+        }
+        if (filtro.periodo === 'mes') {
+            qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY-MM') = :valor", { valor: filtro.valor });
+        }
+        if (filtro.periodo === 'anio') {
+            qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY') = :valor", { valor: filtro.valor });
+        }
+        const data = await qb.getMany();
+        const grouped = {};
+        data.forEach((g) => {
+            const key = filtro.periodo === 'dia'
+                ? g.createdAt.toISOString().substring(11, 16)
+                : filtro.periodo === 'mes'
+                    ? g.createdAt.toISOString().substring(8, 10)
+                    : g.createdAt.toISOString().substring(5, 7);
+            grouped[key] = (grouped[key] || 0) + g.amount;
+        });
+        return grouped;
+    }
 };
 exports.GastosService = GastosService;
 exports.GastosService = GastosService = __decorate([

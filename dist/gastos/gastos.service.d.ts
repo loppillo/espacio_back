@@ -30,4 +30,9 @@ export declare class GastosService {
     }[]>;
     private crearGasto;
     crearGastoManual(data: Partial<Gasto>): Promise<Gasto>;
+    estadisticas(filtro: {
+        type?: any;
+        periodo?: any;
+        valor?: any;
+    }): Promise<{}>;
 }
