@@ -301,15 +301,24 @@ async estadisticas(filtro: { type?; periodo?; valor? }) {
 
   // Manejo del periodo
   if (filtro.periodo === 'dia') {
+    // valor esperado: '2025-11-06'
     qb.andWhere("DATE(gasto.createdAt) = :valor", { valor: filtro.valor });
   }
 
   if (filtro.periodo === 'mes') {
-    qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY-MM') = :valor", { valor: filtro.valor });
+    // valor esperado: '2025-11'
+    qb.andWhere(
+      "DATE_FORMAT(gasto.createdAt, '%Y-%m') = :valor",
+      { valor: filtro.valor }
+    );
   }
 
   if (filtro.periodo === 'anio') {
-    qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY') = :valor", { valor: filtro.valor });
+    // valor esperado: '2025'
+    qb.andWhere(
+      "DATE_FORMAT(gasto.createdAt, '%Y') = :valor",
+      { valor: filtro.valor }
+    );
   }
 
   const data = await qb.getMany();
@@ -320,9 +329,9 @@ async estadisticas(filtro: { type?; periodo?; valor? }) {
   data.forEach((g) => {
     const key =
       filtro.periodo === 'dia'
-        ? g.createdAt.toISOString().substring(11, 16) // HH:mm
+        ? g.createdAt.toISOString().substring(11, 16)  // HH:mm
         : filtro.periodo === 'mes'
-        ? g.createdAt.toISOString().substring(8, 10)  // día del mes
+        ? g.createdAt.toISOString().substring(8, 10)   // día del mes
         : g.createdAt.toISOString().substring(5, 7);   // mes
 
     grouped[key] = (grouped[key] || 0) + g.amount;
@@ -330,7 +339,6 @@ async estadisticas(filtro: { type?; periodo?; valor? }) {
 
   return grouped;
 }
-
 
 
 }
