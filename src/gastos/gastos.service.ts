@@ -290,4 +290,47 @@ async getBalanceDiario(fecha: string): Promise<{
     return await this.expenseRepository.save(gasto);
   }
 
+  // gasto.service.ts
+
+async estadisticas(filtro: { type?; periodo?; valor? }) {
+  const qb = this.expenseRepository.createQueryBuilder('gasto');
+
+  if (filtro.type) {
+    qb.andWhere('gasto.type = :type', { type: filtro.type });
+  }
+
+  // Manejo del periodo
+  if (filtro.periodo === 'dia') {
+    qb.andWhere("DATE(gasto.createdAt) = :valor", { valor: filtro.valor });
+  }
+
+  if (filtro.periodo === 'mes') {
+    qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY-MM') = :valor", { valor: filtro.valor });
+  }
+
+  if (filtro.periodo === 'anio') {
+    qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY') = :valor", { valor: filtro.valor });
+  }
+
+  const data = await qb.getMany();
+
+  // Agrupar por día/hora según periodo
+  const grouped = {};
+
+  data.forEach((g) => {
+    const key =
+      filtro.periodo === 'dia'
+        ? g.createdAt.toISOString().substring(11, 16) // HH:mm
+        : filtro.periodo === 'mes'
+        ? g.createdAt.toISOString().substring(8, 10)  // día del mes
+        : g.createdAt.toISOString().substring(5, 7);   // mes
+
+    grouped[key] = (grouped[key] || 0) + g.amount;
+  });
+
+  return grouped;
+}
+
+
+
 }

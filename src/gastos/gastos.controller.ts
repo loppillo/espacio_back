@@ -62,7 +62,14 @@ export class GastosController {
     return this.expensesService.remove(id);
   }
 
- 
+ @Get('estadisticas')
+async estadisticas(
+  @Query('type') type?: 'ingreso' | 'egreso',
+  @Query('periodo') periodo?: 'dia' | 'mes' | 'anio',
+  @Query('valor') valor?: string, // ej: 2025-11-05, 2025-11, 2025
+) {
+  return this.expensesService.estadisticas({ type, periodo, valor });
+}
  
 }
 
