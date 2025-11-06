@@ -22,6 +22,10 @@ export class OrdersController {
     return this.ordersService.obtenerPendientes();
   }
 
+  @Get(':id')
+async getById(@Param('id') id: number) {
+  return this.ordersService.getById(id);
+}
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {

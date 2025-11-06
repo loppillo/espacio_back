@@ -647,5 +647,24 @@ private async generarNumeroVenta(): Promise<number> {
   return (max || 0) + 1;
 }
 
+  
+async getById(id: number) {
+  const order = await this.orderRepository.findOne({
+    where: { id },
+    relations: {
+      orderProducts: {
+        product: true,
+      },
+      customer: true,
+      mesa: true,
+    }
+  });
+
+  if (!order) {
+    throw new NotFoundException('Pedido no encontrado');
+  }
+
+  return order;
+}
 
 }
