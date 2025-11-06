@@ -271,14 +271,12 @@ let OrdersService = class OrdersService {
             .where('order.status = :status', { status: 'pendiente' })
             .orderBy('order.createdAt', 'ASC')
             .getMany();
-        for (let i = 0; i < 4; i++) {
-            if (orders[i]) {
-                console.log(`🔥 Pedido ${i + 1}:`, orders[i]);
-            }
-            else {
-                console.log(`⚠️ Pedido ${i + 1} no existe`);
-            }
-        }
+        orders.forEach((order, index) => {
+            console.log(`🔥 Pedido ${index + 1}: ID=${order.id}, Mesa=${order.mesa?.numero_mesa}, Total=${order.total}, Status=${order.status}`);
+            order.orderProducts.forEach(op => {
+                console.log(`   - ${op.cantidad} x ${op.product.name} = ${op.subtotal}`);
+            });
+        });
         return orders;
     }
     async aceptarVenta(orderId) {
