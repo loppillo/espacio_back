@@ -339,32 +339,28 @@ async findAll() {
   }
 
   async aceptarVenta(orderId: number): Promise<Order> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['mesa'] // Relación con la mesa
-    });
-    if (!order) throw new NotFoundException('Pedido no encontrado');
+  const order = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['mesa']
+  });
 
-    // Marcar pedido como Pagado
-    order.status = 'Pagado';
-    await this.orderRepository.save(order);
+  if (!order) throw new NotFoundException('Pedido no encontrado');
 
-    // Actualizar status de la mesa
-    const mesa = order.mesa;
-    if (mesa) {
-      // Revisar si hay otros pedidos activos en la mesa
-      const pedidosActivos = await this.orderRepository.count({
-        where: { mesaId: mesa.id, status: 'Activo' }
-      });
-      mesa.status = pedidosActivos > 0 ? 'Ocupada' : 'Libre';
-      await this.mesaRepository.save(mesa);
+  // Estado correcto al aceptar
+  order.status = 'pendiente'; // o "preparando"
+  await this.orderRepository.save(order);
 
-      // Emitir evento para frontend
-      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-    }
+  const mesa = order.mesa;
+  if (mesa) {
+    mesa.status = 'Ocupada';
+    await this.mesaRepository.save(mesa);
 
-    return order;
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
   }
+
+  return order;
+}
+
 
   async cancelarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
