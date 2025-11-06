@@ -271,10 +271,7 @@ let OrdersService = class OrdersService {
             .where('order.status = :status', { status: 'pendiente' })
             .orderBy('order.createdAt', 'ASC')
             .getMany();
-        console.log('🔥 PENDIENTES DESDE BACKEND:');
-        orders.forEach(o => {
-            console.log('ID', o.id, 'orderProducts:', o.orderProducts);
-        });
+        console.log('🔥 Pedido 3 (si existe):', await this.orderRepository.findOne({ where: { id: 3 } }));
         return orders;
     }
     async aceptarVenta(orderId) {
