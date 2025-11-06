@@ -19,6 +19,9 @@ let GastosController = class GastosController {
     constructor(expensesService) {
         this.expensesService = expensesService;
     }
+    async estadisticas(type, periodo, valor) {
+        return this.expensesService.estadisticas({ type, periodo, valor });
+    }
     async getBalance(startDate, endDate) {
         return this.expensesService.getBalancePorFecha(startDate, endDate);
     }
@@ -49,11 +52,17 @@ let GastosController = class GastosController {
     remove(id) {
         return this.expensesService.remove(id);
     }
-    async estadisticas(type, periodo, valor) {
-        return this.expensesService.estadisticas({ type, periodo, valor });
-    }
 };
 exports.GastosController = GastosController;
+__decorate([
+    (0, common_1.Get)('estadisticas'),
+    __param(0, (0, common_1.Query)('type')),
+    __param(1, (0, common_1.Query)('periodo')),
+    __param(2, (0, common_1.Query)('valor')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", Promise)
+], GastosController.prototype, "estadisticas", null);
 __decorate([
     (0, common_1.Get)('balances'),
     __param(0, (0, common_1.Query)('start')),
@@ -116,15 +125,6 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], GastosController.prototype, "remove", null);
-__decorate([
-    (0, common_1.Get)('estadisticas'),
-    __param(0, (0, common_1.Query)('type')),
-    __param(1, (0, common_1.Query)('periodo')),
-    __param(2, (0, common_1.Query)('valor')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
-    __metadata("design:returntype", Promise)
-], GastosController.prototype, "estadisticas", null);
 exports.GastosController = GastosController = __decorate([
     (0, common_1.Controller)('gastos'),
     __metadata("design:paramtypes", [gastos_service_1.GastosService])
