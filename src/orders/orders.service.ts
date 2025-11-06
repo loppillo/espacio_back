@@ -378,8 +378,8 @@ async obtenerPendientes(): Promise<Order[]> {
     .getMany();
 
 console.log(
-  '🔥 Pedido 3 (si existe):',
-  await this.orderRepository.findOne({ where: { id: 3 } })
+  '🔥 Pedido 2 (si existe):',
+  await this.orderRepository.findOne({ where: { id: 2 } })
 );
 
   return orders;
