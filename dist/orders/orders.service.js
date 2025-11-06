@@ -271,7 +271,14 @@ let OrdersService = class OrdersService {
             .where('order.status = :status', { status: 'pendiente' })
             .orderBy('order.createdAt', 'ASC')
             .getMany();
-        console.log('🔥 Pedido 3 (si existe):', await this.orderRepository.findOne({ where: { id: 3 } }));
+        for (let i = 0; i < 4; i++) {
+            if (orders[i]) {
+                console.log(`🔥 Pedido ${i + 1}:`, orders[i]);
+            }
+            else {
+                console.log(`⚠️ Pedido ${i + 1} no existe`);
+            }
+        }
         return orders;
     }
     async aceptarVenta(orderId) {
