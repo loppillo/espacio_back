@@ -10,6 +10,16 @@ import { RolesGuard } from 'src/roles/roles.guard';
 export class GastosController {
  constructor(private readonly expensesService: GastosService) {}
 
+   @Get('estadisticas')
+async estadisticas(
+  @Query('type') type?: 'ingreso' | 'egreso',
+  @Query('periodo') periodo?: 'dia' | 'mes' | 'anio',
+  @Query('valor') valor?: string, // ej: 2025-11-05, 2025-11, 2025
+) {
+  return this.expensesService.estadisticas({ type, periodo, valor });
+}
+
+
    @Get('balances')
   async getBalance(
     @Query('start') startDate?: string,
@@ -62,14 +72,7 @@ export class GastosController {
     return this.expensesService.remove(id);
   }
 
- @Get('estadisticas')
-async estadisticas(
-  @Query('type') type?: 'ingreso' | 'egreso',
-  @Query('periodo') periodo?: 'dia' | 'mes' | 'anio',
-  @Query('valor') valor?: string, // ej: 2025-11-05, 2025-11, 2025
-) {
-  return this.expensesService.estadisticas({ type, periodo, valor });
-}
+
  
 }
 
