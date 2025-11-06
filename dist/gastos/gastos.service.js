@@ -229,10 +229,10 @@ let GastosService = class GastosService {
             qb.andWhere("DATE(gasto.createdAt) = :valor", { valor: filtro.valor });
         }
         if (filtro.periodo === 'mes') {
-            qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY-MM') = :valor", { valor: filtro.valor });
+            qb.andWhere("DATE_FORMAT(gasto.createdAt, '%Y-%m') = :valor", { valor: filtro.valor });
         }
         if (filtro.periodo === 'anio') {
-            qb.andWhere("TO_CHAR(gasto.createdAt, 'YYYY') = :valor", { valor: filtro.valor });
+            qb.andWhere("DATE_FORMAT(gasto.createdAt, '%Y') = :valor", { valor: filtro.valor });
         }
         const data = await qb.getMany();
         const grouped = {};
