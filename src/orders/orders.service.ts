@@ -346,15 +346,15 @@ async findAll() {
 
   if (!order) throw new NotFoundException('Pedido no encontrado');
 
-  // Estado correcto al aceptar
-  order.status = 'pendiente'; // o "preparando"
+  // Si aceptar = pagar, entonces lo marcas como pagado
+  order.status = 'pagado';
+  order.paymentMethod = order.paymentMethod ?? 'efectivo'; // o lo que uses
   await this.orderRepository.save(order);
 
   const mesa = order.mesa;
   if (mesa) {
-    mesa.status = 'Ocupada';
+    mesa.status = 'Libre';
     await this.mesaRepository.save(mesa);
-
     this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
   }
 
