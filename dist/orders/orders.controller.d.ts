@@ -11,6 +11,7 @@ export declare class OrdersController {
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
     obtenerPendientes(): Promise<Order[]>;
+    getById(id: number): Promise<Order>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
     getHistorialPorMesa(mesaId: number): Promise<{
         numeroVenta: number;

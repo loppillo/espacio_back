@@ -73,4 +73,5 @@ export declare class OrdersService {
     }>;
     private sanitizeOrder;
     private generarNumeroVenta;
+    getById(id: number): Promise<Order>;
 }

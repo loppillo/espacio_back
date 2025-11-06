@@ -485,6 +485,22 @@ let OrdersService = class OrdersService {
             .getRawOne();
         return (max || 0) + 1;
     }
+    async getById(id) {
+        const order = await this.orderRepository.findOne({
+            where: { id },
+            relations: {
+                orderProducts: {
+                    product: true,
+                },
+                customer: true,
+                mesa: true,
+            }
+        });
+        if (!order) {
+            throw new common_1.NotFoundException('Pedido no encontrado');
+        }
+        return order;
+    }
 };
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([

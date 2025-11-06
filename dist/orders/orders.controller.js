@@ -31,6 +31,9 @@ let OrdersController = class OrdersController {
     async obtenerPendientes() {
         return this.ordersService.obtenerPendientes();
     }
+    async getById(id) {
+        return this.ordersService.getById(id);
+    }
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
     }
@@ -109,6 +112,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "obtenerPendientes", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getById", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
