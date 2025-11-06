@@ -366,7 +366,7 @@ async findAll() {
   }
 
 
- async obtenerPendientes(): Promise<any[]> {
+async obtenerPendientes(): Promise<Order[]> {
   const orders = await this.orderRepository
     .createQueryBuilder('order')
     .leftJoinAndSelect('order.mesa', 'mesa')
@@ -377,7 +377,12 @@ async findAll() {
     .orderBy('order.createdAt', 'ASC')
     .getMany();
 
-  return orders.map(o => this.sanitizeOrder(o));
+  console.log('🔥 PENDIENTES DESDE BACKEND:');
+  orders.forEach(o => {
+    console.log('ID', o.id, 'orderProducts:', o.orderProducts);
+  });
+
+  return orders;
 }
 
   async aceptarVenta(orderId: number): Promise<Order> {
