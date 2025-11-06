@@ -366,17 +366,19 @@ async findAll() {
   }
 
 
-  async obtenerPendientes(): Promise<Order[]> {
-    return await this.orderRepository
-      .createQueryBuilder('order')
-      .leftJoinAndSelect('order.mesa', 'mesa')
-      .leftJoinAndSelect('order.customer', 'customer') // ✅ Cliente Delivery
-      .leftJoinAndSelect('order.orderProducts', 'orderProducts')
-      .leftJoinAndSelect('orderProducts.product', 'product')
-      .where('order.status = :status', { status: 'pendiente' })
-      .orderBy('order.createdAt', 'ASC')
-      .getMany();
-  }
+ async obtenerPendientes(): Promise<any[]> {
+  const orders = await this.orderRepository
+    .createQueryBuilder('order')
+    .leftJoinAndSelect('order.mesa', 'mesa')
+    .leftJoinAndSelect('order.customer', 'customer')
+    .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+    .leftJoinAndSelect('orderProducts.product', 'product')
+    .where('order.status = :status', { status: 'pendiente' })
+    .orderBy('order.createdAt', 'ASC')
+    .getMany();
+
+  return orders.map(o => this.sanitizeOrder(o));
+}
 
   async aceptarVenta(orderId: number): Promise<Order> {
   const order = await this.orderRepository.findOne({
@@ -620,24 +622,16 @@ async findAll() {
       : null,
 
     // Productos
-    orderProducts: order.orderProducts?.map(op => ({
-      orderId: op.order?.id ?? order.id,
-      productId: op.product?.id ?? null,
-      cantidad: op.cantidad,
-      precioUnitario: op.precioUnitario,
-      subtotal: op.subtotal,
-      product: op.product
-        ? {
-            id: op.product.id,
-            name: op.product.name,
-            description: op.product.description,
-            price: op.product.price,
-            imageUrl: op.product.imageUrl ?? null,
-          }
-        : null,
-    })) ?? [],
-  };
-}
+   items: order.orderProducts?.map(op => ({
+  name: op.product.name,
+  cantidad: op.cantidad,
+  precio: op.precioUnitario,
+  subtotal: op.subtotal,
+  imageUrl: op.product.imageUrl ?? null,
+})) ?? [],
+    };
+  }
+
 
 private async generarNumeroVenta(): Promise<number> {
   const { max } = await this.orderRepository
