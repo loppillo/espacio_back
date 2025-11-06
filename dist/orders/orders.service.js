@@ -93,6 +93,27 @@ let OrdersService = class OrdersService {
         if (orderType !== 'delivery') {
             throw new common_1.BadRequestException('Este método solo permite pedidos de delivery.');
         }
+        let customer = null;
+        if (createOrderDto.customerId) {
+            customer = await this.customerRepository.findOne({
+                where: { id: createOrderDto.customerId }
+            });
+            if (!customer)
+                throw new common_1.NotFoundException('Cliente no encontrado');
+        }
+        if (!customer && createOrderDto.newCustomer) {
+            const nc = createOrderDto.newCustomer;
+            customer = this.customerRepository.create({
+                customerName: nc.customerName,
+                customerEmail: nc.customerEmail || null,
+                customerAddress: nc.customerAddress || null,
+                customerPhone: nc.customerPhone || null,
+            });
+            customer = await this.customerRepository.save(customer);
+        }
+        if (!customer) {
+            throw new common_1.BadRequestException('Debe proporcionar customerId o newCustomer');
+        }
         const { max } = await this.orderRepository
             .createQueryBuilder('order')
             .select('MAX(order.numeroVenta)', 'max')
@@ -106,6 +127,7 @@ let OrdersService = class OrdersService {
             paymentMethod: createOrderDto.paymentMethod || 'pendiente',
             numeroVenta: nextNumeroVenta,
             total: 0,
+            customer,
         });
         const productIds = products.map(p => p.id);
         const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
