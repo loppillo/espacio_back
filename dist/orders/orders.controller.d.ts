@@ -33,7 +33,7 @@ export declare class OrdersController {
     creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
-    update(id: string, updateOrderDto: UpdateOrderDto): Promise<import("typeorm").UpdateResult>;
+    update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order>;
     remove(id: string): Promise<{
         message: string;
         id: number;

@@ -170,8 +170,29 @@ let OrdersService = class OrdersService {
     async findOne(id) {
         return await this.orderRepository.findOneBy({ id });
     }
-    async update(id, updateOrderDto) {
-        return await this.orderRepository.update(id, updateOrderDto);
+    async update(id, dto) {
+        const order = await this.orderRepository.findOne({
+            where: { id },
+            relations: ['orderProducts', 'orderProducts.product'],
+        });
+        if (!order)
+            throw new common_1.NotFoundException('Orden no encontrada');
+        const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
+        let nuevaPropina;
+        if (typeof dto.propina === 'number') {
+            nuevaPropina = dto.propina;
+        }
+        else {
+            nuevaPropina = Math.round(subtotal * 0.10);
+        }
+        order.propina = nuevaPropina;
+        order.total = subtotal + nuevaPropina;
+        Object.assign(order, dto);
+        await this.orderRepository.save(order);
+        return this.orderRepository.findOne({
+            where: { id },
+            relations: ['customer', 'orderProducts', 'orderProducts.product', 'mesa'],
+        });
     }
     async remove(id) {
         const order = await this.orderRepository.findOne({ where: { id } });

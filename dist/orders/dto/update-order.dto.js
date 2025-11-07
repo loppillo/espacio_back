@@ -15,21 +15,34 @@ class UpdateOrderDto {
 }
 exports.UpdateOrderDto = UpdateOrderDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], UpdateOrderDto.prototype, "tableNumber", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateOrderDto.prototype, "orderType", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateOrderDto.prototype, "status", void 0);
 __decorate([
-    (0, class_validator_1.IsDecimal)({ decimal_digits: '3', force_decimal: true }, { message: 'El valor debe ser un decimal con 3 dígitos decimales, por ejemplo, 2.000' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], UpdateOrderDto.prototype, "total", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateOrderDto.prototype, "propina", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Date)
+], UpdateOrderDto.prototype, "createdAt", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
