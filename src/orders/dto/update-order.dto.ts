@@ -1,29 +1,36 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateOrderDto } from './create-order.dto';
-import { IsDecimal, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsNumber } from 'class-validator';
 
-export class UpdateOrderDto  {
-    @IsInt()
-    tableNumber: number;
-  
+export class UpdateOrderDto {
 
-    @IsString()
-    orderType: string
-  
-    @IsString()
-    status:string;
-  
+  // ✅ Todo opcional, porque en "pendientes" solo quieres enviar propina
+  @IsOptional()
+  @IsInt()
+  tableNumber?: number;
 
-    @IsDecimal({ decimal_digits: '3', force_decimal: true }, { message: 'El valor debe ser un decimal con 3 dígitos decimales, por ejemplo, 2.000' })
-    total: number;
-  
-   
-    createdAt: Date;
+  @IsOptional()
+  @IsString()
+  orderType?: string;
 
+  @IsOptional()
+  @IsString()
+  status?: string;
 
-    @IsOptional()
-    userId?: number;
-  
-    @IsOptional()
-    customerId?: number;
+  // ✅ El backend recalcula total. No lo envías desde Angular.
+  @IsOptional()
+  @IsInt()
+  total?: number;
+
+  // ✅ Esta es la estrella: propina editable
+  @IsOptional()
+  @IsNumber()
+  propina?: number;
+
+  @IsOptional()
+  createdAt?: Date;
+
+  @IsOptional()
+  userId?: number;
+
+  @IsOptional()
+  customerId?: number;
 }

@@ -240,9 +240,44 @@ async findAll() {
     return await this.orderRepository.findOneBy({ id });
   }
 
-  async update(id: number, updateOrderDto: UpdateOrderDto) {
-    return await this.orderRepository.update(id, updateOrderDto)
+async update(id: number, dto: UpdateOrderDto) {
+  const order = await this.orderRepository.findOne({
+    where: { id },
+    relations: ['orderProducts', 'orderProducts.product'],
+  });
+
+  if (!order) throw new NotFoundException('Orden no encontrada');
+
+  // ✅ recalcular subtotal actual
+  const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
+
+  // ✅ manejar propina
+  let nuevaPropina: number;
+
+  if (typeof dto.propina === 'number') {
+    nuevaPropina = dto.propina;              // ✅ usuario escribió propina
+  } else {
+    nuevaPropina = Math.round(subtotal * 0.10);   // ✅ si viene vacía → 10%
   }
+
+  order.propina = nuevaPropina;
+
+  // ✅ recalcular total final
+  order.total = subtotal + nuevaPropina;
+
+  // ✅ copiar otros campos que quieras actualizar
+  Object.assign(order, dto);
+
+  // ✅ guardar
+  await this.orderRepository.save(order);
+
+  // ✅ devolver orden completa (tu estilo)
+  return this.orderRepository.findOne({
+    where: { id },
+    relations: ['customer', 'orderProducts', 'orderProducts.product', 'mesa'],
+  });
+}
+
 
   async remove(id: number) {
     const order = await this.orderRepository.findOne({ where: { id } });
