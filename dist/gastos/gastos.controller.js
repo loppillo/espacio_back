@@ -19,8 +19,8 @@ let GastosController = class GastosController {
     constructor(expensesService) {
         this.expensesService = expensesService;
     }
-    async estadisticas(type, periodo, valor) {
-        return this.expensesService.estadisticas({ type, periodo, valor });
+    async estadisticas(periodo, valor) {
+        return this.expensesService.estadisticas({ periodo, valor });
     }
     async getMensual(anio, mes) {
         const year = Number(anio);
@@ -65,11 +65,10 @@ let GastosController = class GastosController {
 exports.GastosController = GastosController;
 __decorate([
     (0, common_1.Get)('estadisticas'),
-    __param(0, (0, common_1.Query)('type')),
-    __param(1, (0, common_1.Query)('periodo')),
-    __param(2, (0, common_1.Query)('valor')),
+    __param(0, (0, common_1.Query)('periodo')),
+    __param(1, (0, common_1.Query)('valor')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], GastosController.prototype, "estadisticas", null);
 __decorate([

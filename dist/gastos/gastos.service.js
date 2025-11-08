@@ -269,10 +269,7 @@ let GastosService = class GastosService {
         const gasto = this.expenseRepository.create(data);
         return await this.expenseRepository.save(gasto);
     }
-    async estadisticas(filtro) {
-        const { type, periodo, valor } = filtro;
-        if (!periodo || !valor)
-            return { gastos: {}, orders: {} };
+    async estadisticas({ periodo, valor }) {
         let start;
         let end;
         if (periodo === 'dia') {
@@ -280,49 +277,54 @@ let GastosService = class GastosService {
             end = new Date(`${valor}T23:59:59`);
         }
         if (periodo === 'mes') {
-            const [year, month] = valor.split('-').map(Number);
-            start = new Date(year, month - 1, 1, 0, 0, 0);
-            end = new Date(year, month, 0, 23, 59, 59);
+            const [y, m] = valor.split('-');
+            start = new Date(Number(y), Number(m) - 1, 1, 0, 0, 0);
+            end = new Date(Number(y), Number(m), 0, 23, 59, 59);
         }
         if (periodo === 'anio') {
-            const year = Number(valor);
-            start = new Date(year, 0, 1, 0, 0, 0);
-            end = new Date(year, 11, 31, 23, 59, 59);
+            const y = Number(valor);
+            start = new Date(y, 0, 1, 0, 0, 0);
+            end = new Date(y, 11, 31, 23, 59, 59);
         }
-        const qbGastos = this.expenseRepository.createQueryBuilder('gasto');
-        if (type) {
-            qbGastos.andWhere('gasto.type = :type', { type });
-        }
-        qbGastos.andWhere('gasto.createdAt BETWEEN :start AND :end', { start, end });
-        const gastos = await qbGastos.getMany();
-        const gastosGrouped = {};
-        gastos.forEach((g) => {
-            const d = g.createdAt;
-            const key = periodo === 'dia'
-                ? `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-                : periodo === 'mes'
-                    ? d.getDate().toString().padStart(2, '0')
-                    : (d.getMonth() + 1).toString().padStart(2, '0');
-            gastosGrouped[key] = (gastosGrouped[key] || 0) + g.amount;
+        const gastosRows = await this.expenseRepository
+            .createQueryBuilder('g')
+            .where('g.createdAt BETWEEN :start AND :end', { start, end })
+            .andWhere('g.type = :t', { t: 'egreso' })
+            .getMany();
+        const orderRows = await this.orderRepository
+            .createQueryBuilder('o')
+            .where('o.createdAt BETWEEN :start AND :end', { start, end })
+            .getMany();
+        const groupKey = (d) => {
+            if (periodo === 'dia')
+                return d.toISOString().substring(11, 16);
+            if (periodo === 'mes')
+                return d.toISOString().substring(8, 10);
+            return d.toISOString().substring(5, 7);
+        };
+        const gastos = {};
+        const ingresos = {};
+        const propinas = {};
+        gastosRows.forEach((g) => {
+            const k = groupKey(g.createdAt);
+            gastos[k] = (gastos[k] || 0) + g.amount;
         });
-        let ordersGrouped = {};
-        if (!type || type === 'ingreso') {
-            const qbOrders = this.orderRepository.createQueryBuilder('order');
-            qbOrders.andWhere('order.createdAt BETWEEN :start AND :end', { start, end });
-            const orders = await qbOrders.getMany();
-            orders.forEach((o) => {
-                const d = o.createdAt;
-                const key = periodo === 'dia'
-                    ? `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-                    : periodo === 'mes'
-                        ? d.getDate().toString().padStart(2, '0')
-                        : (d.getMonth() + 1).toString().padStart(2, '0');
-                ordersGrouped[key] = (ordersGrouped[key] || 0) + o.total;
-            });
-        }
+        orderRows.forEach((o) => {
+            const k = groupKey(o.createdAt);
+            ingresos[k] = (ingresos[k] || 0) + o.total;
+            propinas[k] = (propinas[k] || 0) + (o.propina || 0);
+        });
+        const labels = Array.from(new Set([...Object.keys(gastos), ...Object.keys(ingresos), ...Object.keys(propinas)])).sort();
+        const arrIngresos = labels.map((l) => ingresos[l] || 0);
+        const arrEgresos = labels.map((l) => gastos[l] || 0);
+        const arrPropinas = labels.map((l) => propinas[l] || 0);
+        const arrBalance = labels.map((_, idx) => arrIngresos[idx] - arrEgresos[idx]);
         return {
-            gastos: gastosGrouped,
-            orders: ordersGrouped,
+            labels,
+            ingresos: arrIngresos,
+            egresos: arrEgresos,
+            propinas: arrPropinas,
+            balance: arrBalance,
         };
     }
 };

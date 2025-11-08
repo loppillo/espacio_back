@@ -3,9 +3,12 @@ import { Gasto } from './entities/gasto.entity';
 export declare class GastosController {
     private readonly expensesService;
     constructor(expensesService: GastosService);
-    estadisticas(type?: 'ingreso' | 'egreso', periodo?: 'dia' | 'mes' | 'anio', valor?: string): Promise<{
-        gastos: Record<string, number>;
-        orders: Record<string, number>;
+    estadisticas(periodo: 'dia' | 'mes' | 'anio', valor: string): Promise<{
+        labels: string[];
+        ingresos: number[];
+        egresos: number[];
+        propinas: number[];
+        balance: number[];
     }>;
     getMensual(anio: string, mes: string): Promise<{
         ingresos: number[];
