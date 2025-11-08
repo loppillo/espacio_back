@@ -4,13 +4,12 @@ export declare class GastosController {
     private readonly expensesService;
     constructor(expensesService: GastosService);
     estadisticas(type?: 'ingreso' | 'egreso', periodo?: 'dia' | 'mes' | 'anio', valor?: string): Promise<{}>;
-    getBalanceAnual(anio: number): Promise<{
-        ingresos: any[];
-        egresos: any[];
-        propinas: any[];
-        balance: any[];
+    getBalanceMensual(anio: number, mes: number): Promise<{
+        ingresos: number;
+        egresos: number;
+        balance: number;
     }>;
-    getBalanceMensual(anio: number, mes: number): Promise<any[]>;
+    getBalanceAnual(anio: number): Promise<any>;
     getBalance(startDate?: string, endDate?: string): Promise<any[]>;
     getBalancePorAnio(anio?: number): Promise<any>;
     getBalanceDiario(fecha: string): Promise<{
@@ -24,7 +23,6 @@ export declare class GastosController {
             propina: number;
         }[];
     }[]>;
-    getMensual(anio: number): Promise<any[]>;
     getAll(): Promise<Gasto[]>;
     getOne(id: number): Promise<Gasto>;
     crearGasto(body: Partial<Gasto>): Promise<Gasto>;

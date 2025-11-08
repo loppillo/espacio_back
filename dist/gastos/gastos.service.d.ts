@@ -14,13 +14,12 @@ export declare class GastosService {
     findOne(id: number): Promise<Gasto>;
     create(expenseData: Partial<Gasto>): Promise<Gasto>;
     remove(id: number): Promise<void>;
-    getBalanceMensual(anio: number): Promise<any[]>;
-    getBalanceAnual(anio: number): Promise<{
-        ingresos: any[];
-        egresos: any[];
-        propinas: any[];
-        balance: any[];
+    getBalanceMensual(anio: number, mes: number): Promise<{
+        ingresos: number;
+        egresos: number;
+        balance: number;
     }>;
+    getBalanceAnual(anio: number): Promise<any>;
     getBalancePorAnio(anio?: number): Promise<any>;
     getBalanceDiario(fecha: string): Promise<{
         fecha: string;

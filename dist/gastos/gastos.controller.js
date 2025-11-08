@@ -22,11 +22,11 @@ let GastosController = class GastosController {
     async estadisticas(type, periodo, valor) {
         return this.expensesService.estadisticas({ type, periodo, valor });
     }
-    async getBalanceAnual(anio) {
-        return this.expensesService.getBalanceAnual(Number(anio));
-    }
     getBalanceMensual(anio, mes) {
-        return this.expensesService.getBalanceMensual(Number(anio));
+        return this.expensesService.getBalanceMensual(Number(anio), Number(mes));
+    }
+    getBalanceAnual(anio) {
+        return this.expensesService.getBalanceAnual(Number(anio));
     }
     async getBalance(startDate, endDate) {
         return this.expensesService.getBalancePorFecha(startDate, endDate);
@@ -39,9 +39,6 @@ let GastosController = class GastosController {
             throw new common_1.BadRequestException('La fecha es requerida en formato YYYY-MM-DD');
         }
         return this.expensesService.getBalanceDiario(fecha);
-    }
-    getMensual(anio) {
-        return this.expensesService.getBalanceMensual(anio);
     }
     getAll() {
         return this.expensesService.findAll();
@@ -67,13 +64,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GastosController.prototype, "estadisticas", null);
 __decorate([
-    (0, common_1.Get)('anual'),
-    __param(0, (0, common_1.Query)('anio')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], GastosController.prototype, "getBalanceAnual", null);
-__decorate([
     (0, common_1.Get)('mensual'),
     __param(0, (0, common_1.Query)('anio')),
     __param(1, (0, common_1.Query)('mes')),
@@ -81,6 +71,13 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", void 0)
 ], GastosController.prototype, "getBalanceMensual", null);
+__decorate([
+    (0, common_1.Get)('anual'),
+    __param(0, (0, common_1.Query)('anio')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], GastosController.prototype, "getBalanceAnual", null);
 __decorate([
     (0, common_1.Get)('balances'),
     __param(0, (0, common_1.Query)('start')),
@@ -103,13 +100,6 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], GastosController.prototype, "getBalanceDiario", null);
-__decorate([
-    (0, common_1.Get)('mensual'),
-    __param(0, (0, common_1.Query)('anio', common_1.ParseIntPipe)),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", void 0)
-], GastosController.prototype, "getMensual", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
