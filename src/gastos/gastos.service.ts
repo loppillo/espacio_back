@@ -379,13 +379,8 @@ async getBalanceDiario(fecha: string): Promise<{
 
   // gasto.service.ts
 
-async estadisticas(filtro: { type?: string; periodo?: string; valor?: string }) {
-  const { type, periodo, valor } = filtro;
-
-  // Validación básica
-  if (!periodo || !valor) return { gastos: {}, orders: {} };
-
-  // Generar rango de fechas según periodo
+async estadisticas({ periodo, valor }: { periodo; valor }) {
+  // rango según periodo
   let start: Date;
   let end: Date;
 
@@ -395,77 +390,74 @@ async estadisticas(filtro: { type?: string; periodo?: string; valor?: string }) 
   }
 
   if (periodo === 'mes') {
-    const [year, month] = valor.split('-').map(Number);
-    start = new Date(year, month - 1, 1, 0, 0, 0);
-    end = new Date(year, month, 0, 23, 59, 59);
+    const [y, m] = valor.split('-');
+    start = new Date(Number(y), Number(m) - 1, 1, 0, 0, 0);
+    end = new Date(Number(y), Number(m), 0, 23, 59, 59);
   }
 
   if (periodo === 'anio') {
-    const year = Number(valor);
-    start = new Date(year, 0, 1, 0, 0, 0);
-    end = new Date(year, 11, 31, 23, 59, 59);
+    const y = Number(valor);
+    start = new Date(y, 0, 1, 0, 0, 0);
+    end = new Date(y, 11, 31, 23, 59, 59);
   }
 
-  // --------------------------
-  // GASTOS
-  // --------------------------
-  const qbGastos = this.expenseRepository.createQueryBuilder('gasto');
+  // ---- QUERIES ----
 
-  if (type) {
-    qbGastos.andWhere('gasto.type = :type', { type }); // ingreso | egreso
-  }
+  // GASTOS (egresos)
+  const gastosRows = await this.expenseRepository
+    .createQueryBuilder('g')
+    .where('g.createdAt BETWEEN :start AND :end', { start, end })
+    .andWhere('g.type = :t', { t: 'egreso' })
+    .getMany();
 
-  qbGastos.andWhere('gasto.createdAt BETWEEN :start AND :end', { start, end });
+  // ORDERS (ingresos)
+  const orderRows = await this.orderRepository
+    .createQueryBuilder('o')
+    .where('o.createdAt BETWEEN :start AND :end', { start, end })
+    .getMany();
 
-  const gastos = await qbGastos.getMany();
+  // ---- AGRUPAR POR LLAVE SEGÚN PERIODO ----
+  const groupKey = (d: Date) => {
+    if (periodo === 'dia') return d.toISOString().substring(11, 16);
+    if (periodo === 'mes') return d.toISOString().substring(8, 10);
+    return d.toISOString().substring(5, 7);
+  };
 
-  const gastosGrouped: Record<string, number> = {};
+  const gastos: Record<string, number> = {};
+  const ingresos: Record<string, number> = {};
+  const propinas: Record<string, number> = {};
 
-  gastos.forEach((g) => {
-    const d = g.createdAt;
-
-    const key =
-      periodo === 'dia'
-        ? `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-        : periodo === 'mes'
-        ? d.getDate().toString().padStart(2, '0')
-        : (d.getMonth() + 1).toString().padStart(2, '0');
-
-    gastosGrouped[key] = (gastosGrouped[key] || 0) + g.amount;
+  gastosRows.forEach((g) => {
+    const k = groupKey(g.createdAt);
+    gastos[k] = (gastos[k] || 0) + g.amount;
   });
 
-  // --------------------------
-  // ORDERS (solo si type = ingreso o no viene)
-  // --------------------------
+  orderRows.forEach((o) => {
+    const k = groupKey(o.createdAt);
+    ingresos[k] = (ingresos[k] || 0) + o.total;
+    propinas[k] = (propinas[k] || 0) + (o.propina || 0);
+  });
 
-  let ordersGrouped: Record<string, number> = {};
+  // ---- GENERAR LISTA DE LABELS ORDENADAS ----
+  const labels = Array.from(
+    new Set([...Object.keys(gastos), ...Object.keys(ingresos), ...Object.keys(propinas)])
+  ).sort();
 
-  if (!type || type === 'ingreso') {
-    const qbOrders = this.orderRepository.createQueryBuilder('order');
-
-    qbOrders.andWhere('order.createdAt BETWEEN :start AND :end', { start, end });
-
-    const orders = await qbOrders.getMany();
-
-    orders.forEach((o) => {
-      const d = o.createdAt;
-
-      const key =
-        periodo === 'dia'
-          ? `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-          : periodo === 'mes'
-          ? d.getDate().toString().padStart(2, '0')
-          : (d.getMonth() + 1).toString().padStart(2, '0');
-
-      ordersGrouped[key] = (ordersGrouped[key] || 0) + o.total;
-    });
-  }
+  // ---- ARMAR ARRAYS PARA GRAFICOS ----
+  const arrIngresos = labels.map((l) => ingresos[l] || 0);
+  const arrEgresos = labels.map((l) => gastos[l] || 0);
+  const arrPropinas = labels.map((l) => propinas[l] || 0);
+  const arrBalance = labels.map((_, idx) => arrIngresos[idx] - arrEgresos[idx]);
 
   return {
-    gastos: gastosGrouped,
-    orders: ordersGrouped,
+    labels,
+    ingresos: arrIngresos,
+    egresos: arrEgresos,
+    propinas: arrPropinas,
+    balance: arrBalance,
   };
 }
+
 
 
 

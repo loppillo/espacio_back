@@ -10,13 +10,12 @@ import { RolesGuard } from 'src/roles/roles.guard';
 export class GastosController {
  constructor(private readonly expensesService: GastosService) {}
 
-   @Get('estadisticas')
+@Get('estadisticas')
 async estadisticas(
-  @Query('type') type?: 'ingreso' | 'egreso',
-  @Query('periodo') periodo?: 'dia' | 'mes' | 'anio',
-  @Query('valor') valor?: string, // ej: 2025-11-05, 2025-11, 2025
+  @Query('periodo') periodo: 'dia' | 'mes' | 'anio',
+  @Query('valor') valor: string
 ) {
-  return this.expensesService.estadisticas({ type, periodo, valor });
+  return this.expensesService.estadisticas({ periodo, valor });
 }
 
 @Get('mensual')
