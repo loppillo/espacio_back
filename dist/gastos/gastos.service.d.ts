@@ -44,13 +44,11 @@ export declare class GastosService {
     private crearGasto;
     crearGastoManual(data: Partial<Gasto>): Promise<Gasto>;
     estadisticas(filtro: {
-        type?: any;
-        periodo?: any;
-        valor?: any;
+        type?: string;
+        periodo?: 'dia' | 'mes' | 'anio';
+        valor?: string;
     }): Promise<{
-        ingresos: {};
-        egresos: {};
-        propinas: {};
-        balance: {};
+        gastos: Record<string, number>;
+        orders: Record<string, number>;
     }>;
 }

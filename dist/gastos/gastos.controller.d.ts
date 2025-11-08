@@ -4,10 +4,8 @@ export declare class GastosController {
     private readonly expensesService;
     constructor(expensesService: GastosService);
     estadisticas(type?: 'ingreso' | 'egreso', periodo?: 'dia' | 'mes' | 'anio', valor?: string): Promise<{
-        ingresos: {};
-        egresos: {};
-        propinas: {};
-        balance: {};
+        gastos: Record<string, number>;
+        orders: Record<string, number>;
     }>;
     getMensual(anio: string, mes: string): Promise<{
         ingresos: number[];
