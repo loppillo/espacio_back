@@ -10,7 +10,13 @@ export declare class GastosController {
         propinas: number;
         balance: number;
     }>;
-    getAnual(anio: string): Promise<any>;
+    getAnual(anio: string): Promise<{
+        mes: number;
+        ingresos: any;
+        egresos: any;
+        propinas: any;
+        balance: number;
+    }[]>;
     getBalance(startDate?: string, endDate?: string): Promise<any[]>;
     getBalancePorAnio(anio?: number): Promise<any>;
     getBalanceDiario(fecha: string): Promise<{

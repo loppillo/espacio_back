@@ -1,5 +1,6 @@
 import { Gasto } from './entities/gasto.entity';
 import { Repository, DataSource } from 'typeorm';
+import { Order } from 'src/orders/entities/order.entity';
 export declare enum Frecuencia {
     DIARIO = "diario",
     SEMANAL = "semanal",
@@ -7,8 +8,9 @@ export declare enum Frecuencia {
 }
 export declare class GastosService {
     private readonly expenseRepository;
+    private readonly orderRepository;
     private dataSource;
-    constructor(expenseRepository: Repository<Gasto>, dataSource: DataSource);
+    constructor(expenseRepository: Repository<Gasto>, orderRepository: Repository<Order>, dataSource: DataSource);
     findAll(): Promise<Gasto[]>;
     getBalancePorFecha(ingresosWhere?: any, egresosWhere?: any): Promise<any[]>;
     findOne(id: number): Promise<Gasto>;
@@ -20,7 +22,13 @@ export declare class GastosService {
         propinas: number;
         balance: number;
     }>;
-    getBalanceAnual(anio: number): Promise<any>;
+    getBalanceAnual(anio: number): Promise<{
+        mes: number;
+        ingresos: any;
+        egresos: any;
+        propinas: any;
+        balance: number;
+    }[]>;
     getBalancePorAnio(anio?: number): Promise<any>;
     getBalanceDiario(fecha: string): Promise<{
         fecha: string;

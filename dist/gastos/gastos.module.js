@@ -15,12 +15,13 @@ const typeorm_1 = require("@nestjs/typeorm");
 const customer_entity_1 = require("../customer/entities/customer.entity");
 const categoria_gasto_entity_1 = require("../categoria-gasto/entities/categoria-gasto.entity");
 const schedule_1 = require("@nestjs/schedule");
+const order_entity_1 = require("../orders/entities/order.entity");
 let GastosModule = class GastosModule {
 };
 exports.GastosModule = GastosModule;
 exports.GastosModule = GastosModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([gasto_entity_1.Gasto, customer_entity_1.Customer, categoria_gasto_entity_1.CategoriaGasto]), schedule_1.ScheduleModule.forRoot(),],
+        imports: [typeorm_1.TypeOrmModule.forFeature([gasto_entity_1.Gasto, customer_entity_1.Customer, categoria_gasto_entity_1.CategoriaGasto, order_entity_1.Order]), schedule_1.ScheduleModule.forRoot(),],
         controllers: [gastos_controller_1.GastosController],
         providers: [gastos_service_1.GastosService],
     })

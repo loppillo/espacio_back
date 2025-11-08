@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const gasto_entity_1 = require("./entities/gasto.entity");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const order_entity_1 = require("../orders/entities/order.entity");
 var Frecuencia;
 (function (Frecuencia) {
     Frecuencia["DIARIO"] = "diario";
@@ -24,8 +25,9 @@ var Frecuencia;
     Frecuencia["MENSUAL"] = "mensual";
 })(Frecuencia || (exports.Frecuencia = Frecuencia = {}));
 let GastosService = class GastosService {
-    constructor(expenseRepository, dataSource) {
+    constructor(expenseRepository, orderRepository, dataSource) {
         this.expenseRepository = expenseRepository;
+        this.orderRepository = orderRepository;
         this.dataSource = dataSource;
     }
     findAll() {
@@ -93,17 +95,23 @@ let GastosService = class GastosService {
         await this.expenseRepository.delete(id);
     }
     async getBalanceMensual(anio, mes) {
-        const rows = await this.expenseRepository.query(`
+        const expRows = await this.expenseRepository.query(`
     SELECT 
-      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
-      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos,
-      SUM(CASE WHEN type = 'propina' THEN amount ELSE 0 END) AS propinas
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
     FROM expenses
     WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
     `, [anio, mes]);
-        const ingresos = Number(rows[0]?.ingresos || 0);
-        const egresos = Number(rows[0]?.egresos || 0);
-        const propinas = Number(rows[0]?.propinas || 0);
+        const orderRows = await this.orderRepository.query(`
+    SELECT
+      SUM(total) AS ingresos,
+      SUM(propina) AS propinas
+    FROM orders
+    WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
+      AND status != 'cancelado'
+    `, [anio, mes]);
+        const ingresos = Number(orderRows[0]?.ingresos || 0);
+        const egresos = Number(expRows[0]?.egresos || 0);
+        const propinas = Number(orderRows[0]?.propinas || 0);
         return {
             ingresos,
             egresos,
@@ -112,29 +120,44 @@ let GastosService = class GastosService {
         };
     }
     async getBalanceAnual(anio) {
-        const rows = await this.expenseRepository.query(`
+        const expRows = await this.expenseRepository.query(`
     SELECT 
       MONTH(createdAt) AS mes,
-      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
-      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos,
-      SUM(CASE WHEN type = 'propina' THEN amount ELSE 0 END) AS propinas
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
     FROM expenses
     WHERE YEAR(createdAt) = ?
     GROUP BY MONTH(createdAt)
     ORDER BY mes
     `, [anio]);
-        return rows.map(r => {
-            const ingresos = Number(r.ingresos || 0);
-            const egresos = Number(r.egresos || 0);
-            const propinas = Number(r.propinas || 0);
-            return {
-                mes: r.mes,
-                ingresos,
-                egresos,
-                propinas,
-                balance: ingresos - egresos
-            };
+        const orderRows = await this.orderRepository.query(`
+    SELECT
+      MONTH(createdAt) AS mes,
+      SUM(total) AS ingresos,
+      SUM(propina) AS propinas
+    FROM orders
+    WHERE YEAR(createdAt) = ?
+      AND status != 'cancelado'
+    GROUP BY MONTH(createdAt)
+    ORDER BY mes
+    `, [anio]);
+        const byMonth = {};
+        expRows.forEach(r => {
+            byMonth[r.mes] = { egresos: Number(r.egresos || 0), ingresos: 0, propinas: 0 };
         });
+        orderRows.forEach(r => {
+            if (!byMonth[r.mes]) {
+                byMonth[r.mes] = { egresos: 0, ingresos: 0, propinas: 0 };
+            }
+            byMonth[r.mes].ingresos = Number(r.ingresos || 0);
+            byMonth[r.mes].propinas = Number(r.propinas || 0);
+        });
+        return Object.entries(byMonth).map(([mes, d]) => ({
+            mes: Number(mes),
+            ingresos: d.ingresos,
+            egresos: d.egresos,
+            propinas: d.propinas,
+            balance: d.ingresos - d.egresos,
+        }));
     }
     async getBalancePorAnio(anio) {
         const entityManager = this.dataSource.manager;
@@ -264,7 +287,9 @@ exports.GastosService = GastosService;
 exports.GastosService = GastosService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(gasto_entity_1.Gasto)),
+    __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.DataSource])
 ], GastosService);
 //# sourceMappingURL=gastos.service.js.map
