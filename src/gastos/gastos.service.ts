@@ -109,41 +109,60 @@ export class GastosService {
   }
 
 async getBalanceMensual(anio: number, mes: number) {
-  // 1) Egresos desde expenses
-  const expRows = await this.expenseRepository.query(
+  // 1) Egresos diarios desde expenses
+  const egresoRows = await this.expenseRepository.query(
     `
     SELECT 
-      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
+      DAY(createdAt) AS dia,
+      SUM(amount) AS egresos
     FROM expenses
     WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
+    GROUP BY DAY(createdAt)
     `,
-    [anio, mes],
+    [anio, mes]
   );
 
-  // 2) Ingresos y propinas desde orders
+  // 2) Ingresos y propinas diarios desde orders
   const orderRows = await this.orderRepository.query(
     `
     SELECT
+      DAY(createdAt) AS dia,
       SUM(total) AS ingresos,
       SUM(propina) AS propinas
     FROM orders
     WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
       AND status != 'cancelado'
+    GROUP BY DAY(createdAt)
     `,
-    [anio, mes],
+    [anio, mes]
   );
 
-  const ingresos = Number(orderRows[0]?.ingresos || 0);
-  const egresos  = Number(expRows[0]?.egresos || 0);
-  const propinas = Number(orderRows[0]?.propinas || 0);
+  // Inicializamos arrays de 31 días
+  const dias = Array.from({ length: 31 }, () => 0);
+  const ingresos = Array.from({ length: 31 }, () => 0);
+  const egresos = Array.from({ length: 31 }, () => 0);
+  const propinas = Array.from({ length: 31 }, () => 0);
+  const balance = Array.from({ length: 31 }, () => 0);
 
-  return {
-    ingresos,
-    egresos,
-    propinas,
-    balance: ingresos - egresos // como pediste: SIN propinas
-  };
+  egresoRows.forEach((r: any) => {
+    const idx = r.dia - 1;
+    egresos[idx] = Number(r.egresos || 0);
+  });
+
+  orderRows.forEach((r: any) => {
+    const idx = r.dia - 1;
+    ingresos[idx] = Number(r.ingresos || 0);
+    propinas[idx] = Number(r.propinas || 0);
+  });
+
+  // Calculamos balance diario
+  for (let i = 0; i < 31; i++) {
+    balance[i] = ingresos[i] - egresos[i]; // SIN propinas
+  }
+
+  return { ingresos, egresos, propinas, balance };
 }
+
 
 
 async getBalanceAnual(anio: number) {
