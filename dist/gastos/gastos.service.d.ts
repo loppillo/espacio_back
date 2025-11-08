@@ -45,7 +45,7 @@ export declare class GastosService {
     crearGastoManual(data: Partial<Gasto>): Promise<Gasto>;
     estadisticas(filtro: {
         type?: string;
-        periodo?: 'dia' | 'mes' | 'anio';
+        periodo?: string;
         valor?: string;
     }): Promise<{
         gastos: Record<string, number>;
