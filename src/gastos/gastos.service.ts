@@ -106,88 +106,58 @@ export class GastosService {
     await this.expenseRepository.delete(id);
   }
 
-  async getBalanceMensual(anio: number) {
-  // 1. Traes lo que exista en la BD
-  const filas = await this.expenseRepository.query(
+async getBalanceMensual(anio: number, mes: number) {
+  const rows = await this.expenseRepository.query(
     `
-      SELECT 
-        MONTH(fecha) AS mes,
-        SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END) AS ingresos,
-        SUM(CASE WHEN tipo = 'egreso' THEN monto ELSE 0 END) AS egresos
-      FROM gastos
-      WHERE YEAR(fecha) = ?
-      GROUP BY MONTH(fecha)
-      ORDER BY mes ASC
+    SELECT 
+      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
+    FROM expenses
+    WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
     `,
-    [anio]
+    [anio, mes],
   );
 
-  // 2. Normalizas: siempre 12 meses
-  const resultado = [];
+  const ingresos = Number(rows[0]?.ingresos || 0);
+  const egresos  = Number(rows[0]?.egresos || 0);
 
-  for (let m = 1; m <= 12; m++) {
-    const fila = filas.find(f => f.mes === m);
-
-    resultado.push({
-      mes: m,
-      ingresos: fila?.ingresos ?? 0,
-      egresos: fila?.egresos ?? 0,
-      balance: (fila?.ingresos ?? 0) - (fila?.egresos ?? 0),
-    });
-  }
-
-  return resultado;
+  return {
+    ingresos,
+    egresos,
+    balance: ingresos - egresos,
+  };
 }
 
 
+
+
   async getBalanceAnual(anio: number) {
-    const ingresos = Array(12).fill(0);
-    const egresos = Array(12).fill(0);
-    const propinas = Array(12).fill(0);
-    const balance = Array(12).fill(0);
+  const rows = await this.expenseRepository.query(
+    `
+    SELECT 
+      MONTH(createdAt) AS mes,
+      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
+    FROM expenses
+    WHERE YEAR(createdAt) = ?
+    GROUP BY MONTH(createdAt)
+    ORDER BY mes
+    `,
+    [anio],
+  );
 
-    // ✅ INGRESOS Y PROPINAS (tabla orders)
-    const ordenes = await this.expenseRepository
-      .createQueryBuilder('o')
-      .select([
-        "EXTRACT(MONTH FROM o.createdAt) as mes",
-        "SUM(o.total - o.propina) as ingreso",
-        "SUM(o.propina) as propina"
-      ])
-      .where("EXTRACT(YEAR FROM o.createdAt) = :anio", { anio })
-      .andWhere("o.status = 'pagado'") // ajústalo si usas otro status
-      .groupBy("mes")
-      .getRawMany();
+  return rows.map(r => {
+    const ingresos = Number(r.ingresos || 0);
+    const egresos  = Number(r.egresos || 0);
 
-    ordenes.forEach(row => {
-      const mes = Number(row.mes) - 1;
-      ingresos[mes] = Number(row.ingreso);
-      propinas[mes] = Number(row.propina);
-    });
-
-    // ✅ EGRESOS (tabla gastos)
-    const gastos = await this.expenseRepository
-      .createQueryBuilder('g')
-      .select([
-        "EXTRACT(MONTH FROM g.fecha) as mes",
-        "SUM(g.monto) as egreso"
-      ])
-      .where("EXTRACT(YEAR FROM g.fecha) = :anio", { anio })
-      .groupBy("mes")
-      .getRawMany();
-
-    gastos.forEach(row => {
-      const mes = Number(row.mes) - 1;
-      egresos[mes] = Number(row.egreso);
-    });
-
-    // ✅ Balance mensual
-    for (let i = 0; i < 12; i++) {
-      balance[i] = ingresos[i] - egresos[i] + propinas[i];
-    }
-
-    return { ingresos, egresos, propinas, balance };
-  }
+    return {
+      mes: r.mes,
+      ingresos,
+      egresos,
+      balance: ingresos - egresos,
+    };
+  });
+}
 
 async getBalancePorAnio(anio?: number) {
   const entityManager = this.dataSource.manager;

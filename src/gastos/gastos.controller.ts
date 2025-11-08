@@ -19,17 +19,19 @@ async estadisticas(
   return this.expensesService.estadisticas({ type, periodo, valor });
 }
 
-  @Get('anual')
-  async getBalanceAnual(@Query('anio') anio: number) {
-    return this.expensesService.getBalanceAnual(Number(anio));
-  }
-
-    @Get('mensual')
+@Get('mensual')
   getBalanceMensual(
     @Query('anio') anio: number,
     @Query('mes') mes: number,
   ) {
-    return this.expensesService.getBalanceMensual(Number(anio));
+    return this.expensesService.getBalanceMensual(Number(anio), Number(mes));
+  }
+
+  @Get('anual')
+  getBalanceAnual(
+    @Query('anio') anio: number,
+  ) {
+    return this.expensesService.getBalanceAnual(Number(anio));
   }
 
 
@@ -54,12 +56,6 @@ async estadisticas(
     }
     return this.expensesService.getBalanceDiario(fecha);
   }
-
-   @Get('mensual')
-  getMensual(@Query('anio', ParseIntPipe) anio: number) {
-    return this.expensesService.getBalanceMensual(anio);
-  }
-
 
 
   @Get()
