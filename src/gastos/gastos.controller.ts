@@ -20,19 +20,34 @@ async estadisticas(
 }
 
 @Get('mensual')
-  getBalanceMensual(
-    @Query('anio') anio: number,
-    @Query('mes') mes: number,
-  ) {
-    return this.expensesService.getBalanceMensual(Number(anio), Number(mes));
+async getMensual(
+  @Query('anio') anio: string,
+  @Query('mes') mes: string,
+) {
+  const year = Number(anio);
+  const month = Number(mes);
+
+  if (isNaN(year) || isNaN(month)) {
+    throw new BadRequestException('Año o mes inválido');
   }
 
-  @Get('anual')
-  getBalanceAnual(
-    @Query('anio') anio: number,
-  ) {
-    return this.expensesService.getBalanceAnual(Number(anio));
+  return this.expensesService.getBalanceMensual(year, month);
+}
+
+
+@Get('anual')
+async getAnual(
+  @Query('anio') anio: string,
+) {
+  const year = Number(anio);
+
+  if (isNaN(year)) {
+    throw new BadRequestException('Año inválido');
   }
+
+  return this.expensesService.getBalanceAnual(year);
+}
+
 
 
    @Get('balances')
