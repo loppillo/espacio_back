@@ -1,0 +1,264 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GastosService = exports.Frecuencia = void 0;
+const common_1 = require("@nestjs/common");
+const gasto_entity_1 = require("./entities/gasto.entity");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+var Frecuencia;
+(function (Frecuencia) {
+    Frecuencia["DIARIO"] = "diario";
+    Frecuencia["SEMANAL"] = "semanal";
+    Frecuencia["MENSUAL"] = "mensual";
+})(Frecuencia || (exports.Frecuencia = Frecuencia = {}));
+let GastosService = class GastosService {
+    constructor(expenseRepository, dataSource) {
+        this.expenseRepository = expenseRepository;
+        this.dataSource = dataSource;
+    }
+    findAll() {
+        return this.expenseRepository.find();
+    }
+    async getBalancePorFecha(ingresosWhere, egresosWhere) {
+        const entityManager = this.dataSource.manager;
+        const ingresosQuery = entityManager
+            .createQueryBuilder()
+            .select("DATE(o.createdAt)", "fecha")
+            .addSelect("SUM(o.total)", "ingresos")
+            .addSelect("0", "egresos")
+            .from("orders", "o");
+        if (ingresosWhere && typeof ingresosWhere === 'object') {
+            Object.entries(ingresosWhere).forEach(([key, value], index) => {
+                if (value !== undefined &&
+                    value !== null &&
+                    !(typeof value === 'number' && Number.isNaN(value))) {
+                    const paramName = `ingresoParam${index}`;
+                    ingresosQuery.andWhere(`o.${key} = :${paramName}`, { [paramName]: value });
+                }
+            });
+        }
+        ingresosQuery.groupBy("DATE(o.createdAt)");
+        const egresosQuery = entityManager
+            .createQueryBuilder()
+            .select("DATE(e.createdAt)", "fecha")
+            .addSelect("0", "ingresos")
+            .addSelect("SUM(e.amount)", "egresos")
+            .from("expenses", "e");
+        if (egresosWhere && typeof egresosWhere === 'object') {
+            Object.entries(egresosWhere).forEach(([key, value], index) => {
+                if (value !== undefined &&
+                    value !== null &&
+                    !(typeof value === 'number' && Number.isNaN(value))) {
+                    const paramName = `egresoParam${index}`;
+                    egresosQuery.andWhere(`e.${key} = :${paramName}`, { [paramName]: value });
+                }
+            });
+        }
+        egresosQuery.groupBy("DATE(e.createdAt)");
+        const unionQuery = entityManager
+            .createQueryBuilder()
+            .select("fecha")
+            .addSelect("SUM(ingresos)", "ingresos")
+            .addSelect("SUM(egresos)", "egresos")
+            .addSelect("SUM(ingresos) - SUM(egresos)", "balance")
+            .from(`(${ingresosQuery.getQuery()} UNION ALL ${egresosQuery.getQuery()})`, "movimientos")
+            .groupBy("fecha")
+            .orderBy("fecha", "DESC")
+            .setParameters({
+            ...ingresosQuery.getParameters(),
+            ...egresosQuery.getParameters(),
+        });
+        return unionQuery.getRawMany();
+    }
+    findOne(id) {
+        return this.expenseRepository.findOneBy({ id });
+    }
+    create(expenseData) {
+        const expense = this.expenseRepository.create(expenseData);
+        return this.expenseRepository.save(expense);
+    }
+    async remove(id) {
+        await this.expenseRepository.delete(id);
+    }
+    async getBalanceMensual(anio, mes) {
+        const rows = await this.expenseRepository.query(`
+    SELECT 
+      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
+    FROM expenses
+    WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
+    `, [anio, mes]);
+        const ingresos = Number(rows[0]?.ingresos || 0);
+        const egresos = Number(rows[0]?.egresos || 0);
+        return {
+            ingresos,
+            egresos,
+            balance: ingresos - egresos,
+        };
+    }
+    async getBalanceAnual(anio) {
+        const rows = await this.expenseRepository.query(`
+    SELECT 
+      MONTH(createdAt) AS mes,
+      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
+    FROM expenses
+    WHERE YEAR(createdAt) = ?
+    GROUP BY MONTH(createdAt)
+    ORDER BY mes
+    `, [anio]);
+        return rows.map(r => {
+            const ingresos = Number(r.ingresos || 0);
+            const egresos = Number(r.egresos || 0);
+            return {
+                mes: r.mes,
+                ingresos,
+                egresos,
+                balance: ingresos - egresos,
+            };
+        });
+    }
+    async getBalancePorAnio(anio) {
+        const entityManager = this.dataSource.manager;
+        const filtroOrders = anio
+            ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'Pagado')`
+            : `WHERE (o.status = 'vendido' OR o.status = 'Pagado')`;
+        const filtroExpenses = anio
+            ? `WHERE YEAR(e.createdAt) = ${anio} AND e.type = 'egreso'`
+            : `WHERE e.type = 'egreso'`;
+        const query = `
+    SELECT anio,
+           SUM(ingresos) AS ingresos,
+           SUM(propinas) AS propinas,
+           SUM(egresos) AS egresos,
+           (SUM(ingresos) - SUM(egresos)) AS balance
+    FROM (
+      -- ingresos (orders)
+      SELECT 
+        YEAR(o.createdAt) AS anio,
+        SUM(o.total) AS ingresos,
+        SUM(o.propina) AS propinas,
+        0 AS egresos
+      FROM orders o
+      ${filtroOrders}
+      GROUP BY YEAR(o.createdAt)
+
+      UNION ALL
+
+      -- egresos (expenses)
+      SELECT 
+        YEAR(e.createdAt) AS anio,
+        0 AS ingresos,
+        0 AS propinas,
+        SUM(e.amount) AS egresos
+      FROM expenses e
+      ${filtroExpenses}
+      GROUP BY YEAR(e.createdAt)
+    ) resumen
+    GROUP BY anio
+    ORDER BY anio ASC
+  `;
+        return await entityManager.query(query);
+    }
+    async getBalanceDiario(fecha) {
+        const entityManager = this.dataSource.manager;
+        const ingresos = await entityManager
+            .createQueryBuilder()
+            .select("DATE(o.createdAt)", "fecha")
+            .addSelect("SUM(o.total)", "totalIngresos")
+            .addSelect("SUM(o.propina)", "totalPropina")
+            .addSelect("p.name AS producto")
+            .addSelect("SUM(o.cantidad) AS cantidad")
+            .from("orders", "o")
+            .innerJoin("o.products", "p")
+            .where("DATE(o.createdAt) = :fecha", { fecha })
+            .andWhere("o.status = :status", { status: 'Pagado' })
+            .groupBy("fecha, p.name")
+            .getRawMany();
+        const egresos = await entityManager
+            .createQueryBuilder()
+            .select("DATE(e.createdAt)", "fecha")
+            .addSelect("SUM(e.amount)", "totalEgresos")
+            .from("expenses", "e")
+            .where("DATE(e.createdAt) = :fecha", { fecha })
+            .groupBy("fecha")
+            .getRawOne();
+        const agrupados = new Map();
+        ingresos.forEach(i => {
+            const key = i.fecha;
+            const ingresoTotal = parseFloat(i.totalIngresos) + parseFloat(i.totalPropina);
+            if (!agrupados.has(key)) {
+                agrupados.set(key, {
+                    fecha: key,
+                    totalIngresos: ingresoTotal,
+                    totalEgresos: egresos ? parseFloat(egresos.totalEgresos) : 0,
+                    productosVendidos: []
+                });
+            }
+            agrupados.get(key)?.productosVendidos.push({
+                producto: i.producto,
+                cantidad: parseInt(i.cantidad, 10),
+                total: parseFloat(i.totalIngresos),
+                propina: parseFloat(i.totalPropina)
+            });
+        });
+        return Array.from(agrupados.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    }
+    async crearGasto(g) {
+        await this.expenseRepository.save({
+            ...g,
+            id: undefined,
+            createdAt: new Date(),
+        });
+    }
+    async crearGastoManual(data) {
+        const gasto = this.expenseRepository.create(data);
+        return await this.expenseRepository.save(gasto);
+    }
+    async estadisticas(filtro) {
+        const qb = this.expenseRepository.createQueryBuilder('gasto');
+        if (filtro.type) {
+            qb.andWhere('gasto.type = :type', { type: filtro.type });
+        }
+        if (filtro.periodo === 'dia') {
+            qb.andWhere("DATE(gasto.createdAt) = :valor", { valor: filtro.valor });
+        }
+        if (filtro.periodo === 'mes') {
+            qb.andWhere("DATE_FORMAT(gasto.createdAt, '%Y-%m') = :valor", { valor: filtro.valor });
+        }
+        if (filtro.periodo === 'anio') {
+            qb.andWhere("DATE_FORMAT(gasto.createdAt, '%Y') = :valor", { valor: filtro.valor });
+        }
+        const data = await qb.getMany();
+        const grouped = {};
+        data.forEach((g) => {
+            const key = filtro.periodo === 'dia'
+                ? g.createdAt.toISOString().substring(11, 16)
+                : filtro.periodo === 'mes'
+                    ? g.createdAt.toISOString().substring(8, 10)
+                    : g.createdAt.toISOString().substring(5, 7);
+            grouped[key] = (grouped[key] || 0) + g.amount;
+        });
+        return grouped;
+    }
+};
+exports.GastosService = GastosService;
+exports.GastosService = GastosService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_1.InjectRepository)(gasto_entity_1.Gasto)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.DataSource])
+], GastosService);
+//# sourceMappingURL=gastos.service.js.map
