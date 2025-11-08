@@ -379,93 +379,79 @@ async getBalanceDiario(fecha: string): Promise<{
 
   // gasto.service.ts
 
-async estadisticas(filtro: { type?; periodo?; valor? }) {
-
-  // ==== QUERY GASTOS ====
-  const gastosQ = this.expenseRepository.createQueryBuilder('gasto');
+async estadisticas(filtro: { type?: string; periodo?: 'dia' | 'mes' | 'anio'; valor?: string }) {
+  // Crear query builder para gastos
+  const qbGastos = this.expenseRepository.createQueryBuilder('gasto');
 
   if (filtro.type) {
-    gastosQ.andWhere('gasto.type = :type', { type: filtro.type });
+    qbGastos.andWhere('gasto.type = :type', { type: filtro.type });
   }
 
-  if (filtro.periodo === 'dia') {
-    gastosQ.andWhere("DATE(gasto.createdAt) = :valor", { valor: filtro.valor });
+  // Manejo del periodo para gastos
+  if (filtro.periodo === 'dia' && filtro.valor) {
+    qbGastos.andWhere('DATE(gasto.createdAt) = :valor', { valor: filtro.valor }); // YYYY-MM-DD
   }
 
-  if (filtro.periodo === 'mes') {
-    gastosQ.andWhere("DATE_FORMAT(gasto.createdAt, '%Y-%m') = :valor", { valor: filtro.valor });
+  if (filtro.periodo === 'mes' && filtro.valor) {
+    qbGastos.andWhere("DATE_FORMAT(gasto.createdAt, '%Y-%m') = :valor", { valor: filtro.valor }); // YYYY-MM
   }
 
-  if (filtro.periodo === 'anio') {
-    gastosQ.andWhere("DATE_FORMAT(gasto.createdAt, '%Y') = :valor", { valor: filtro.valor });
+  if (filtro.periodo === 'anio' && filtro.valor) {
+    qbGastos.andWhere("DATE_FORMAT(gasto.createdAt, '%Y') = :valor", { valor: filtro.valor }); // YYYY
   }
 
-  const gastos = await gastosQ.getMany();
+  const gastos = await qbGastos.getMany();
 
-
-  // ==== QUERY ORDERS ====
-  const ventasQ = this.orderRepository.createQueryBuilder('orden');
-
-  if (filtro.periodo === 'dia') {
-    ventasQ.andWhere("DATE(orden.createdAt) = :valor", { valor: filtro.valor });
-  }
-
-  if (filtro.periodo === 'mes') {
-    ventasQ.andWhere("DATE_FORMAT(orden.createdAt, '%Y-%m') = :valor", { valor: filtro.valor });
-  }
-
-  if (filtro.periodo === 'anio') {
-    ventasQ.andWhere("DATE_FORMAT(orden.createdAt, '%Y') = :valor", { valor: filtro.valor });
-  }
-
-  const ventas = await ventasQ.getMany();
-
-
-  // ==== AGRUPADOR ====
-  const agrupar = (items: any[], periodo: string, campo: string) => {
-    const grouped = {};
-
-    items.forEach((item) => {
-      const key =
-        periodo === 'dia'
-          ? item.createdAt.toISOString().substring(11, 16) // HH:mm
-          : periodo === 'mes'
-          ? item.createdAt.toISOString().substring(8, 10)  // día
-          : item.createdAt.toISOString().substring(5, 7);  // mes (01–12)
-
-      grouped[key] = (grouped[key] || 0) + (item[campo] || 0);
-    });
-
-    return grouped;
-  };
-
-
-  // ==== SUMAS ====
-  const egresosGrouped  = agrupar(gastos, filtro.periodo, 'amount');
-  const ingresosGrouped = agrupar(ventas, filtro.periodo, 'total');
-  const propinasGrouped = agrupar(ventas, filtro.periodo, 'propina');
-
-  // ==== BALANCE (ingresos - egresos) ====
-  const balanceGrouped = {};
-  const claves = new Set([
-    ...Object.keys(ingresosGrouped),
-    ...Object.keys(egresosGrouped),
-  ]);
-
-  claves.forEach((k) => {
-    balanceGrouped[k] =
-      (ingresosGrouped[k] || 0) - (egresosGrouped[k] || 0);
+  // Agrupar gastos por periodo
+  const groupedGastos: Record<string, number> = {};
+  gastos.forEach(g => {
+    const key =
+      filtro.periodo === 'dia'
+        ? g.createdAt.toISOString().substring(11, 16)  // HH:mm
+        : filtro.periodo === 'mes'
+        ? g.createdAt.toISOString().substring(8, 10)  // Día del mes
+        : g.createdAt.toISOString().substring(5, 7);  // Mes
+    groupedGastos[key] = (groupedGastos[key] || 0) + g.amount;
   });
 
+  // Ahora hacemos lo mismo para órdenes
+  const qbOrders = this.orderRepository.createQueryBuilder('order');
 
-  // ==== RESPUESTA ====
+  if (filtro.type) {
+    qbOrders.andWhere('order.status = :type', { type: filtro.type });
+  }
+
+  if (filtro.periodo === 'dia' && filtro.valor) {
+    qbOrders.andWhere('DATE(order.createdAt) = :valor', { valor: filtro.valor });
+  }
+
+  if (filtro.periodo === 'mes' && filtro.valor) {
+    qbOrders.andWhere("DATE_FORMAT(order.createdAt, '%Y-%m') = :valor", { valor: filtro.valor });
+  }
+
+  if (filtro.periodo === 'anio' && filtro.valor) {
+    qbOrders.andWhere("DATE_FORMAT(order.createdAt, '%Y') = :valor", { valor: filtro.valor });
+  }
+
+  const orders = await qbOrders.getMany();
+
+  const groupedOrders: Record<string, number> = {};
+  orders.forEach(o => {
+    const key =
+      filtro.periodo === 'dia'
+        ? o.createdAt.toISOString().substring(11, 16)
+        : filtro.periodo === 'mes'
+        ? o.createdAt.toISOString().substring(8, 10)
+        : o.createdAt.toISOString().substring(5, 7);
+    groupedOrders[key] = (groupedOrders[key] || 0) + o.total;
+  });
+
   return {
-    ingresos: ingresosGrouped,
-    egresos: egresosGrouped,
-    propinas: propinasGrouped,
-    balance: balanceGrouped
+    gastos: groupedGastos,
+    orders: groupedOrders
   };
 }
+
 
 
 
