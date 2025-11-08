@@ -51,6 +51,7 @@ let OrdersService = class OrdersService {
             total: 0,
             numeroVenta: await this.generarNumeroVenta(),
             mesa,
+            detalle_venta: createOrderDto.detalle_venta || null,
         });
         let savedOrder = await this.orderRepository.save(newOrder);
         const productIds = products.map(p => p.id);
