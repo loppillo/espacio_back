@@ -93,7 +93,7 @@ let GastosService = class GastosService {
         await this.expenseRepository.delete(id);
     }
     async getBalanceMensual(anio) {
-        const data = await this.expenseRepository.query(`
+        const filas = await this.expenseRepository.query(`
       SELECT 
         MONTH(fecha) AS mes,
         SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END) AS ingresos,
@@ -101,27 +101,58 @@ let GastosService = class GastosService {
       FROM gastos
       WHERE YEAR(fecha) = ?
       GROUP BY MONTH(fecha)
-      ORDER BY mes
+      ORDER BY mes ASC
     `, [anio]);
-        return data;
+        const resultado = [];
+        for (let m = 1; m <= 12; m++) {
+            const fila = filas.find(f => f.mes === m);
+            resultado.push({
+                mes: m,
+                ingresos: fila?.ingresos ?? 0,
+                egresos: fila?.egresos ?? 0,
+                balance: (fila?.ingresos ?? 0) - (fila?.egresos ?? 0),
+            });
+        }
+        return resultado;
     }
-    async getBalanceAnual() {
-        try {
-            const data = await this.expenseRepository.query(`
-      SELECT 
-        YEAR(createdAt) AS anio,
-        SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
-        SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
-      FROM expenses
-      GROUP BY YEAR(createdAt)
-      ORDER BY anio
-    `);
-            return data;
+    async getBalanceAnual(anio) {
+        const ingresos = Array(12).fill(0);
+        const egresos = Array(12).fill(0);
+        const propinas = Array(12).fill(0);
+        const balance = Array(12).fill(0);
+        const ordenes = await this.expenseRepository
+            .createQueryBuilder('o')
+            .select([
+            "EXTRACT(MONTH FROM o.createdAt) as mes",
+            "SUM(o.total - o.propina) as ingreso",
+            "SUM(o.propina) as propina"
+        ])
+            .where("EXTRACT(YEAR FROM o.createdAt) = :anio", { anio })
+            .andWhere("o.status = 'pagado'")
+            .groupBy("mes")
+            .getRawMany();
+        ordenes.forEach(row => {
+            const mes = Number(row.mes) - 1;
+            ingresos[mes] = Number(row.ingreso);
+            propinas[mes] = Number(row.propina);
+        });
+        const gastos = await this.expenseRepository
+            .createQueryBuilder('g')
+            .select([
+            "EXTRACT(MONTH FROM g.fecha) as mes",
+            "SUM(g.monto) as egreso"
+        ])
+            .where("EXTRACT(YEAR FROM g.fecha) = :anio", { anio })
+            .groupBy("mes")
+            .getRawMany();
+        gastos.forEach(row => {
+            const mes = Number(row.mes) - 1;
+            egresos[mes] = Number(row.egreso);
+        });
+        for (let i = 0; i < 12; i++) {
+            balance[i] = ingresos[i] - egresos[i] + propinas[i];
         }
-        catch (error) {
-            console.error('Error en getBalanceAnual:', error);
-            throw new common_1.InternalServerErrorException('No se pudo obtener el balance anual');
-        }
+        return { ingresos, egresos, propinas, balance };
     }
     async getBalancePorAnio(anio) {
         const entityManager = this.dataSource.manager;

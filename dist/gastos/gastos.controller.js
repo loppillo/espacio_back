@@ -22,6 +22,12 @@ let GastosController = class GastosController {
     async estadisticas(type, periodo, valor) {
         return this.expensesService.estadisticas({ type, periodo, valor });
     }
+    async getBalanceAnual(anio) {
+        return this.expensesService.getBalanceAnual(Number(anio));
+    }
+    getBalanceMensual(anio, mes) {
+        return this.expensesService.getBalanceMensual(Number(anio));
+    }
     async getBalance(startDate, endDate) {
         return this.expensesService.getBalancePorFecha(startDate, endDate);
     }
@@ -36,9 +42,6 @@ let GastosController = class GastosController {
     }
     getMensual(anio) {
         return this.expensesService.getBalanceMensual(anio);
-    }
-    getAnual() {
-        return this.expensesService.getBalanceAnual();
     }
     getAll() {
         return this.expensesService.findAll();
@@ -63,6 +66,21 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], GastosController.prototype, "estadisticas", null);
+__decorate([
+    (0, common_1.Get)('anual'),
+    __param(0, (0, common_1.Query)('anio')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], GastosController.prototype, "getBalanceAnual", null);
+__decorate([
+    (0, common_1.Get)('mensual'),
+    __param(0, (0, common_1.Query)('anio')),
+    __param(1, (0, common_1.Query)('mes')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", void 0)
+], GastosController.prototype, "getBalanceMensual", null);
 __decorate([
     (0, common_1.Get)('balances'),
     __param(0, (0, common_1.Query)('start')),
@@ -92,12 +110,6 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], GastosController.prototype, "getMensual", null);
-__decorate([
-    (0, common_1.Get)('anual'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], GastosController.prototype, "getAnual", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
