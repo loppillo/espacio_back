@@ -17,10 +17,10 @@ export declare class GastosService {
     create(expenseData: Partial<Gasto>): Promise<Gasto>;
     remove(id: number): Promise<void>;
     getBalanceMensual(anio: number, mes: number): Promise<{
-        ingresos: number;
-        egresos: number;
-        propinas: number;
-        balance: number;
+        ingresos: number[];
+        egresos: number[];
+        propinas: number[];
+        balance: number[];
     }>;
     getBalanceAnual(anio: number): Promise<{
         mes: number;
