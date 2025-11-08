@@ -47,5 +47,10 @@ export declare class GastosService {
         type?: any;
         periodo?: any;
         valor?: any;
-    }): Promise<{}>;
+    }): Promise<{
+        ingresos: {};
+        egresos: {};
+        propinas: {};
+        balance: {};
+    }>;
 }
