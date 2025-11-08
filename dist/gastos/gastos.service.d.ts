@@ -17,6 +17,7 @@ export declare class GastosService {
     getBalanceMensual(anio: number, mes: number): Promise<{
         ingresos: number;
         egresos: number;
+        propinas: number;
         balance: number;
     }>;
     getBalanceAnual(anio: number): Promise<any>;

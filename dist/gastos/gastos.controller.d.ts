@@ -7,6 +7,7 @@ export declare class GastosController {
     getMensual(anio: string, mes: string): Promise<{
         ingresos: number;
         egresos: number;
+        propinas: number;
         balance: number;
     }>;
     getAnual(anio: string): Promise<any>;

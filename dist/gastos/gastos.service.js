@@ -96,16 +96,19 @@ let GastosService = class GastosService {
         const rows = await this.expenseRepository.query(`
     SELECT 
       SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
-      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos,
+      SUM(CASE WHEN type = 'propina' THEN amount ELSE 0 END) AS propinas
     FROM expenses
     WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
     `, [anio, mes]);
         const ingresos = Number(rows[0]?.ingresos || 0);
         const egresos = Number(rows[0]?.egresos || 0);
+        const propinas = Number(rows[0]?.propinas || 0);
         return {
             ingresos,
             egresos,
-            balance: ingresos - egresos,
+            propinas,
+            balance: ingresos - egresos
         };
     }
     async getBalanceAnual(anio) {
@@ -113,7 +116,8 @@ let GastosService = class GastosService {
     SELECT 
       MONTH(createdAt) AS mes,
       SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
-      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos,
+      SUM(CASE WHEN type = 'propina' THEN amount ELSE 0 END) AS propinas
     FROM expenses
     WHERE YEAR(createdAt) = ?
     GROUP BY MONTH(createdAt)
@@ -122,11 +126,13 @@ let GastosService = class GastosService {
         return rows.map(r => {
             const ingresos = Number(r.ingresos || 0);
             const egresos = Number(r.egresos || 0);
+            const propinas = Number(r.propinas || 0);
             return {
                 mes: r.mes,
                 ingresos,
                 egresos,
-                balance: ingresos - egresos,
+                propinas,
+                balance: ingresos - egresos
             };
         });
     }
