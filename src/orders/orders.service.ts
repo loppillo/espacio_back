@@ -45,17 +45,20 @@ async create(createOrderDto: CreateOrderDto) {
   if (!mesa) throw new BadRequestException('La mesa no existe');
 
   // ✅ Crear pedido base
-  const newOrder = this.orderRepository.create({
-    tableNumber: Number(mesa.numero_mesa),
-    orderType,
-    estado: 'activo',
-    status: 'pendiente',
-    paymentMethod: '', // ✅ ahora vacío
-    propina,
-    total: 0,
-    numeroVenta: await this.generarNumeroVenta(),
-    mesa,
-  });
+ const newOrder = this.orderRepository.create({
+  tableNumber: Number(mesa.numero_mesa),
+  orderType,
+  estado: 'activo',
+  status: 'pendiente',
+  paymentMethod: '', // vacío
+  propina,
+  total: 0,
+  numeroVenta: await this.generarNumeroVenta(),
+  mesa,
+
+  // ✅ agregar aquí
+  detalle_venta: createOrderDto.detalle_venta || null,
+});
 
   // Guardar pedido base
   let savedOrder = await this.orderRepository.save(newOrder);
