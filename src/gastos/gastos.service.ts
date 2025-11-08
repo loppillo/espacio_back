@@ -380,69 +380,82 @@ async getBalanceDiario(fecha: string): Promise<{
   // gasto.service.ts
 
 async estadisticas(filtro: { type?: string; periodo?: 'dia' | 'mes' | 'anio'; valor?: string }) {
-  // Crear query builder para gastos
+  // --- Helper para crear rango de fechas ---
+  const getDateRange = (periodo: 'dia' | 'mes' | 'anio', valor: string) => {
+    if (!valor) return null;
+
+    if (periodo === 'dia') {
+      const start = new Date(`${valor}T00:00:00`);
+      const end = new Date(`${valor}T23:59:59`);
+      return { start, end };
+    }
+
+    if (periodo === 'mes') {
+      const [year, month] = valor.split('-').map(Number);
+      const start = new Date(year, month - 1, 1, 0, 0, 0);
+      const end = new Date(year, month, 0, 23, 59, 59); // último día del mes
+      return { start, end };
+    }
+
+    if (periodo === 'anio') {
+      const year = Number(valor);
+      const start = new Date(year, 0, 1, 0, 0, 0);
+      const end = new Date(year, 11, 31, 23, 59, 59);
+      return { start, end };
+    }
+
+    return null;
+  };
+
+  const range = getDateRange(filtro.periodo, filtro.valor);
+
+  // --- GASTOS ---
   const qbGastos = this.expenseRepository.createQueryBuilder('gasto');
 
   if (filtro.type) {
     qbGastos.andWhere('gasto.type = :type', { type: filtro.type });
   }
 
-  // Manejo del periodo para gastos
-  if (filtro.periodo === 'dia' && filtro.valor) {
-    qbGastos.andWhere('DATE(gasto.createdAt) = :valor', { valor: filtro.valor }); // YYYY-MM-DD
-  }
-
-  if (filtro.periodo === 'mes' && filtro.valor) {
-    qbGastos.andWhere("DATE_FORMAT(gasto.createdAt, '%Y-%m') = :valor", { valor: filtro.valor }); // YYYY-MM
-  }
-
-  if (filtro.periodo === 'anio' && filtro.valor) {
-    qbGastos.andWhere("DATE_FORMAT(gasto.createdAt, '%Y') = :valor", { valor: filtro.valor }); // YYYY
+  if (range) {
+    qbGastos.andWhere('gasto.createdAt BETWEEN :start AND :end', { start: range.start, end: range.end });
   }
 
   const gastos = await qbGastos.getMany();
 
-  // Agrupar gastos por periodo
+  // Agrupar gastos
   const groupedGastos: Record<string, number> = {};
   gastos.forEach(g => {
     const key =
       filtro.periodo === 'dia'
-        ? g.createdAt.toISOString().substring(11, 16)  // HH:mm
+        ? g.createdAt.getHours().toString().padStart(2,'0') + ':' + g.createdAt.getMinutes().toString().padStart(2,'0')
         : filtro.periodo === 'mes'
-        ? g.createdAt.toISOString().substring(8, 10)  // Día del mes
-        : g.createdAt.toISOString().substring(5, 7);  // Mes
+        ? g.createdAt.getDate().toString().padStart(2,'0')
+        : (g.createdAt.getMonth() + 1).toString().padStart(2,'0');
     groupedGastos[key] = (groupedGastos[key] || 0) + g.amount;
   });
 
-  // Ahora hacemos lo mismo para órdenes
+  // --- ORDERS ---
   const qbOrders = this.orderRepository.createQueryBuilder('order');
 
   if (filtro.type) {
     qbOrders.andWhere('order.status = :type', { type: filtro.type });
   }
 
-  if (filtro.periodo === 'dia' && filtro.valor) {
-    qbOrders.andWhere('DATE(order.createdAt) = :valor', { valor: filtro.valor });
-  }
-
-  if (filtro.periodo === 'mes' && filtro.valor) {
-    qbOrders.andWhere("DATE_FORMAT(order.createdAt, '%Y-%m') = :valor", { valor: filtro.valor });
-  }
-
-  if (filtro.periodo === 'anio' && filtro.valor) {
-    qbOrders.andWhere("DATE_FORMAT(order.createdAt, '%Y') = :valor", { valor: filtro.valor });
+  if (range) {
+    qbOrders.andWhere('order.createdAt BETWEEN :start AND :end', { start: range.start, end: range.end });
   }
 
   const orders = await qbOrders.getMany();
 
+  // Agrupar órdenes
   const groupedOrders: Record<string, number> = {};
   orders.forEach(o => {
     const key =
       filtro.periodo === 'dia'
-        ? o.createdAt.toISOString().substring(11, 16)
+        ? o.createdAt.getHours().toString().padStart(2,'0') + ':' + o.createdAt.getMinutes().toString().padStart(2,'0')
         : filtro.periodo === 'mes'
-        ? o.createdAt.toISOString().substring(8, 10)
-        : o.createdAt.toISOString().substring(5, 7);
+        ? o.createdAt.getDate().toString().padStart(2,'0')
+        : (o.createdAt.getMonth() + 1).toString().padStart(2,'0');
     groupedOrders[key] = (groupedOrders[key] || 0) + o.total;
   });
 
@@ -451,6 +464,7 @@ async estadisticas(filtro: { type?: string; periodo?: 'dia' | 'mes' | 'anio'; va
     orders: groupedOrders
   };
 }
+
 
 
 
