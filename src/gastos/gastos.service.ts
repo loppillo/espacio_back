@@ -19,6 +19,8 @@ export class GastosService {
   constructor(
     @InjectRepository(Gasto)
     private readonly expenseRepository: Repository<Gasto>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
     private dataSource: DataSource
   ) {}
 
@@ -107,41 +109,50 @@ export class GastosService {
   }
 
 async getBalanceMensual(anio: number, mes: number) {
-  const rows = await this.expenseRepository.query(
+  // 1) Egresos desde expenses
+  const expRows = await this.expenseRepository.query(
     `
     SELECT 
-      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
-      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos,
-      SUM(CASE WHEN type = 'propina' THEN amount ELSE 0 END) AS propinas
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
     FROM expenses
     WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
     `,
     [anio, mes],
   );
 
-  const ingresos = Number(rows[0]?.ingresos || 0);
-  const egresos  = Number(rows[0]?.egresos || 0);
-  const propinas = Number(rows[0]?.propinas || 0);
+  // 2) Ingresos y propinas desde orders
+  const orderRows = await this.orderRepository.query(
+    `
+    SELECT
+      SUM(total) AS ingresos,
+      SUM(propina) AS propinas
+    FROM orders
+    WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
+      AND status != 'cancelado'
+    `,
+    [anio, mes],
+  );
+
+  const ingresos = Number(orderRows[0]?.ingresos || 0);
+  const egresos  = Number(expRows[0]?.egresos || 0);
+  const propinas = Number(orderRows[0]?.propinas || 0);
 
   return {
     ingresos,
     egresos,
     propinas,
-    balance: ingresos - egresos // ✅ como pediste: SIN incluir propinas
+    balance: ingresos - egresos // como pediste: SIN propinas
   };
 }
 
 
-
-
 async getBalanceAnual(anio: number) {
-  const rows = await this.expenseRepository.query(
+  // 1) Egresos por mes desde expenses
+  const expRows = await this.expenseRepository.query(
     `
     SELECT 
       MONTH(createdAt) AS mes,
-      SUM(CASE WHEN type = 'ingreso' THEN amount ELSE 0 END) AS ingresos,
-      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos,
-      SUM(CASE WHEN type = 'propina' THEN amount ELSE 0 END) AS propinas
+      SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
     FROM expenses
     WHERE YEAR(createdAt) = ?
     GROUP BY MONTH(createdAt)
@@ -150,20 +161,50 @@ async getBalanceAnual(anio: number) {
     [anio],
   );
 
-  return rows.map(r => {
-    const ingresos = Number(r.ingresos || 0);
-    const egresos  = Number(r.egresos || 0);
-    const propinas = Number(r.propinas || 0);
+  // 2) Ingresos + propinas por mes desde orders
+  const orderRows = await this.orderRepository.query(
+    `
+    SELECT
+      MONTH(createdAt) AS mes,
+      SUM(total) AS ingresos,
+      SUM(propina) AS propinas
+    FROM orders
+    WHERE YEAR(createdAt) = ?
+      AND status != 'cancelado'
+    GROUP BY MONTH(createdAt)
+    ORDER BY mes
+    `,
+    [anio],
+  );
 
-    return {
-      mes: r.mes,
-      ingresos,
-      egresos,
-      propinas,
-      balance: ingresos - egresos // ✅ sin incluir propinas
-    };
+  // fusionar meses
+  const byMonth: Record<number, any> = {};
+
+  // primero egresos
+  expRows.forEach(r => {
+    byMonth[r.mes] = { egresos: Number(r.egresos || 0), ingresos: 0, propinas: 0 };
   });
+
+  // luego ingresos y propinas
+  orderRows.forEach(r => {
+    if (!byMonth[r.mes]) {
+      byMonth[r.mes] = { egresos: 0, ingresos: 0, propinas: 0 };
+    }
+
+    byMonth[r.mes].ingresos = Number(r.ingresos || 0);
+    byMonth[r.mes].propinas = Number(r.propinas || 0);
+  });
+
+  // convertir en array ordenado
+  return Object.entries(byMonth).map(([mes, d]) => ({
+    mes: Number(mes),
+    ingresos: d.ingresos,
+    egresos: d.egresos,
+    propinas: d.propinas,
+    balance: d.ingresos - d.egresos,
+  }));
 }
+
 
 
 async getBalancePorAnio(anio?: number) {
