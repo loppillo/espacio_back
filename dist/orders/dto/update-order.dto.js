@@ -36,9 +36,14 @@ __decorate([
 ], UpdateOrderDto.prototype, "total", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateOrderDto.prototype, "propinaTipo", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
-], UpdateOrderDto.prototype, "propina", void 0);
+], UpdateOrderDto.prototype, "propinaValor", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Date)

@@ -180,11 +180,22 @@ let OrdersService = class OrdersService {
             throw new common_1.NotFoundException('Orden no encontrada');
         const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
         let nuevaPropina;
-        if (typeof dto.propina === 'number') {
-            nuevaPropina = dto.propina;
-        }
-        else {
-            nuevaPropina = Math.round(subtotal * 0.10);
+        switch (dto.propinaTipo) {
+            case '5':
+                nuevaPropina = Math.round(subtotal * 0.05);
+                break;
+            case '10':
+                nuevaPropina = Math.round(subtotal * 0.10);
+                break;
+            case '12':
+                nuevaPropina = Math.round(subtotal * 0.12);
+                break;
+            case 'custom':
+                nuevaPropina = Number(dto.propinaValor || 0);
+                break;
+            default:
+                nuevaPropina = Math.round(subtotal * 0.10);
+                break;
         }
         order.propina = nuevaPropina;
         order.total = subtotal + nuevaPropina;
