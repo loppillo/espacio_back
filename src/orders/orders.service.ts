@@ -243,59 +243,72 @@ export class OrdersService {
     return await this.orderRepository.findOneBy({ id });
   }
 
-  async update(id: number, dto: UpdateOrderDto) {
-    const order = await this.orderRepository.findOne({
-      where: { id },
-      relations: ['orderProducts', 'orderProducts.product'],
-    });
+async update(id: number, dto: UpdateOrderDto) {
+  // 1️⃣ Buscar la orden con sus productos
+  const order = await this.orderRepository.findOne({
+    where: { id },
+    relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+  });
 
-    if (!order) throw new NotFoundException('Orden no encontrada');
+  if (!order) throw new NotFoundException('Orden no encontrada');
 
-    // ✅ Subtotal actual
-    const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
+  // 2️⃣ Recalcular subtotal
+  const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
 
-    // ✅ Determinar propina según tipo
-    let nuevaPropina: number;
-
-    switch (dto.propinaTipo) {
-      case '5':
-        nuevaPropina = Math.round(subtotal * 0.05);
-        break;
-
-      case '10':
-        nuevaPropina = Math.round(subtotal * 0.10);
-        break;
-
-      case '12':
-        nuevaPropina = Math.round(subtotal * 0.12);
-        break;
-
-      case 'custom':
-        nuevaPropina = Number(dto.propinaValor || 0);
-        break;
-
-      default:
-        // ✅ Sin tipo → mantener la propina actual o aplicar 10% por defecto
-        nuevaPropina = Math.round(subtotal * 0.10);
-        break;
-    }
-
-    order.propina = nuevaPropina;
-
-    // ✅ Total final recalculado
-    order.total = subtotal + nuevaPropina;
-
-    // ✅ Copiar cualquier otro campo opcional
-    Object.assign(order, dto);
-
-    // ✅ Guardar cambios
-    await this.orderRepository.save(order);
-
-    return this.orderRepository.findOne({
-      where: { id },
-      relations: ['customer', 'orderProducts', 'orderProducts.product', 'mesa'],
-    });
+  // 3️⃣ Determinar propina
+  let nuevaPropina: number;
+  switch (dto.propinaTipo) {
+    case '5':
+      nuevaPropina = Math.round(subtotal * 0.05);
+      break;
+    case '10':
+      nuevaPropina = Math.round(subtotal * 0.10);
+      break;
+    case '12':
+      nuevaPropina = Math.round(subtotal * 0.12);
+      break;
+    case 'custom':
+      nuevaPropina = Number(dto.propinaValor || 0);
+      break;
+    default:
+      // Si no viene tipo, mantener propina actual o 10% por defecto
+      nuevaPropina = Math.round(subtotal * 0.10);
   }
+
+  order.propina = nuevaPropina;
+
+  // 4️⃣ Total final
+  order.total = subtotal + nuevaPropina;
+
+  // 5️⃣ Actualizar otros campos opcionales
+  const camposActualizables = [
+    'tableNumber',
+    'orderType',
+    'status',
+    'detalle_venta',
+    'paymentMethod',
+    'userId',
+    'customerId',
+    'mesaId',
+    'numeroVenta',
+  ];
+
+  camposActualizables.forEach(campo => {
+    if (dto[campo] !== undefined) {
+      order[campo] = dto[campo];
+    }
+  });
+
+  // 6️⃣ Guardar cambios
+  await this.orderRepository.save(order);
+
+  // 7️⃣ Devolver orden completa
+  return this.orderRepository.findOne({
+    where: { id: order.id },
+    relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+  });
+}
+
 
 
 
