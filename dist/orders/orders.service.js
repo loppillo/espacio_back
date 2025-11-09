@@ -36,16 +36,16 @@ let OrdersService = class OrdersService {
         this.productsOrdersRepository = productsOrdersRepository;
         this.ordersGateway = ordersGateway;
     }
-    async update(id, propinaTipo, propinaValor) {
+    async update(id, dto) {
         const order = await this.orderRepository.findOne({
             where: { id },
-            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+            relations: ['orderProducts'],
         });
         if (!order)
             throw new common_1.NotFoundException('Orden no encontrada');
         const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
         let nuevaPropina = 0;
-        switch (propinaTipo) {
+        switch (dto.propinaTipo) {
             case '5':
                 nuevaPropina = Math.round(subtotal * 0.05);
                 break;
@@ -56,15 +56,30 @@ let OrdersService = class OrdersService {
                 nuevaPropina = Math.round(subtotal * 0.12);
                 break;
             case 'custom':
-                nuevaPropina = propinaValor ?? 0;
+                nuevaPropina = dto.propinaValor ?? 0;
                 break;
-            default: nuevaPropina = Math.round(subtotal * 0.10);
+            default:
+                nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
         }
         order.propina = nuevaPropina;
         order.total = subtotal + nuevaPropina;
+        const camposValidos = [
+            'tableNumber',
+            'orderType',
+            'status',
+            'userId',
+            'customerId',
+        ];
+        camposValidos.forEach(campo => {
+            if (dto[campo] !== undefined)
+                order[campo] = dto[campo];
+        });
         await this.orderRepository.save(order);
         this.ordersGateway.notifyOrderUpdated(order);
-        return order;
+        return this.orderRepository.findOne({
+            where: { id },
+            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+        });
     }
     async create(createOrderDto) {
         const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
