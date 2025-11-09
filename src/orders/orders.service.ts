@@ -41,20 +41,19 @@ export class OrdersService {
 
 async update(
   id: number,
-  dto: UpdateOrderDto
+  dto: UpdateOrderDto & { propinaTipo?: string; propinaValor?: number }
 ) {
-  // 1️⃣ Traer la orden con productos y relaciones necesarias
   const order = await this.orderRepository.findOne({
     where: { id },
-    relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+    relations: ['orderProducts'], // Solo lo necesario
   });
 
   if (!order) throw new NotFoundException('Orden no encontrada');
 
-  // 2️⃣ Calcular subtotal
+  // Calcular subtotal
   const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
 
-  // 3️⃣ Calcular propina según tipo
+  // Calcular propina
   let nuevaPropina = 0;
   switch (dto.propinaTipo) {
     case '5':
@@ -71,34 +70,29 @@ async update(
       break;
     default:
       nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
-      break;
   }
 
-  // 4️⃣ Asignar propina y total a la entidad
   order.propina = nuevaPropina;
   order.total = subtotal + nuevaPropina;
 
-  // 5️⃣ Actualizar solo campos válidos de la entidad
+  // Actualizar campos simples
   const camposValidos: (keyof UpdateOrderDto)[] = [
     'tableNumber',
     'orderType',
     'status',
     'userId',
-    'customerId'
+    'customerId',
   ];
-
   camposValidos.forEach(campo => {
-    if (dto[campo] !== undefined) {
-      order[campo] = dto[campo];
-    }
+    if (dto[campo] !== undefined) order[campo] = dto[campo];
   });
 
-  // 6️⃣ Guardar cambios (sin tocar orderProducts)
+  // ⚡ Guardar solo la orden
   await this.orderRepository.save(order);
 
-  // 7️⃣ Devolver orden completa con relaciones
+  // Retornar con relaciones necesarias para Angular
   return this.orderRepository.findOne({
-    where: { id: order.id },
+    where: { id },
     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
   });
 }

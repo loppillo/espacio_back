@@ -48,7 +48,7 @@ paymentMethod: string | null;
   @JoinColumn({ name: 'customerId' })
   customer: Customer;
 
-  @OneToMany(() => ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true })
+ @OneToMany(() => ProductsOrders, po => po.order, { eager: true })
   orderProducts: ProductsOrders[];
 
   @ManyToOne(() => Mesa, mesa => mesa.orders, { nullable: true })
