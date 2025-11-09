@@ -20,6 +20,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guard/jwt-auth.guard';
 import { RolesGuard } from './roles/roles.guard';
 import { OrdersGateway } from './orders/orders.gateway';
+import { ThemeModule } from './theme/theme.module';
 
 
 @Module({
@@ -35,7 +36,7 @@ imports: [
       synchronize: true,
     }),
 
- UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule],
+ UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule],
   controllers: [AppController],
   providers: [AppService, OrdersGateway],
 })
