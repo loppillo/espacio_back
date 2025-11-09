@@ -39,35 +39,62 @@ export class OrdersService {
 
 
 
-async update(id: number, propinaTipo:string, propinaValor?: number) {
+async update(
+  id: number,
+  dto: UpdateOrderDto & { propinaTipo?: string; propinaValor?: number }
+) {
   const order = await this.orderRepository.findOne({
     where: { id },
-    relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+    relations: ['orderProducts'], // Solo lo necesario
   });
 
   if (!order) throw new NotFoundException('Orden no encontrada');
 
+  // Calcular subtotal
   const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
 
   // Calcular propina
   let nuevaPropina = 0;
-  switch (propinaTipo) {
-    case '5': nuevaPropina = Math.round(subtotal * 0.05); break;
-    case '10': nuevaPropina = Math.round(subtotal * 0.10); break;
-    case '12': nuevaPropina = Math.round(subtotal * 0.12); break;
-    case 'custom': nuevaPropina = propinaValor ?? 0; break;
-    default: nuevaPropina = Math.round(subtotal * 0.10);
+  switch (dto.propinaTipo) {
+    case '5':
+      nuevaPropina = Math.round(subtotal * 0.05);
+      break;
+    case '10':
+      nuevaPropina = Math.round(subtotal * 0.10);
+      break;
+    case '12':
+      nuevaPropina = Math.round(subtotal * 0.12);
+      break;
+    case 'custom':
+      nuevaPropina = dto.propinaValor ?? 0;
+      break;
+    default:
+      nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
   }
 
   order.propina = nuevaPropina;
   order.total = subtotal + nuevaPropina;
 
+  // Actualizar campos simples
+  const camposValidos: (keyof UpdateOrderDto)[] = [
+    'tableNumber',
+    'orderType',
+    'status',
+    'userId',
+    'customerId',
+  ];
+  camposValidos.forEach(campo => {
+    if (dto[campo] !== undefined) order[campo] = dto[campo];
+  });
+
+  // ⚡ Guardar solo la orden
   await this.orderRepository.save(order);
 
-  // 🚀 Notificar vía WebSocket
-  this.ordersGateway.notifyOrderUpdated(order);
-
-  return order;
+  // Retornar con relaciones necesarias para Angular
+  return this.orderRepository.findOne({
+    where: { id },
+    relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+  });
 }
 
 
