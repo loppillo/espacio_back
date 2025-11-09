@@ -89,17 +89,13 @@ async update(
 
   // ⚡ Guardar solo la orden
   await this.orderRepository.save(order);
-
+    this.ordersGateway.notifyOrderUpdated(order);
   // Retornar con relaciones necesarias para Angular
   return this.orderRepository.findOne({
     where: { id },
     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
   });
 }
-
-
-
-
 
 
   async create(createOrderDto: CreateOrderDto) {
