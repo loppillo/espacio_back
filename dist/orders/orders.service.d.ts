@@ -25,10 +25,7 @@ export declare class OrdersService {
     creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
     findOne(id: number): Promise<Order>;
-    update(id: number, dto: UpdateOrderDto & {
-        propinaTipo?: string;
-        propinaValor?: number;
-    }): Promise<Order>;
+    update(id: number, dto: UpdateOrderDto): Promise<Order>;
     remove(id: number): Promise<{
         message: string;
         id: number;
