@@ -9,6 +9,7 @@ import { Between, Raw, Repository } from 'typeorm';
 import { PrintService } from './print/print.service';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/roles/roles.guard';
+import { UpdatePropinaDto } from 'src/propina/dto/update-propina.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -18,9 +19,13 @@ export class OrdersController {
   ) { }
 
     @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.ordersService.update(+id, updateOrderDto);
+  async updatePropina(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateOrderDto
+  ) {
+    return this.ordersService.update(id, dto.propinaTipo, dto.propinaValor);
   }
+
 
   @Get('pendientes')
   async obtenerPendientes() {
