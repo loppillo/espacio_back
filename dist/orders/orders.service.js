@@ -179,7 +179,7 @@ let OrdersService = class OrdersService {
         if (!order)
             throw new common_1.NotFoundException('Orden no encontrada');
         const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
-        let nuevaPropina;
+        let nuevaPropina = 0;
         switch (dto.propinaTipo) {
             case '5':
                 nuevaPropina = Math.round(subtotal * 0.05);
@@ -191,28 +191,19 @@ let OrdersService = class OrdersService {
                 nuevaPropina = Math.round(subtotal * 0.12);
                 break;
             case 'custom':
-                nuevaPropina = Number(dto.propinaValor || 0);
+                nuevaPropina = dto.propinaValor ?? 0;
                 break;
-            default:
-                nuevaPropina = Math.round(subtotal * 0.10);
+            default: nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
         }
         order.propina = nuevaPropina;
         order.total = subtotal + nuevaPropina;
-        const camposActualizables = [
-            'tableNumber',
-            'orderType',
-            'status',
-            'detalle_venta',
-            'paymentMethod',
-            'userId',
-            'customerId',
-            'mesaId',
-            'numeroVenta',
+        const camposValidos = [
+            'tableNumber', 'orderType', 'status',
+            'userId', 'customerId',
         ];
-        camposActualizables.forEach(campo => {
-            if (dto[campo] !== undefined) {
+        camposValidos.forEach(campo => {
+            if (dto[campo] !== undefined)
                 order[campo] = dto[campo];
-            }
         });
         await this.orderRepository.save(order);
         return this.orderRepository.findOne({
