@@ -243,7 +243,11 @@ export class OrdersService {
     return await this.orderRepository.findOneBy({ id });
   }
 
-async update(id: number, dto: UpdateOrderDto & { propinaTipo?: string, propinaValor?: number }) {
+async update(
+  id: number,
+  dto: UpdateOrderDto
+) {
+  // 1️⃣ Traer la orden con productos y relaciones necesarias
   const order = await this.orderRepository.findOne({
     where: { id },
     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
@@ -251,40 +255,59 @@ async update(id: number, dto: UpdateOrderDto & { propinaTipo?: string, propinaVa
 
   if (!order) throw new NotFoundException('Orden no encontrada');
 
-  // Calcular subtotal
+  // 2️⃣ Calcular subtotal
   const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
 
-  // Calcular propina según tipo
+  // 3️⃣ Calcular propina según tipo
   let nuevaPropina = 0;
   switch (dto.propinaTipo) {
-    case '5': nuevaPropina = Math.round(subtotal * 0.05); break;
-    case '10': nuevaPropina = Math.round(subtotal * 0.10); break;
-    case '12': nuevaPropina = Math.round(subtotal * 0.12); break;
-    case 'custom': nuevaPropina = dto.propinaValor ?? 0; break;
-    default: nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
+    case '5':
+      nuevaPropina = Math.round(subtotal * 0.05);
+      break;
+    case '10':
+      nuevaPropina = Math.round(subtotal * 0.10);
+      break;
+    case '12':
+      nuevaPropina = Math.round(subtotal * 0.12);
+      break;
+    case 'custom':
+      nuevaPropina = dto.propinaValor ?? 0;
+      break;
+    default:
+      nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
+      break;
   }
 
+  // 4️⃣ Asignar propina y total a la entidad
   order.propina = nuevaPropina;
   order.total = subtotal + nuevaPropina;
 
-  // Actualizar solo campos válidos de la entidad
+  // 5️⃣ Actualizar solo campos válidos de la entidad
   const camposValidos: (keyof UpdateOrderDto)[] = [
-    'tableNumber', 'orderType', 'status',
-    'userId', 'customerId',
+    'tableNumber',
+    'orderType',
+    'status',
+    'userId',
+    'customerId'
   ];
 
   camposValidos.forEach(campo => {
-    if (dto[campo] !== undefined) order[campo] = dto[campo];
+    if (dto[campo] !== undefined) {
+      order[campo] = dto[campo];
+    }
   });
 
-  // Guardar cambios
+  // 6️⃣ Guardar cambios (sin tocar orderProducts)
   await this.orderRepository.save(order);
 
+  // 7️⃣ Devolver orden completa con relaciones
   return this.orderRepository.findOne({
     where: { id: order.id },
     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
   });
 }
+
+
 
 
 
