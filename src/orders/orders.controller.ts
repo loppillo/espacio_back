@@ -17,6 +17,11 @@ export class OrdersController {
     private readonly printService: PrintService
   ) { }
 
+    @Patch(':id')
+  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
+    return this.ordersService.update(+id, updateOrderDto);
+  }
+
   @Get('pendientes')
   async obtenerPendientes() {
     return this.ordersService.obtenerPendientes();
@@ -52,11 +57,6 @@ async getById(@Param('id') id: number) {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.ordersService.update(+id, updateOrderDto);
   }
 
   @Delete(':id')
