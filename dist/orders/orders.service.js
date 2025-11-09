@@ -39,7 +39,7 @@ let OrdersService = class OrdersService {
     async update(id, dto) {
         const order = await this.orderRepository.findOne({
             where: { id },
-            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+            relations: ['orderProducts'],
         });
         if (!order)
             throw new common_1.NotFoundException('Orden no encontrada');
@@ -60,7 +60,6 @@ let OrdersService = class OrdersService {
                 break;
             default:
                 nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
-                break;
         }
         order.propina = nuevaPropina;
         order.total = subtotal + nuevaPropina;
@@ -69,16 +68,15 @@ let OrdersService = class OrdersService {
             'orderType',
             'status',
             'userId',
-            'customerId'
+            'customerId',
         ];
         camposValidos.forEach(campo => {
-            if (dto[campo] !== undefined) {
+            if (dto[campo] !== undefined)
                 order[campo] = dto[campo];
-            }
         });
         await this.orderRepository.save(order);
         return this.orderRepository.findOne({
-            where: { id: order.id },
+            where: { id },
             relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
         });
     }

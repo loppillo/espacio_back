@@ -70,7 +70,7 @@ __decorate([
     __metadata("design:type", customer_entity_1.Customer)
 ], Order.prototype, "customer", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => products_order_entity_1.ProductsOrders, productsOrders => productsOrders.order, { cascade: true, eager: true }),
+    (0, typeorm_1.OneToMany)(() => products_order_entity_1.ProductsOrders, po => po.order, { eager: true }),
     __metadata("design:type", Array)
 ], Order.prototype, "orderProducts", void 0);
 __decorate([

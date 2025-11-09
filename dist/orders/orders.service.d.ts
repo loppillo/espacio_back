@@ -21,7 +21,10 @@ export declare class OrdersService {
     private readonly productsOrdersRepository;
     private ordersGateway;
     constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway);
-    update(id: number, dto: UpdateOrderDto): Promise<Order>;
+    update(id: number, dto: UpdateOrderDto & {
+        propinaTipo?: string;
+        propinaValor?: number;
+    }): Promise<Order>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
     creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
