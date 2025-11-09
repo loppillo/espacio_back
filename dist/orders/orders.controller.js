@@ -28,6 +28,9 @@ let OrdersController = class OrdersController {
         this.orderRepository = orderRepository;
         this.printService = printService;
     }
+    update(id, updateOrderDto) {
+        return this.ordersService.update(+id, updateOrderDto);
+    }
     async obtenerPendientes() {
         return this.ordersService.obtenerPendientes();
     }
@@ -49,9 +52,6 @@ let OrdersController = class OrdersController {
     }
     findOne(id) {
         return this.ordersService.findOne(+id);
-    }
-    update(id, updateOrderDto) {
-        return this.ordersService.update(+id, updateOrderDto);
     }
     remove(id) {
         return this.ordersService.remove(+id);
@@ -107,6 +107,14 @@ let OrdersController = class OrdersController {
 };
 exports.OrdersController = OrdersController;
 __decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_order_dto_1.UpdateOrderDto]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "update", null);
+__decorate([
     (0, common_1.Get)('pendientes'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
@@ -153,14 +161,6 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "findOne", null);
-__decorate([
-    (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_order_dto_1.UpdateOrderDto]),
-    __metadata("design:returntype", void 0)
-], OrdersController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),

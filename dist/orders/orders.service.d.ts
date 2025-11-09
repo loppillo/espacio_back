@@ -21,11 +21,11 @@ export declare class OrdersService {
     private readonly productsOrdersRepository;
     private ordersGateway;
     constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway);
+    update(id: number, dto: UpdateOrderDto): Promise<Order>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
     creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
     findOne(id: number): Promise<Order>;
-    update(id: number, dto: UpdateOrderDto): Promise<Order>;
     remove(id: number): Promise<{
         message: string;
         id: number;

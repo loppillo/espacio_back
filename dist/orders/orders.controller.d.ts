@@ -10,6 +10,7 @@ export declare class OrdersController {
     private readonly orderRepository;
     private readonly printService;
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
+    update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order>;
     obtenerPendientes(): Promise<Order[]>;
     getById(id: number): Promise<Order>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
@@ -33,7 +34,6 @@ export declare class OrdersController {
     creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
-    update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order>;
     remove(id: string): Promise<{
         message: string;
         id: number;

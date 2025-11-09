@@ -36,6 +36,52 @@ let OrdersService = class OrdersService {
         this.productsOrdersRepository = productsOrdersRepository;
         this.ordersGateway = ordersGateway;
     }
+    async update(id, dto) {
+        const order = await this.orderRepository.findOne({
+            where: { id },
+            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+        });
+        if (!order)
+            throw new common_1.NotFoundException('Orden no encontrada');
+        const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
+        let nuevaPropina = 0;
+        switch (dto.propinaTipo) {
+            case '5':
+                nuevaPropina = Math.round(subtotal * 0.05);
+                break;
+            case '10':
+                nuevaPropina = Math.round(subtotal * 0.10);
+                break;
+            case '12':
+                nuevaPropina = Math.round(subtotal * 0.12);
+                break;
+            case 'custom':
+                nuevaPropina = dto.propinaValor ?? 0;
+                break;
+            default:
+                nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
+                break;
+        }
+        order.propina = nuevaPropina;
+        order.total = subtotal + nuevaPropina;
+        const camposValidos = [
+            'tableNumber',
+            'orderType',
+            'status',
+            'userId',
+            'customerId'
+        ];
+        camposValidos.forEach(campo => {
+            if (dto[campo] !== undefined) {
+                order[campo] = dto[campo];
+            }
+        });
+        await this.orderRepository.save(order);
+        return this.orderRepository.findOne({
+            where: { id: order.id },
+            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+        });
+    }
     async create(createOrderDto) {
         const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
         const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
@@ -170,52 +216,6 @@ let OrdersService = class OrdersService {
     }
     async findOne(id) {
         return await this.orderRepository.findOneBy({ id });
-    }
-    async update(id, dto) {
-        const order = await this.orderRepository.findOne({
-            where: { id },
-            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
-        });
-        if (!order)
-            throw new common_1.NotFoundException('Orden no encontrada');
-        const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
-        let nuevaPropina = 0;
-        switch (dto.propinaTipo) {
-            case '5':
-                nuevaPropina = Math.round(subtotal * 0.05);
-                break;
-            case '10':
-                nuevaPropina = Math.round(subtotal * 0.10);
-                break;
-            case '12':
-                nuevaPropina = Math.round(subtotal * 0.12);
-                break;
-            case 'custom':
-                nuevaPropina = dto.propinaValor ?? 0;
-                break;
-            default:
-                nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
-                break;
-        }
-        order.propina = nuevaPropina;
-        order.total = subtotal + nuevaPropina;
-        const camposValidos = [
-            'tableNumber',
-            'orderType',
-            'status',
-            'userId',
-            'customerId'
-        ];
-        camposValidos.forEach(campo => {
-            if (dto[campo] !== undefined) {
-                order[campo] = dto[campo];
-            }
-        });
-        await this.orderRepository.save(order);
-        return this.orderRepository.findOne({
-            where: { id: order.id },
-            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
-        });
     }
     async remove(id) {
         const order = await this.orderRepository.findOne({ where: { id } });
