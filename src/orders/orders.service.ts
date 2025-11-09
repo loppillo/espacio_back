@@ -244,7 +244,7 @@ export class OrdersService {
   }
 
 async update(id: number, dto: UpdateOrderDto) {
-  // 1️⃣ Buscar la orden con sus productos
+  // 1️⃣ Buscar la orden con sus productos y relaciones necesarias
   const order = await this.orderRepository.findOne({
     where: { id },
     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
@@ -252,10 +252,10 @@ async update(id: number, dto: UpdateOrderDto) {
 
   if (!order) throw new NotFoundException('Orden no encontrada');
 
-  // 2️⃣ Recalcular subtotal
+  // 2️⃣ Calcular subtotal de productos
   const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
 
-  // 3️⃣ Determinar propina
+  // 3️⃣ Calcular propina según tipo
   let nuevaPropina: number;
   switch (dto.propinaTipo) {
     case '5':
@@ -271,13 +271,12 @@ async update(id: number, dto: UpdateOrderDto) {
       nuevaPropina = Number(dto.propinaValor || 0);
       break;
     default:
-      // Si no viene tipo, mantener propina actual o 10% por defecto
-      nuevaPropina = Math.round(subtotal * 0.10);
+      nuevaPropina = Math.round(subtotal * 0.10); // Por defecto 10%
   }
 
   order.propina = nuevaPropina;
 
-  // 4️⃣ Total final
+  // 4️⃣ Recalcular total final
   order.total = subtotal + nuevaPropina;
 
   // 5️⃣ Actualizar otros campos opcionales
@@ -299,10 +298,10 @@ async update(id: number, dto: UpdateOrderDto) {
     }
   });
 
-  // 6️⃣ Guardar cambios
+  // 6️⃣ Guardar cambios sin tocar orderProducts
   await this.orderRepository.save(order);
 
-  // 7️⃣ Devolver orden completa
+  // 7️⃣ Devolver la orden completa actualizada
   return this.orderRepository.findOne({
     where: { id: order.id },
     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
