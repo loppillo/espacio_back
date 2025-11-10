@@ -56,17 +56,20 @@ async update(
     0
   );
 
-  let nuevaPropina = 0;
+let nuevaPropina = order.propina; // ← arranca con la que ya tiene
+
+if (dto.propinaTipo !== undefined) {
   switch (dto.propinaTipo) {
     case '5': nuevaPropina = Math.round(subtotal * 0.05); break;
     case '10': nuevaPropina = Math.round(subtotal * 0.10); break;
     case '12': nuevaPropina = Math.round(subtotal * 0.12); break;
     case 'custom': nuevaPropina = dto.propinaValor ?? 0; break;
-    default: nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
+    case 'none': nuevaPropina = 0; break;
   }
+}
 
-  order.propina = nuevaPropina;
-  order.total = subtotal + nuevaPropina;
+order.propina = nuevaPropina;
+order.total = subtotal + nuevaPropina;
 
   const camposValidos: (keyof UpdateOrderDto)[] = [
     'tableNumber',

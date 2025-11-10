@@ -23,7 +23,7 @@ export class UpdateOrderDto {
   // ✅ Esta es la estrella: propina editable
   @IsOptional()
   @IsString()
-  propinaTipo?: '5' | '10' | '12' | 'custom';
+  propinaTipo?: '5' | '10' | '12' | 'custom'| 'none';
 
   @IsOptional()
   @IsNumber()
