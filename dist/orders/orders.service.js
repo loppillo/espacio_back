@@ -145,57 +145,81 @@ let OrdersService = class OrdersService {
         return sanitized;
     }
     async creates(createOrderDto) {
-        const { products = [], propina = 0, orderType = 'mesa', customerId, newCustomer, paymentMethod = '', detalle_venta = '', } = createOrderDto;
-        if (!['mesa', 'delivery'].includes(orderType)) {
-            throw new common_1.BadRequestException('orderType inválido.');
+        const { products = [], propina = 0, orderType = 'delivery' } = createOrderDto;
+        if (orderType !== 'delivery') {
+            throw new common_1.BadRequestException('Este método solo permite pedidos de delivery.');
         }
-        const esDelivery = orderType === 'delivery';
-        const propinaFinal = esDelivery ? 0 : Number(propina ?? 0);
         let customer = null;
-        if (customerId) {
-            customer = await this.customerRepository.findOne({ where: { id: customerId } });
-            if (!customer) {
-                throw new common_1.BadRequestException('Cliente no encontrado.');
-            }
+        if (createOrderDto.customerId) {
+            customer = await this.customerRepository.findOne({
+                where: { id: createOrderDto.customerId }
+            });
+            if (!customer)
+                throw new common_1.NotFoundException('Cliente no encontrado');
         }
-        else if (newCustomer) {
-            customer = this.customerRepository.create(newCustomer);
-            customer = await this.customerRepository.save(customer);
+        if (!customer && createOrderDto.newCustomer) {
+            const nc = createOrderDto.newCustomer;
+            customer = await this.customerRepository.save(this.customerRepository.create({
+                customerName: nc.customerName,
+                customerEmail: nc.customerEmail || null,
+                customerAddress: nc.customerAddress || null,
+                customerPhone: nc.customerPhone || null,
+            }));
+        }
+        if (!customer) {
+            throw new common_1.BadRequestException('Debe proporcionar customerId o newCustomer');
+        }
+        const { max } = await this.orderRepository
+            .createQueryBuilder('order')
+            .select('MAX(order.numeroVenta)', 'max')
+            .getRawOne();
+        const nextNumeroVenta = (max || 0) + 1;
+        let order = this.orderRepository.create({
+            detalle_venta: createOrderDto.detalle_venta,
+            propina,
+            status: 'pendiente',
+            orderType,
+            paymentMethod: createOrderDto.paymentMethod || 'pendiente',
+            numeroVenta: nextNumeroVenta,
+            total: 0,
+            customer,
+        });
+        order = await this.orderRepository.save(order);
+        if (!products.length) {
+            throw new common_1.BadRequestException('La orden debe incluir productos');
+        }
+        const productIds = products.map(p => p.id);
+        const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
+        if (productEntities.length !== products.length) {
+            throw new common_1.BadRequestException('Uno o más productos no existen');
         }
         let total = 0;
-        if (!esDelivery) {
-            for (const p of products) {
-                const product = await this.productRepository.findOne({ where: { id: p.id } });
-                if (!product)
-                    throw new common_1.BadRequestException(`Producto ${p.id} no existe`);
-                total += product.price * p.cantidad;
-            }
-            total += propinaFinal;
+        const ops = [];
+        for (const p of products) {
+            const prod = productEntities.find(x => x.id === p.id);
+            const subtotal = prod.price * p.cantidad;
+            total += subtotal;
+            const op = this.productsOrdersRepository.create({
+                orderId: order.id,
+                productId: prod.id,
+                cantidad: p.cantidad,
+                precioUnitario: prod.price,
+                subtotal,
+                order: order,
+                product: prod
+            });
+            ops.push(op);
         }
-        const order = this.orderRepository.create({
-            mesaId: esDelivery ? null : createOrderDto.mesaId,
-            customer: customer ?? null,
-            orderType,
-            paymentMethod,
-            detalle_venta,
-            propina: propinaFinal,
-            total: esDelivery ? 0 : total,
-            status: 'pendiente',
-            orderProducts: [],
+        await this.productsOrdersRepository.save(ops);
+        order.total = total + propina;
+        await this.orderRepository.save(order);
+        const full = await this.orderRepository.findOne({
+            where: { id: order.id },
+            relations: ['customer', 'orderProducts', 'orderProducts.product'],
         });
-        const savedOrder = await this.orderRepository.save(order);
-        if (!esDelivery && products.length > 0) {
-            for (const p of products) {
-                const product = await this.productRepository.findOne({ where: { id: p.id } });
-                const orderProduct = this.productsOrdersRepository.create({
-                    order: savedOrder,
-                    product,
-                    cantidad: p.cantidad,
-                });
-                await this.productsOrdersRepository.save(orderProduct);
-            }
-        }
-        return savedOrder;
+        const sanitized = this.sanitizeOrder(full);
+        Promise.resolve().then(() => this.ordersGateway.notifyNewOrder(sanitized));
+        return sanitized;
     }
     async findAll() {
         return await this.orderRepository

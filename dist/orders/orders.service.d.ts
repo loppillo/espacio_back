@@ -26,7 +26,7 @@ export declare class OrdersService {
         propinaValor?: number;
     }): Promise<Order>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
-    creates(createOrderDto: CreateSOrderDto): Promise<Order>;
+    creates(createOrderDto: CreateSOrderDto): Promise<any>;
     findAll(): Promise<Order[]>;
     findOne(id: number): Promise<Order>;
     remove(id: number): Promise<{
