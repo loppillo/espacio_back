@@ -58,6 +58,7 @@ export declare class OrdersService {
     cancelarVenta(orderId: number): Promise<Order>;
     getVentasDiarias(desde?: string, hasta?: string, orderType?: string): Promise<{
         totalVentas: number;
+        totalPropinas: number;
         cantidadPedidos: number;
         rango: {
             desde: Date;

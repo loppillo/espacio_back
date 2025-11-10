@@ -378,6 +378,7 @@ let OrdersService = class OrdersService {
         const totalesQuery = this.orderRepository
             .createQueryBuilder('order')
             .select('SUM(order.total)', 'total_ventas')
+            .addSelect('SUM(order.propina)', 'total_propinas')
             .addSelect('COUNT(order.id)', 'cantidad_pedidos')
             .where('order.status = :status', { status: 'Pagado' })
             .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
@@ -389,6 +390,7 @@ let OrdersService = class OrdersService {
             .createQueryBuilder('order')
             .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
             .addSelect('SUM(order.total)', 'total')
+            .addSelect('SUM(order.propina)', 'propina')
             .where('order.status = :status', { status: 'Pagado' })
             .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
             .groupBy('hora')
@@ -402,6 +404,7 @@ let OrdersService = class OrdersService {
             .select([
             'order.id AS id',
             'order.total AS total',
+            'order.propina AS propina',
             'order.orderType AS orderType',
             'order.paymentMethod AS paymentMethod',
             'order.createdAt AS createdAt',
@@ -417,6 +420,7 @@ let OrdersService = class OrdersService {
         const detalles = await detallesQuery.getRawMany();
         return {
             totalVentas: Number(totales?.total_ventas || 0),
+            totalPropinas: Number(totales?.total_propinas || 0),
             cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
             rango: { desde: inicio, hasta: fin },
             grafico,
