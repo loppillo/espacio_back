@@ -46,37 +46,28 @@ async update(
 ) {
   const order = await this.orderRepository.findOne({
     where: { id },
-     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
+    relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
   });
 
   if (!order) throw new NotFoundException('Orden no encontrada');
 
-  // Calcular subtotal
-  const subtotal = order.orderProducts.reduce((acc, op) => acc + op.subtotal, 0);
+  const subtotal = order.orderProducts.reduce(
+    (acc, op) => acc + op.subtotal,
+    0
+  );
 
-  // Calcular propina
   let nuevaPropina = 0;
   switch (dto.propinaTipo) {
-    case '5':
-      nuevaPropina = Math.round(subtotal * 0.05);
-      break;
-    case '10':
-      nuevaPropina = Math.round(subtotal * 0.10);
-      break;
-    case '12':
-      nuevaPropina = Math.round(subtotal * 0.12);
-      break;
-    case 'custom':
-      nuevaPropina = dto.propinaValor ?? 0;
-      break;
-    default:
-      nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
+    case '5': nuevaPropina = Math.round(subtotal * 0.05); break;
+    case '10': nuevaPropina = Math.round(subtotal * 0.10); break;
+    case '12': nuevaPropina = Math.round(subtotal * 0.12); break;
+    case 'custom': nuevaPropina = dto.propinaValor ?? 0; break;
+    default: nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
   }
 
   order.propina = nuevaPropina;
   order.total = subtotal + nuevaPropina;
 
-  // Actualizar campos simples
   const camposValidos: (keyof UpdateOrderDto)[] = [
     'tableNumber',
     'orderType',
@@ -84,14 +75,27 @@ async update(
     'userId',
     'customerId',
   ];
-  camposValidos.forEach(campo => {
-    if (dto[campo] !== undefined) order[campo] = dto[campo];
+
+  for (const campo of camposValidos) {
+    if (dto[campo] !== undefined) {
+      order[campo] = dto[campo];
+    }
+  }
+
+  // ✅ Guardar SOLO el pedazo de datos de la orden, no el objeto entero
+  await this.orderRepository.save({
+    id: order.id,
+    propina: order.propina,
+    total: order.total,
+    tableNumber: order.tableNumber,
+    orderType: order.orderType,
+    status: order.status,
   });
 
-  // ⚡ Guardar solo la orden
-  await this.orderRepository.save(order);
+  // WebSocket
   this.ordersGateway.notifyOrderUpdated(order);
-  // Retornar con relaciones necesarias para Angular
+
+  // Respuesta recargada
   return this.orderRepository.findOne({
     where: { id },
     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
