@@ -58,8 +58,7 @@ let OrdersService = class OrdersService {
             case 'custom':
                 nuevaPropina = dto.propinaValor ?? 0;
                 break;
-            default:
-                nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
+            default: nuevaPropina = order.propina ?? Math.round(subtotal * 0.10);
         }
         order.propina = nuevaPropina;
         order.total = subtotal + nuevaPropina;
@@ -70,11 +69,19 @@ let OrdersService = class OrdersService {
             'userId',
             'customerId',
         ];
-        camposValidos.forEach(campo => {
-            if (dto[campo] !== undefined)
+        for (const campo of camposValidos) {
+            if (dto[campo] !== undefined) {
                 order[campo] = dto[campo];
+            }
+        }
+        await this.orderRepository.save({
+            id: order.id,
+            propina: order.propina,
+            total: order.total,
+            tableNumber: order.tableNumber,
+            orderType: order.orderType,
+            status: order.status,
         });
-        await this.orderRepository.save(order);
         this.ordersGateway.notifyOrderUpdated(order);
         return this.orderRepository.findOne({
             where: { id },
