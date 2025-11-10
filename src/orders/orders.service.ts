@@ -508,79 +508,83 @@ async update(
   }
 
   async getVentasDiarias(desde?: string, hasta?: string, orderType?: string) {
-    let inicio: Date;
-    let fin: Date;
+  let inicio: Date;
+  let fin: Date;
 
-    if (!desde && !hasta) {
-      const hoy = new Date();
-      inicio = new Date(hoy.setHours(0, 0, 0, 0));
-      fin = new Date(hoy.setHours(23, 59, 59, 999));
-    } else {
-      inicio = new Date(desde);
-      fin = new Date(hasta);
-    }
-
-    // 🧾 1️⃣ Totales generales
-    const totalesQuery = this.orderRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total_ventas')
-      .addSelect('COUNT(order.id)', 'cantidad_pedidos')
-      .where('order.status = :status', { status: 'Pagado' })
-      .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
-
-    if (orderType) {
-      totalesQuery.andWhere('order.orderType = :orderType', { orderType });
-    }
-
-    const totales = await totalesQuery.getRawOne();
-
-    // 📊 2️⃣ Ventas agrupadas por hora (para Chart.js)
-    const graficoQuery = this.orderRepository
-      .createQueryBuilder('order')
-      .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
-      .addSelect('SUM(order.total)', 'total')
-      .where('order.status = :status', { status: 'Pagado' })
-      .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-      .groupBy('hora')
-      .orderBy('hora', 'ASC');
-
-    if (orderType) {
-      graficoQuery.andWhere('order.orderType = :orderType', { orderType });
-    }
-
-    const grafico = await graficoQuery.getRawMany();
-
-    // 🧾 3️⃣ Detalle de ventas individuales (para la tabla)
-    const detallesQuery = this.orderRepository
-      .createQueryBuilder('order')
-      .select([
-        'order.id AS id',
-        'order.total AS total',
-        'order.orderType AS orderType',
-        'order.paymentMethod AS paymentMethod',
-        'order.createdAt AS createdAt',
-        'mesa.numero_mesa AS numero_mesa',
-      ])
-      .leftJoin('order.mesa', 'mesa')
-      .where('order.status = :status', { status: 'Pagado' })
-      .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
-      .orderBy('order.createdAt', 'DESC');
-
-    if (orderType) {
-      detallesQuery.andWhere('order.orderType = :orderType', { orderType });
-    }
-
-    const detalles = await detallesQuery.getRawMany();
-
-    // 📋 4️⃣ Respuesta final
-    return {
-      totalVentas: Number(totales?.total_ventas || 0),
-      cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
-      rango: { desde: inicio, hasta: fin },
-      grafico,
-      detalles,
-    };
+  if (!desde && !hasta) {
+    const hoy = new Date();
+    inicio = new Date(hoy.setHours(0, 0, 0, 0));
+    fin = new Date(hoy.setHours(23, 59, 59, 999));
+  } else {
+    inicio = new Date(desde);
+    fin = new Date(hasta);
   }
+
+  // 🧾 1️⃣ Totales generales (incluye total y propinas)
+  const totalesQuery = this.orderRepository
+    .createQueryBuilder('order')
+    .select('SUM(order.total)', 'total_ventas')
+    .addSelect('SUM(order.propina)', 'total_propinas')
+    .addSelect('COUNT(order.id)', 'cantidad_pedidos')
+    .where('order.status = :status', { status: 'Pagado' })
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+
+  if (orderType) {
+    totalesQuery.andWhere('order.orderType = :orderType', { orderType });
+  }
+
+  const totales = await totalesQuery.getRawOne();
+
+  // 📊 2️⃣ Gráfico por hora (suma total y propina opcional)
+  const graficoQuery = this.orderRepository
+    .createQueryBuilder('order')
+    .select("DATE_FORMAT(order.createdAt, '%H:00')", 'hora')
+    .addSelect('SUM(order.total)', 'total')
+    .addSelect('SUM(order.propina)', 'propina')
+    .where('order.status = :status', { status: 'Pagado' })
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+    .groupBy('hora')
+    .orderBy('hora', 'ASC');
+
+  if (orderType) {
+    graficoQuery.andWhere('order.orderType = :orderType', { orderType });
+  }
+
+  const grafico = await graficoQuery.getRawMany();
+
+  // 🧾 3️⃣ Detalle de ventas individuales (incluye propina)
+  const detallesQuery = this.orderRepository
+    .createQueryBuilder('order')
+    .select([
+      'order.id AS id',
+      'order.total AS total',
+      'order.propina AS propina',
+      'order.orderType AS orderType',
+      'order.paymentMethod AS paymentMethod',
+      'order.createdAt AS createdAt',
+      'mesa.numero_mesa AS numero_mesa',
+    ])
+    .leftJoin('order.mesa', 'mesa')
+    .where('order.status = :status', { status: 'Pagado' })
+    .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin })
+    .orderBy('order.createdAt', 'DESC');
+
+  if (orderType) {
+    detallesQuery.andWhere('order.orderType = :orderType', { orderType });
+  }
+
+  const detalles = await detallesQuery.getRawMany();
+
+  // 📋 4️⃣ Respuesta final
+  return {
+    totalVentas: Number(totales?.total_ventas || 0),
+    totalPropinas: Number(totales?.total_propinas || 0),
+    cantidadPedidos: Number(totales?.cantidad_pedidos || 0),
+    rango: { desde: inicio, hasta: fin },
+    grafico,
+    detalles,
+  };
+}
 
   async getVentasDiariasxMesa(desde?: string, hasta?: string, mesaId?: number) {
     let inicio: Date;
