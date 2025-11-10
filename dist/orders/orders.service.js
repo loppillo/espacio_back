@@ -97,6 +97,7 @@ let OrdersService = class OrdersService {
         const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
         if (!mesa)
             throw new common_1.BadRequestException('La mesa no existe');
+        const numeroVenta = await this.generarNumeroVenta();
         const newOrder = this.orderRepository.create({
             tableNumber: Number(mesa.numero_mesa),
             orderType,
@@ -105,11 +106,14 @@ let OrdersService = class OrdersService {
             paymentMethod: '',
             propina,
             total: 0,
-            numeroVenta: await this.generarNumeroVenta(),
+            numeroVenta,
             mesa,
             detalle_venta: createOrderDto.detalle_venta || null,
         });
         let savedOrder = await this.orderRepository.save(newOrder);
+        if (!products || products.length === 0) {
+            throw new common_1.BadRequestException('El pedido debe tener productos');
+        }
         const productIds = products.map(p => p.id);
         const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
         if (productEntities.length !== products.length) {
@@ -121,8 +125,8 @@ let OrdersService = class OrdersService {
             const subtotal = productEntity.price * p.cantidad;
             total += subtotal;
             return this.productsOrdersRepository.create({
-                order: savedOrder,
-                product: productEntity,
+                orderId: savedOrder.id,
+                productId: productEntity.id,
                 cantidad: p.cantidad,
                 precioUnitario: productEntity.price,
                 subtotal,
