@@ -39,7 +39,7 @@ let OrdersService = class OrdersService {
     async update(id, dto) {
         const order = await this.orderRepository.findOne({
             where: { id },
-            relations: ['orderProducts'],
+            relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
         });
         if (!order)
             throw new common_1.NotFoundException('Orden no encontrada');
