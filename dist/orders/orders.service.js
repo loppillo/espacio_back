@@ -145,7 +145,7 @@ let OrdersService = class OrdersService {
         return sanitized;
     }
     async creates(createOrderDto) {
-        const { products, propina = 0, orderType = 'delivery' } = createOrderDto;
+        const { products = [], propina = 0, orderType = 'delivery' } = createOrderDto;
         if (orderType !== 'delivery') {
             throw new common_1.BadRequestException('Este método solo permite pedidos de delivery.');
         }
@@ -185,6 +185,9 @@ let OrdersService = class OrdersService {
             total: 0,
             customer,
         });
+        if (!products.length) {
+            throw new common_1.BadRequestException('La orden debe incluir productos');
+        }
         const productIds = products.map(p => p.id);
         const productEntities = await this.productRepository.findBy({ id: (0, typeorm_1.In)(productIds) });
         if (productEntities.length !== products.length) {
@@ -192,22 +195,22 @@ let OrdersService = class OrdersService {
         }
         let total = 0;
         const orderProducts = products.map(p => {
-            const productEntity = productEntities.find(pe => pe.id === p.id);
-            const subtotal = productEntity.price * p.cantidad;
+            const entity = productEntities.find(pe => pe.id === p.id);
+            const subtotal = entity.price * p.cantidad;
             total += subtotal;
             const op = new products_order_entity_1.ProductsOrders();
-            op.product = productEntity;
+            op.product = entity;
             op.cantidad = p.cantidad;
-            op.precioUnitario = productEntity.price;
+            op.precioUnitario = entity.price;
             op.subtotal = subtotal;
             op.order = newOrder;
             return op;
         });
-        newOrder.total = total + propina;
         newOrder.orderProducts = orderProducts;
-        const savedOrder = await this.orderRepository.save(newOrder);
+        newOrder.total = total + newOrder.propina;
+        const saved = await this.orderRepository.save(newOrder);
         const fullOrder = await this.orderRepository.findOne({
-            where: { id: savedOrder.id },
+            where: { id: saved.id },
             relations: ['customer', 'orderProducts', 'orderProducts.product'],
         });
         const sanitized = this.sanitizeOrder(fullOrder);
