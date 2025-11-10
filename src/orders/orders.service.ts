@@ -39,13 +39,14 @@ export class OrdersService {
 
 
 
+
 async update(
   id: number,
   dto: UpdateOrderDto & { propinaTipo?: string; propinaValor?: number }
 ) {
   const order = await this.orderRepository.findOne({
     where: { id },
-    relations: ['orderProducts'], // Solo lo necesario
+     relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
   });
 
   if (!order) throw new NotFoundException('Orden no encontrada');
@@ -89,7 +90,7 @@ async update(
 
   // ⚡ Guardar solo la orden
   await this.orderRepository.save(order);
-    this.ordersGateway.notifyOrderUpdated(order);
+  this.ordersGateway.notifyOrderUpdated(order);
   // Retornar con relaciones necesarias para Angular
   return this.orderRepository.findOne({
     where: { id },
