@@ -31,7 +31,7 @@ export declare class OrdersController {
             subtotal: number;
         }[];
     }[]>;
-    creates(createOrderDto: CreateSOrderDto): Promise<any>;
+    creates(createOrderDto: CreateSOrderDto): Promise<Order>;
     findAll(): Promise<Order[]>;
     findOne(id: string): Promise<Order>;
     remove(id: string): Promise<{
