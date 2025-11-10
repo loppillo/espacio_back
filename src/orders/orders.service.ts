@@ -191,110 +191,114 @@ order.total = subtotal + nuevaPropina;
 
 
   async creates(createOrderDto: CreateSOrderDto) {
-    const { products, propina = 0, orderType = 'delivery' } = createOrderDto;
+  const { products = [], propina = 0, orderType = 'delivery' } = createOrderDto;
 
-    if (orderType !== 'delivery') {
-      throw new BadRequestException('Este método solo permite pedidos de delivery.');
-    }
-
-    // ✅ Resolver cliente (nuevo o existente)
-    let customer = null;
-
-    if (createOrderDto.customerId) {
-      // Buscar cliente existente
-      customer = await this.customerRepository.findOne({
-        where: { id: createOrderDto.customerId }
-      });
-      if (!customer) throw new NotFoundException('Cliente no encontrado');
-    }
-
-    // ✅ Crear cliente nuevo si viene newCustomer
-    if (!customer && createOrderDto.newCustomer) {
-      const nc = createOrderDto.newCustomer;
-
-      customer = this.customerRepository.create({
-        customerName: nc.customerName,
-        customerEmail: nc.customerEmail || null,
-        customerAddress: nc.customerAddress || null,
-        customerPhone: nc.customerPhone || null,
-      });
-
-      customer = await this.customerRepository.save(customer);
-    }
-
-    // Si no hay cliente, error
-    if (!customer) {
-      throw new BadRequestException('Debe proporcionar customerId o newCustomer');
-    }
-
-    // ✅ Número de venta
-    const { max } = await this.orderRepository
-      .createQueryBuilder('order')
-      .select('MAX(order.numeroVenta)', 'max')
-      .getRawOne();
-
-    const nextNumeroVenta = (max || 0) + 1;
-
-    // ✅ Crear pedido sin productos todavía
-    const newOrder = this.orderRepository.create({
-      detalle_venta: createOrderDto.detalle_venta,
-      propina,
-      status: createOrderDto.status || 'pendiente',
-      orderType,
-      paymentMethod: createOrderDto.paymentMethod || 'pendiente',
-      numeroVenta: nextNumeroVenta,
-      total: 0,
-      customer,  // ✅ vínculo con el cliente
-    });
-
-    // ✅ Obtener productos reales
-    const productIds = products.map(p => p.id);
-    const productEntities = await this.productRepository.findBy({ id: In(productIds) });
-
-    if (productEntities.length !== products.length) {
-      throw new BadRequestException('Uno o más productos no existen');
-    }
-
-    // ✅ Construir orderProducts
-    let total = 0;
-
-    const orderProducts = products.map(p => {
-      const productEntity = productEntities.find(pe => pe.id === p.id)!;
-      const subtotal = productEntity.price * p.cantidad;
-
-      total += subtotal;
-
-      const op = new ProductsOrders();
-      op.product = productEntity;
-      op.cantidad = p.cantidad;
-      op.precioUnitario = productEntity.price;
-      op.subtotal = subtotal;
-      op.order = newOrder;
-
-      return op;
-    });
-
-    newOrder.total = total + propina;
-    newOrder.orderProducts = orderProducts;
-
-    // ✅ Guardar pedido completo
-    const savedOrder = await this.orderRepository.save(newOrder);
-
-    // ✅ Cargar con relaciones
-    const fullOrder = await this.orderRepository.findOne({
-      where: { id: savedOrder.id },
-      relations: ['customer', 'orderProducts', 'orderProducts.product'],
-    });
-
-    const sanitized = this.sanitizeOrder(fullOrder);
-
-    // WebSocket async
-    Promise.resolve().then(() => {
-      this.ordersGateway.notifyNewOrder(sanitized);
-    });
-
-    return sanitized;
+  if (orderType !== 'delivery') {
+    throw new BadRequestException('Este método solo permite pedidos de delivery.');
   }
+
+  // ✅ Resolver cliente (nuevo o existente)
+  let customer = null;
+
+  if (createOrderDto.customerId) {
+    customer = await this.customerRepository.findOne({
+      where: { id: createOrderDto.customerId }
+    });
+
+    if (!customer) throw new NotFoundException('Cliente no encontrado');
+  }
+
+  // ✅ Crear cliente nuevo si viene newCustomer
+  if (!customer && createOrderDto.newCustomer) {
+    const nc = createOrderDto.newCustomer;
+
+    customer = this.customerRepository.create({
+      customerName: nc.customerName,
+      customerEmail: nc.customerEmail || null,
+      customerAddress: nc.customerAddress || null,
+      customerPhone: nc.customerPhone || null,
+    });
+
+    customer = await this.customerRepository.save(customer);
+  }
+
+  if (!customer) {
+    throw new BadRequestException('Debe proporcionar customerId o newCustomer');
+  }
+
+  // ✅ Numero de venta
+  const { max } = await this.orderRepository
+    .createQueryBuilder('order')
+    .select('MAX(order.numeroVenta)', 'max')
+    .getRawOne();
+
+  const nextNumeroVenta = (max || 0) + 1;
+
+  // ✅ Crear pedido base sin productos aún
+  const newOrder = this.orderRepository.create({
+    detalle_venta: createOrderDto.detalle_venta,
+    propina,                      // ← viene del frontend (0, 5%, 10%, custom)
+    status: createOrderDto.status || 'pendiente',
+    orderType,
+    paymentMethod: createOrderDto.paymentMethod || 'pendiente',
+    numeroVenta: nextNumeroVenta,
+    total: 0,
+    customer,
+  });
+
+  // ✅ VALIDAR productos
+  if (!products.length) {
+    throw new BadRequestException('La orden debe incluir productos');
+  }
+
+  const productIds = products.map(p => p.id);
+
+  const productEntities = await this.productRepository.findBy({ id: In(productIds) });
+
+  if (productEntities.length !== products.length) {
+    throw new BadRequestException('Uno o más productos no existen');
+  }
+
+  // ✅ Construir orderProducts
+  let total = 0;
+
+  const orderProducts = products.map(p => {
+    const entity = productEntities.find(pe => pe.id === p.id)!;
+    const subtotal = entity.price * p.cantidad;
+
+    total += subtotal;
+
+    const op = new ProductsOrders();
+    op.product = entity;
+    op.cantidad = p.cantidad;
+    op.precioUnitario = entity.price;
+    op.subtotal = subtotal;
+    op.order = newOrder;
+    return op;
+  });
+
+  // ✅ Asignar totals definitivos
+  newOrder.orderProducts = orderProducts;
+  newOrder.total = total + newOrder.propina;
+
+  // ✅ Guardar
+  const saved = await this.orderRepository.save(newOrder);
+
+  // ✅ Cargar con relaciones
+  const fullOrder = await this.orderRepository.findOne({
+    where: { id: saved.id },
+    relations: ['customer', 'orderProducts', 'orderProducts.product'],
+  });
+
+  const sanitized = this.sanitizeOrder(fullOrder);
+
+  // WebSocket
+  Promise.resolve().then(() => {
+    this.ordersGateway.notifyNewOrder(sanitized);
+  });
+
+  return sanitized;
+}
 
 
 
