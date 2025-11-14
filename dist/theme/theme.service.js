@@ -17,51 +17,57 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const theme_entity_1 = require("./entities/theme.entity");
+const orders_gateway_1 = require("../orders/orders.gateway");
 let ThemeService = class ThemeService {
-    constructor(repo) {
+    constructor(repo, gateway) {
         this.repo = repo;
+        this.gateway = gateway;
     }
-    async create(dto) {
-        const preset = this.repo.create(dto);
-        return this.repo.save(preset);
-    }
-    async findAll() {
+    findAll() {
         return this.repo.find();
     }
+    async findDefault() {
+        const t = await this.repo.findOne({ where: { isDefault: true } });
+        if (!t)
+            throw new common_1.NotFoundException('No default theme set');
+        return t;
+    }
     async findOne(id) {
-        const preset = await this.repo.findOne({ where: { id } });
-        if (!preset)
-            throw new common_1.NotFoundException('Preset no existe.');
-        return preset;
+        const t = await this.repo.findOneBy({ id });
+        if (!t)
+            throw new common_1.NotFoundException('Theme not found');
+        return t;
     }
-    async update(id, dto) {
-        const preset = await this.findOne(id);
-        if (dto.isDefault) {
-            await this.repo.update({ isDefault: true }, { isDefault: false });
-        }
-        Object.assign(preset, dto);
-        return this.repo.save(preset);
+    async create(data) {
+        const theme = this.repo.create(data);
+        const saved = await this.repo.save(theme);
+        this.gateway.broadcast(saved);
+        return saved;
     }
-    async remove(id) {
-        const preset = await this.findOne(id);
-        return this.repo.remove(preset);
+    async update(id, data) {
+        await this.repo.update(id, data);
+        const updated = await this.repo.findOneBy({ id });
+        if (!updated)
+            throw new common_1.NotFoundException('Theme not found');
+        this.gateway.broadcast(updated);
+        return updated;
     }
-    async getDefaultPreset() {
-        let preset = await this.repo.findOne({ where: { isDefault: true } });
-        if (!preset) {
-            preset = this.repo.create({
-                name: 'Default',
-                isDefault: true,
-            });
-            await this.repo.save(preset);
-        }
-        return preset;
+    async activate(id) {
+        await this.repo.update({}, { isDefault: false });
+        const theme = await this.repo.findOneBy({ id });
+        if (!theme)
+            throw new common_1.NotFoundException('Theme not found');
+        theme.isDefault = true;
+        const saved = await this.repo.save(theme);
+        this.gateway.broadcast(saved);
+        return saved;
     }
 };
 exports.ThemeService = ThemeService;
 exports.ThemeService = ThemeService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(theme_entity_1.Theme)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        orders_gateway_1.OrdersGateway])
 ], ThemeService);
 //# sourceMappingURL=theme.service.js.map

@@ -23,11 +23,11 @@ __decorate([
     __metadata("design:type", String)
 ], Theme.prototype, "name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: '#6C5CE7' }),
+    (0, typeorm_1.Column)({ default: '#ff7f00' }),
     __metadata("design:type", String)
 ], Theme.prototype, "primaryColor", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: '#00CEC9' }),
+    (0, typeorm_1.Column)({ default: '#ffc107' }),
     __metadata("design:type", String)
 ], Theme.prototype, "secondaryColor", void 0);
 __decorate([
@@ -35,9 +35,29 @@ __decorate([
     __metadata("design:type", String)
 ], Theme.prototype, "backgroundColor", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Theme.prototype, "backgroundImage", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Theme.prototype, "gradient", void 0);
+__decorate([
     (0, typeorm_1.Column)({ default: 'light' }),
     __metadata("design:type", String)
 ], Theme.prototype, "mode", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 'rounded' }),
+    __metadata("design:type", String)
+], Theme.prototype, "borderStyle", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 'normal' }),
+    __metadata("design:type", String)
+], Theme.prototype, "cardShadow", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 'full' }),
+    __metadata("design:type", String)
+], Theme.prototype, "layoutType", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: false }),
     __metadata("design:type", Boolean)

@@ -12,13 +12,14 @@ const typeorm_1 = require("@nestjs/typeorm");
 const theme_service_1 = require("./theme.service");
 const theme_controller_1 = require("./theme.controller");
 const theme_entity_1 = require("./entities/theme.entity");
+const orders_gateway_1 = require("../orders/orders.gateway");
 let ThemeModule = class ThemeModule {
 };
 exports.ThemeModule = ThemeModule;
 exports.ThemeModule = ThemeModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([theme_entity_1.Theme])],
-        controllers: [theme_controller_1.ThemeController],
+        controllers: [theme_controller_1.ThemeController, orders_gateway_1.OrdersGateway],
         providers: [theme_service_1.ThemeService],
         exports: [theme_service_1.ThemeService],
     })

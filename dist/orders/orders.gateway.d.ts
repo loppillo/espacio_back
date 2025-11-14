@@ -40,5 +40,6 @@ export declare class OrdersGateway {
     notifyNewOrder(order: any): void;
     notifyOrderUpdated(order: Order): void;
     notifyMesaUpdated(mesaId: number, status: string): void;
+    broadcast(theme: any): void;
     sanitizeOrder(order: Order): OrderDTO;
 }

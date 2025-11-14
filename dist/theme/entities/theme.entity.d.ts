@@ -4,6 +4,11 @@ export declare class Theme {
     primaryColor: string;
     secondaryColor: string;
     backgroundColor: string;
+    backgroundImage: string;
+    gradient: string;
     mode: string;
+    borderStyle: string;
+    cardShadow: string;
+    layoutType: string;
     isDefault: boolean;
 }

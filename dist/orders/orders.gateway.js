@@ -76,6 +76,9 @@ let OrdersGateway = class OrdersGateway {
     notifyMesaUpdated(mesaId, status) {
         this.server.emit('mesaStatusUpdated', { mesaId, status });
     }
+    broadcast(theme) {
+        this.server.emit('themeUpdated', theme);
+    }
     sanitizeOrder(order) {
         return {
             id: order.id,
