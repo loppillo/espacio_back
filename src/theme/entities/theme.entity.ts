@@ -17,8 +17,8 @@ export class Theme {
   @Column({ default: '#ffffff' })
   backgroundColor: string;
 
-  @Column({ nullable: true })
-  backgroundImage: string;
+  @Column({ type: 'longtext', nullable: true })
+ backgroundImage: string;
 
   @Column({ nullable: true })
   gradient: string;
