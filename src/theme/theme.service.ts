@@ -1,62 +1,56 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
-import { CreateThemeDto } from './dto/create-theme.dto';
-import { UpdateThemeDto } from './dto/update-theme.dto';
 import { Theme } from './entities/theme.entity';
+import { OrdersGateway } from 'src/orders/orders.gateway';
+
 
 @Injectable()
 export class ThemeService {
   constructor(
     @InjectRepository(Theme)
-    private repo: Repository<Theme>,
+    private readonly repo: Repository<Theme>,
+    private readonly gateway: OrdersGateway,
   ) {}
 
-  async create(dto: CreateThemeDto): Promise<Theme> {
-    const preset = this.repo.create(dto);
-    return this.repo.save(preset);
-  }
-
-  async findAll(): Promise<Theme[]> {
+  findAll(): Promise<Theme[]> {
     return this.repo.find();
   }
 
+  async findDefault(): Promise<Theme> {
+    const t = await this.repo.findOne({ where: { isDefault: true } });
+    if (!t) throw new NotFoundException('No default theme set');
+    return t;
+  }
+
   async findOne(id: number): Promise<Theme> {
-    const preset = await this.repo.findOne({ where: { id } });
-    if (!preset) throw new NotFoundException('Preset no existe.');
-    return preset;
+    const t = await this.repo.findOneBy({ id });
+    if (!t) throw new NotFoundException('Theme not found');
+    return t;
   }
 
-  async update(id: number, dto: UpdateThemeDto): Promise<Theme> {
-    const preset = await this.findOne(id);
-
-    // Si está marcando uno como default → desmarcar todos los otros
-    if (dto.isDefault) {
-      await this.repo.update({ isDefault: true }, { isDefault: false });
-    }
-
-    Object.assign(preset, dto);
-    return this.repo.save(preset);
+  async create(data: Partial<Theme>): Promise<Theme> {
+    const theme = this.repo.create(data);
+    const saved = await this.repo.save(theme);
+    this.gateway.broadcast(saved);
+    return saved;
   }
 
-  async remove(id: number) {
-    const preset = await this.findOne(id);
-    return this.repo.remove(preset);
+  async update(id: number, data: Partial<Theme>): Promise<Theme> {
+    await this.repo.update(id, data);
+    const updated = await this.repo.findOneBy({ id });
+    if (!updated) throw new NotFoundException('Theme not found');
+    this.gateway.broadcast(updated);
+    return updated;
   }
 
-  async getDefaultPreset(): Promise<Theme> {
-    let preset = await this.repo.findOne({ where: { isDefault: true } });
-
-    // Si no existe ninguno marcado como default → crea uno
-    if (!preset) {
-      preset = this.repo.create({
-        name: 'Default',
-        isDefault: true,
-      });
-      await this.repo.save(preset);
-    }
-
-    return preset;
+  async activate(id: number): Promise<Theme> {
+    await this.repo.update({}, { isDefault: false });
+    const theme = await this.repo.findOneBy({ id });
+    if (!theme) throw new NotFoundException('Theme not found');
+    theme.isDefault = true;
+    const saved = await this.repo.save(theme);
+    this.gateway.broadcast(saved);
+    return saved;
   }
 }

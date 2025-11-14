@@ -8,17 +8,32 @@ export class Theme {
   @Column()
   name: string;
 
-  @Column({ default: '#6C5CE7' })
+  @Column({ default: '#ff7f00' })
   primaryColor: string;
 
-  @Column({ default: '#00CEC9' })
+  @Column({ default: '#ffc107' })
   secondaryColor: string;
 
   @Column({ default: '#ffffff' })
   backgroundColor: string;
 
+  @Column({ nullable: true })
+  backgroundImage: string;
+
+  @Column({ nullable: true })
+  gradient: string;
+
   @Column({ default: 'light' })
-  mode: string;
+  mode: string; // 'light' | 'dark' | 'glass'
+
+  @Column({ default: 'rounded' })
+  borderStyle: string; // 'rounded' | 'square'
+
+  @Column({ default: 'normal' })
+  cardShadow: string; // 'none' | 'normal' | 'deep'
+
+  @Column({ default: 'full' })
+  layoutType: string; // 'full' | 'boxed' | 'minimal' | 'glass'
 
   @Column({ default: false })
   isDefault: boolean;

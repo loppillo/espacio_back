@@ -1,16 +1,18 @@
-import { Controller, Post, Get, Put, Delete, Param, Body } from '@nestjs/common';
+import {
+  Controller, Get, Post, Patch, Param, Body,
+  UploadedFile, UseInterceptors, NotFoundException
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
 import { ThemeService } from './theme.service';
-import { CreateThemeDto } from './dto/create-theme.dto';
-import { UpdateThemeDto } from './dto/update-theme.dto';
 
-@Controller('theme')
+import { existsSync, mkdirSync } from 'fs';
+import { Theme } from './entities/theme.entity';
+
+@Controller('themes')
 export class ThemeController {
   constructor(private readonly service: ThemeService) {}
-
-  @Post()
-  create(@Body() dto: CreateThemeDto) {
-    return this.service.create(dto);
-  }
 
   @Get()
   findAll() {
@@ -18,22 +20,51 @@ export class ThemeController {
   }
 
   @Get('default')
-  getDefault() {
-    return this.service.getDefaultPreset();
+  findDefault() {
+    return this.service.findDefault();
   }
 
   @Get(':id')
   findOne(@Param('id') id: number) {
-    return this.service.findOne(id);
+    return this.service.findOne(Number(id));
   }
 
-  @Put(':id')
-  update(@Param('id') id: number, @Body() dto: UpdateThemeDto) {
-    return this.service.update(id, dto);
+  @Post()
+  create(@Body() body: Partial<Theme>) {
+    return this.service.create(body);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.service.remove(id);
+  @Patch(':id')
+  update(@Param('id') id: number, @Body() body: Partial<Theme>) {
+    return this.service.update(Number(id), body);
+  }
+
+  @Patch(':id/activate')
+  activate(@Param('id') id: number) {
+    return this.service.activate(Number(id));
+  }
+
+  @Post(':id/upload-background')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = join(__dirname, '..', '..', 'uploads', 'themes');
+        if (!existsSync(uploadPath)) mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + extname(file.originalname));
+      }
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  }))
+  async uploadBackground(@Param('id') id: number, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new NotFoundException('File missing');
+    const filePath = `/uploads/themes/${file.filename}`;
+    return this.service.update(Number(id), {
+      backgroundImage: filePath,
+      backgroundColor: undefined // keep as-is unless provided
+    });
   }
 }

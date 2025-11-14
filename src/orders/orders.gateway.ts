@@ -97,7 +97,9 @@ notifyNewOrder(order: any) {
   }
 
   
- 
+   broadcast(theme: any) {
+    this.server.emit('themeUpdated', theme);
+  }
 
 
   // Evitar referencias circulares y objetos grandes

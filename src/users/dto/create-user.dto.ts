@@ -20,3 +20,5 @@ export class CreateUserDto {
   tipo_usuario: string;
 
 }
+
+
