@@ -6,6 +6,7 @@ export declare class Theme {
     backgroundColor: string;
     backgroundImage: string;
     gradient: string;
+    backgroundType: 'color' | 'gradient' | 'image';
     mode: string;
     borderStyle: string;
     cardShadow: string;

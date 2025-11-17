@@ -43,6 +43,10 @@ __decorate([
     __metadata("design:type", String)
 ], Theme.prototype, "gradient", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ default: 'color' }),
+    __metadata("design:type", String)
+], Theme.prototype, "backgroundType", void 0);
+__decorate([
     (0, typeorm_1.Column)({ default: 'light' }),
     __metadata("design:type", String)
 ], Theme.prototype, "mode", void 0);
