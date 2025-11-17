@@ -35,7 +35,42 @@ __decorate([
 ], CreateThemeDto.prototype, "backgroundColor", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['light', 'dark']),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateThemeDto.prototype, "backgroundImage", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateThemeDto.prototype, "gradient", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['color', 'gradient', 'image']),
+    __metadata("design:type", String)
+], CreateThemeDto.prototype, "backgroundType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['light', 'dark', 'glass']),
     __metadata("design:type", String)
 ], CreateThemeDto.prototype, "mode", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['rounded', 'square']),
+    __metadata("design:type", String)
+], CreateThemeDto.prototype, "borderStyle", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['none', 'normal', 'deep']),
+    __metadata("design:type", String)
+], CreateThemeDto.prototype, "cardShadow", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['full', 'boxed', 'minimal', 'glass']),
+    __metadata("design:type", String)
+], CreateThemeDto.prototype, "layoutType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateThemeDto.prototype, "isDefault", void 0);
 //# sourceMappingURL=create-theme.dto.js.map
