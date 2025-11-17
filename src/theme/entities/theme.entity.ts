@@ -24,8 +24,8 @@ export class Theme {
   gradient: string;
 
   // 👇 NUEVO
-  @Column({ default: 'color' })
-  backgroundType: string; // 'color' | 'gradient' | 'image'
+@Column({ default: 'color' }) 
+backgroundType: 'color' | 'gradient' | 'image';
 
   @Column({ default: 'light' })
   mode: string;
