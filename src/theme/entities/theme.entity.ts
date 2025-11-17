@@ -18,22 +18,26 @@ export class Theme {
   backgroundColor: string;
 
   @Column({ type: 'longtext', nullable: true })
- backgroundImage: string;
+  backgroundImage: string;
 
   @Column({ nullable: true })
   gradient: string;
 
+  // 👇 NUEVO
+  @Column({ default: 'color' })
+  backgroundType: string; // 'color' | 'gradient' | 'image'
+
   @Column({ default: 'light' })
-  mode: string; // 'light' | 'dark' | 'glass'
+  mode: string;
 
   @Column({ default: 'rounded' })
-  borderStyle: string; // 'rounded' | 'square'
+  borderStyle: string;
 
   @Column({ default: 'normal' })
-  cardShadow: string; // 'none' | 'normal' | 'deep'
+  cardShadow: string;
 
   @Column({ default: 'full' })
-  layoutType: string; // 'full' | 'boxed' | 'minimal' | 'glass'
+  layoutType: string;
 
   @Column({ default: false })
   isDefault: boolean;
