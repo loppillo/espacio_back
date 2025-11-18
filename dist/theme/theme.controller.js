@@ -18,6 +18,8 @@ const platform_express_1 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
 const path_1 = require("path");
 const theme_service_1 = require("./theme.service");
+const create_theme_dto_1 = require("./dto/create-theme.dto");
+const update_theme_dto_1 = require("./dto/update-theme.dto");
 const fs_1 = require("fs");
 let ThemeController = class ThemeController {
     constructor(service) {
@@ -75,7 +77,7 @@ __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [create_theme_dto_1.CreateThemeDto]),
     __metadata("design:returntype", void 0)
 ], ThemeController.prototype, "create", null);
 __decorate([
@@ -83,7 +85,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Number, update_theme_dto_1.UpdateThemeDto]),
     __metadata("design:returntype", void 0)
 ], ThemeController.prototype, "update", null);
 __decorate([

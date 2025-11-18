@@ -16,6 +16,7 @@ class UpdateThemeDto {
 exports.UpdateThemeDto = UpdateThemeDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateThemeDto.prototype, "name", void 0);
 __decorate([

@@ -2,6 +2,7 @@ import { IsHexColor, IsIn, IsOptional, IsString, IsBoolean } from 'class-validat
 
 export class UpdateThemeDto {
   @IsOptional()
+  @IsString()
   name?: string;
 
   @IsOptional()

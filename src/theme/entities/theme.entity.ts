@@ -17,15 +17,15 @@ export class Theme {
   @Column({ default: '#ffffff' })
   backgroundColor: string;
 
-  @Column({ type: 'longtext', nullable: true })
+  @Column({ nullable: true })
   backgroundImage: string;
 
   @Column({ nullable: true })
   gradient: string;
 
   // 👇 NUEVO
-@Column({ default: 'color' }) 
-backgroundType: 'color' | 'gradient' | 'image';
+  @Column({ default: 'color' })
+  backgroundType: 'color' | 'gradient' | 'image';
 
   @Column({ default: 'light' })
   mode: string;

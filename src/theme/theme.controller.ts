@@ -6,13 +6,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ThemeService } from './theme.service';
+import { CreateThemeDto } from './dto/create-theme.dto';
+import { UpdateThemeDto } from './dto/update-theme.dto';
 
 import { existsSync, mkdirSync } from 'fs';
 import { Theme } from './entities/theme.entity';
 
 @Controller('themes')
 export class ThemeController {
-  constructor(private readonly service: ThemeService) {}
+  constructor(private readonly service: ThemeService) { }
 
   @Get()
   findAll() {
@@ -30,12 +32,12 @@ export class ThemeController {
   }
 
   @Post()
-  create(@Body() body: Partial<Theme>) {
+  create(@Body() body: CreateThemeDto) {
     return this.service.create(body);
   }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() body: Partial<Theme>) {
+  update(@Param('id') id: number, @Body() body: UpdateThemeDto) {
     return this.service.update(Number(id), body);
   }
 
