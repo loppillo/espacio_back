@@ -190,6 +190,16 @@ let MesaService = class MesaService {
         });
     }
     async getMesaDetail(mesaId, fecha) {
+        let fechaFiltro;
+        if (fecha) {
+            const fechaObj = new Date(fecha);
+            if (!isNaN(fechaObj.getTime())) {
+                const year = fechaObj.getFullYear();
+                const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+                const day = String(fechaObj.getDate()).padStart(2, '0');
+                fechaFiltro = `${year}-${month}-${day}`;
+            }
+        }
         const query = this.ordersRepository
             .createQueryBuilder('order')
             .leftJoin('order.orderProducts', 'op')
@@ -200,8 +210,8 @@ let MesaService = class MesaService {
             .addSelect('(SUM(op.cantidad) * product.price)', 'subtotal')
             .where('order.mesaId = :mesaId', { mesaId })
             .andWhere('order.status = :status', { status: 'pagado' });
-        if (fecha) {
-            query.andWhere('DATE(order.createdAt) = :fecha', { fecha });
+        if (fechaFiltro) {
+            query.andWhere('DATE(order.createdAt) = :fecha', { fecha: fechaFiltro });
         }
         query.groupBy('product.id');
         const detalle = await query.getRawMany();
@@ -211,12 +221,13 @@ let MesaService = class MesaService {
             .addSelect('SUM(order.propina)', 'totalPropina')
             .where('order.mesaId = :mesaId', { mesaId })
             .andWhere('order.status = :status', { status: 'pagado' });
-        if (fecha)
-            totalQuery.andWhere('DATE(order.createdAt) = :fecha', { fecha });
+        if (fechaFiltro) {
+            totalQuery.andWhere('DATE(order.createdAt) = :fecha', { fecha: fechaFiltro });
+        }
         const totales = await totalQuery.getRawOne();
         return {
             mesaId,
-            fecha: fecha ?? 'todas las fechas',
+            fecha: fechaFiltro ?? 'todas las fechas',
             detalle,
             totalMesa: Number(totales.total) || 0,
             propina: Number(totales.totalPropina) || 0,
