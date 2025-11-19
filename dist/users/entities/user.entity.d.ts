@@ -5,5 +5,8 @@ export declare class User {
     password: string;
     profileImage: string;
     role: string;
+    tipo_usuario: string;
+    createdAt: Date;
+    updatedAt: Date;
     order: Order[];
 }

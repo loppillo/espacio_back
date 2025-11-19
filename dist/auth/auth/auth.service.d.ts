@@ -10,6 +10,9 @@ export declare class AuthService {
         name: string;
         profileImage: string;
         role: string;
+        tipo_usuario: string;
+        createdAt: Date;
+        updatedAt: Date;
         order: import("../../orders/entities/order.entity").Order[];
     }>;
     login(user: any): Promise<{

@@ -16,6 +16,8 @@ const products_module_1 = require("./products/products.module");
 const orders_module_1 = require("./orders/orders.module");
 const propina_module_1 = require("./propina/propina.module");
 const typeorm_1 = require("@nestjs/typeorm");
+const serve_static_1 = require("@nestjs/serve-static");
+const path_1 = require("path");
 const customer_module_1 = require("./customer/customer.module");
 const mesas_module_1 = require("./mesas/mesas.module");
 const gastos_module_1 = require("./gastos/gastos.module");
@@ -40,6 +42,10 @@ exports.AppModule = AppModule = __decorate([
                 database: 'pub_app',
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
                 synchronize: true,
+            }),
+            serve_static_1.ServeStaticModule.forRoot({
+                rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
+                serveRoot: '/uploads',
             }),
             users_module_1.UsersModule, categories_module_1.CategoriesModule, gastos_module_1.GastosModule, products_module_1.ProductsModule, orders_module_1.OrdersModule, propina_module_1.PropinaModule, customer_module_1.CustomerModule, mesas_module_1.MesasModule, gastos_module_1.GastosModule, categoria_gasto_module_1.CategoriaGastoModule, auth_module_1.AuthModule, products_orders_module_1.ProductsOrdersModule, horarios_module_1.HorariosModule, theme_module_1.ThemeModule
         ],

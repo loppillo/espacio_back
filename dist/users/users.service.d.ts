@@ -8,9 +8,11 @@ export declare class UsersService {
     create(createUserDto: CreateUserDto): Promise<User>;
     findAll(): Promise<User[]>;
     findOne(id: number): Promise<User>;
-    update(id: number, updateUserDto: UpdateUserDto): Promise<import("typeorm").UpdateResult>;
-    remove(id: number): Promise<import("typeorm").DeleteResult>;
-    createUser(name: string, password: string, role?: string): Promise<User>;
+    update(id: number, updateUserDto: UpdateUserDto): Promise<User>;
+    remove(id: number): Promise<{
+        message: string;
+    }>;
     findByUsername(name: string): Promise<User | undefined>;
     validateUser(username: string, password: string): Promise<User | null>;
+    private deleteOldImage;
 }

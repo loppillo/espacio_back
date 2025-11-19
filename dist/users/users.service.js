@@ -41,41 +41,78 @@ const user_entity_1 = require("./entities/user.entity");
 const typeorm_1 = require("typeorm");
 const typeorm_2 = require("@nestjs/typeorm");
 const bcrypt = __importStar(require("bcrypt"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 let UsersService = class UsersService {
     constructor(userRepository) {
         this.userRepository = userRepository;
     }
     async create(createUserDto) {
         try {
-            const { name, password, profileImage } = createUserDto;
+            const existingUser = await this.userRepository.findOne({
+                where: { name: createUserDto.name },
+            });
+            if (existingUser) {
+                throw new common_1.ConflictException('El nombre de usuario ya existe');
+            }
+            const { password, ...userData } = createUserDto;
             const hashedPassword = await bcrypt.hash(password, 10);
             const newUser = this.userRepository.create({
-                ...createUserDto,
+                ...userData,
                 password: hashedPassword,
-                profileImage,
             });
-            return await this.userRepository.save(newUser);
+            const savedUser = await this.userRepository.save(newUser);
+            delete savedUser.password;
+            return savedUser;
         }
         catch (error) {
-            throw new Error(`Error al crear usuario: ${error.message}`);
+            if (error instanceof common_1.ConflictException) {
+                throw error;
+            }
+            throw new common_1.BadRequestException(`Error al crear usuario: ${error.message}`);
         }
     }
     async findAll() {
-        return await this.userRepository.find();
+        const users = await this.userRepository.find();
+        return users.map(user => {
+            delete user.password;
+            return user;
+        });
     }
     async findOne(id) {
-        return await this.userRepository.findOneBy({ id });
+        const user = await this.userRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new common_1.NotFoundException(`Usuario con ID ${id} no encontrado`);
+        }
+        delete user.password;
+        return user;
     }
     async update(id, updateUserDto) {
-        return await this.userRepository.update(id, updateUserDto);
+        const user = await this.userRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new common_1.NotFoundException(`Usuario con ID ${id} no encontrado`);
+        }
+        if (updateUserDto.password) {
+            updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+        }
+        if (updateUserDto.profileImage && user.profileImage) {
+            this.deleteOldImage(user.profileImage);
+        }
+        Object.assign(user, updateUserDto);
+        const updatedUser = await this.userRepository.save(user);
+        delete updatedUser.password;
+        return updatedUser;
     }
     async remove(id) {
-        return await this.userRepository.delete(id);
-    }
-    async createUser(name, password, role) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = this.userRepository.create({ name, password: hashedPassword, role });
-        return this.userRepository.save(user);
+        const user = await this.userRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new common_1.NotFoundException(`Usuario con ID ${id} no encontrado`);
+        }
+        if (user.profileImage) {
+            this.deleteOldImage(user.profileImage);
+        }
+        await this.userRepository.delete(id);
+        return { message: `Usuario con ID ${id} eliminado correctamente` };
     }
     async findByUsername(name) {
         return this.userRepository.findOne({ where: { name } });
@@ -86,6 +123,17 @@ let UsersService = class UsersService {
             return user;
         }
         return null;
+    }
+    deleteOldImage(imagePath) {
+        try {
+            const fullPath = path.join(process.cwd(), imagePath);
+            if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+            }
+        }
+        catch (error) {
+            console.error('Error al eliminar imagen:', error);
+        }
     }
 };
 exports.UsersService = UsersService;
