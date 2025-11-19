@@ -10,15 +10,14 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   profileImage: string;
-  
+
+  @IsOptional()
   @IsString()
   role: string;
-  
 
-   @IsOptional()
+  @IsOptional()
   @IsString()
   tipo_usuario: string;
-
 }
 
 

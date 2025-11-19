@@ -1,5 +1,5 @@
 import { Order } from 'src/orders/entities/order.entity';
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('users')
 export class User {
@@ -15,12 +15,18 @@ export class User {
   @Column({ nullable: true })
   profileImage: string;
 
-
   @Column({ nullable: true })
   role: string;
 
-  @OneToMany(()=>Order,(order)=>order.user)
-  order:Order[];
- 
+  @Column({ nullable: true })
+  tipo_usuario: string;
 
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @OneToMany(() => Order, (order) => order.user)
+  order: Order[];
 }

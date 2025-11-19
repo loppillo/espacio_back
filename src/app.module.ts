@@ -7,6 +7,8 @@ import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { PropinaModule } from './propina/propina.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 import { CustomerModule } from './customer/customer.module';
 import { MesasModule } from './mesas/mesas.module';
@@ -24,7 +26,7 @@ import { ThemeModule } from './theme/theme.module';
 
 
 @Module({
-imports: [
+  imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
@@ -35,9 +37,12 @@ imports: [
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
-
- UsersModule, CategoriesModule,GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule],
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
+    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule],
   controllers: [AppController],
   providers: [AppService, OrdersGateway],
 })
-export class AppModule {}
+export class AppModule { }

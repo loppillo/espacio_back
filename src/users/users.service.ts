@@ -1,57 +1,113 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
+
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    
-  ) {}
+  ) { }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      const { name, password, profileImage } = createUserDto;
-  
+      // Verificar si el usuario ya existe
+      const existingUser = await this.userRepository.findOne({
+        where: { name: createUserDto.name },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('El nombre de usuario ya existe');
+      }
+
+      const { password, ...userData } = createUserDto;
+
       // Encriptar contraseña
       const hashedPassword = await bcrypt.hash(password, 10);
-  
+
       const newUser = this.userRepository.create({
-        ...createUserDto,
+        ...userData,
         password: hashedPassword,
-        profileImage,
       });
-  
-      return await this.userRepository.save(newUser);
+
+      const savedUser = await this.userRepository.save(newUser);
+
+      // No devolver la contraseña en la respuesta
+      delete savedUser.password;
+      return savedUser;
     } catch (error) {
-      // Manejo de errores si falla la creación del usuario
-      throw new Error(`Error al crear usuario: ${error.message}`);
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException(`Error al crear usuario: ${error.message}`);
     }
-  } 
-
-  async findAll() {
-    return await this.userRepository.find();
   }
 
-  async findOne(id: number) {
-    return await this.userRepository.findOneBy({id});
+  async findAll(): Promise<User[]> {
+    const users = await this.userRepository.find();
+    // Remover contraseñas de la respuesta
+    return users.map(user => {
+      delete user.password;
+      return user;
+    });
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
-    return await this.userRepository.update(id,updateUserDto);
+  async findOne(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+
+    delete user.password;
+    return user;
   }
 
-  async remove(id: number) {
-    return await this.userRepository.delete(id);
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+
+    // Si se está actualizando la contraseña, encriptarla
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    // Si se está actualizando la imagen y existe una anterior, eliminarla
+    if (updateUserDto.profileImage && user.profileImage) {
+      this.deleteOldImage(user.profileImage);
+    }
+
+    // Actualizar el usuario
+    Object.assign(user, updateUserDto);
+    const updatedUser = await this.userRepository.save(user);
+
+    delete updatedUser.password;
+    return updatedUser;
   }
-   async createUser(name: string, password: string, role?: string): Promise<User> {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = this.userRepository.create({ name, password: hashedPassword, role });
-    return this.userRepository.save(user);
+
+  async remove(id: number): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+
+    // Eliminar imagen de perfil si existe
+    if (user.profileImage) {
+      this.deleteOldImage(user.profileImage);
+    }
+
+    await this.userRepository.delete(id);
+    return { message: `Usuario con ID ${id} eliminado correctamente` };
   }
 
   async findByUsername(name: string): Promise<User | undefined> {
@@ -64,6 +120,19 @@ export class UsersService {
       return user;
     }
     return null;
+  }
+
+  // Método privado para eliminar imagen antigua
+  private deleteOldImage(imagePath: string): void {
+    try {
+      const fullPath = path.join(process.cwd(), imagePath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    } catch (error) {
+      console.error('Error al eliminar imagen:', error);
+      // No lanzar error, solo loggear
+    }
   }
 }
 

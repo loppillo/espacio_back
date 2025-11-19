@@ -28,6 +28,7 @@
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/platform-socket.io": "^10.4.20",
     "@nestjs/schedule": "^6.0.0",
+    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/typeorm": "^10.0.2",
     "@nestjs/websockets": "^10.4.20",
     "bcrypt": "^5.1.1",
