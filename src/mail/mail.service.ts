@@ -11,10 +11,13 @@ export class MailService {
     const hasCredentials = process.env.MAIL_USER && process.env.MAIL_PASSWORD;
 
     if (hasCredentials) {
+      const port = parseInt(process.env.MAIL_PORT) || 587;
+      const isSecure = process.env.MAIL_IS_SECURE === 'true' || port === 465;
+
       this.transporter = nodemailer.createTransport({
         host: process.env.MAIL_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.MAIL_PORT) || 587,
-        secure: false, // true for 465, false for other ports
+        port: port,
+        secure: isSecure, // true para 465 (SSL/TLS), false para 587 (STARTTLS)
         auth: {
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASSWORD,
@@ -22,6 +25,7 @@ export class MailService {
       });
       this.isConfigured = true;
       console.log('✅ Servicio de email configurado correctamente');
+      console.log(`📧 Host: ${process.env.MAIL_HOST}, Puerto: ${port}, Secure: ${isSecure}`);
     } else {
       this.isConfigured = false;
       console.warn('⚠️ Servicio de email NO configurado - Agrega MAIL_USER y MAIL_PASSWORD en tu archivo .env');
