@@ -13,19 +13,32 @@ export class MailService {
     if (hasCredentials) {
       const port = parseInt(process.env.MAIL_PORT) || 587;
       const isSecure = process.env.MAIL_IS_SECURE === 'true' || port === 465;
+      const host = process.env.MAIL_HOST || 'smtp.gmail.com';
 
       this.transporter = nodemailer.createTransport({
-        host: process.env.MAIL_HOST || 'smtp.gmail.com',
+        host: host,
         port: port,
-        secure: isSecure, // true para 465 (SSL/TLS), false para 587 (STARTTLS)
+        secure: isSecure, // true para 465 (SSL/TLS)
+        requireTLS: isSecure, // Fuerza TLS
         auth: {
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASSWORD,
         },
+        tls: {
+          rejectUnauthorized: false, // Acepta certificados autofirmados
+          minVersion: 'TLSv1.2', // Versión mínima de TLS
+          servername: host, // SNI
+        },
+        connectionTimeout: 30000, // 30 segundos
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
+        debug: false, // Desactivar debug para producción
+        logger: false,
       });
       this.isConfigured = true;
       console.log('✅ Servicio de email configurado correctamente');
-      console.log(`📧 Host: ${process.env.MAIL_HOST}, Puerto: ${port}, Secure: ${isSecure}`);
+      console.log(`📧 Host: ${host}, Puerto: ${port}, Secure: ${isSecure}`);
+      console.log(`🔐 Usuario: ${process.env.MAIL_USER}`);
     } else {
       this.isConfigured = false;
       console.warn('⚠️ Servicio de email NO configurado - Agrega MAIL_USER y MAIL_PASSWORD en tu archivo .env');
@@ -47,7 +60,7 @@ export class MailService {
   }) {
     // Si no está configurado, salir sin error
     if (!this.isConfigured) {
-      console.log('⚠️ Email no enviado - servicio no configurado. Crea un archivo .env con las variables MAIL_*');
+      console.log('⚠️ Email no enviado - servicio no configurado');
       return;
     }
 
@@ -275,15 +288,16 @@ export class MailService {
     `;
 
     try {
-      await this.transporter.sendMail({
-        from: process.env.MAIL_FROM || process.env.MAIL_USER,
+      console.log(`📤 Enviando email a ${customerEmail}...`);
+      const info = await this.transporter.sendMail({
+        from: `"Espacio Boulevard" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`,
         to: customerEmail,
         subject: `¡Pedido confirmado! #${numeroVenta}`,
         html: htmlContent,
       });
-      console.log(`✅ Email enviado a ${customerEmail}`);
+      console.log(`✅ Email enviado: ${info.messageId}`);
     } catch (error) {
-      console.error('❌ Error al enviar email:', error);
+      console.error('❌ Error al enviar email:', error.message);
       // No lanzamos error para no interrumpir la creación de la orden
     }
   }
