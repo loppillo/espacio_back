@@ -44,8 +44,12 @@ import { MailModule } from './mail/mail.module';
       synchronize: true,
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'), // Usa process.cwd() para que funcione en producción
       serveRoot: '/uploads',
+      serveStaticOptions: {
+        index: false,
+        fallthrough: true,
+      },
     }),
     UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule],
   controllers: [AppController],
