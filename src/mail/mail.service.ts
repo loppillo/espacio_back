@@ -3,60 +3,77 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
-    private transporter;
+  private transporter;
+  private isConfigured: boolean;
 
-    constructor() {
-        this.transporter = nodemailer.createTransport({
-            host: process.env.MAIL_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.MAIL_PORT) || 587,
-            secure: false, // true for 465, false for other ports
-            auth: {
-                user: process.env.MAIL_USER,
-                pass: process.env.MAIL_PASSWORD,
-            },
-        });
+  constructor() {
+    // Verificar si las credenciales están configuradas
+    const hasCredentials = process.env.MAIL_USER && process.env.MAIL_PASSWORD;
+
+    if (hasCredentials) {
+      this.transporter = nodemailer.createTransport({
+        host: process.env.MAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.MAIL_PORT) || 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASSWORD,
+        },
+      });
+      this.isConfigured = true;
+      console.log('✅ Servicio de email configurado correctamente');
+    } else {
+      this.isConfigured = false;
+      console.warn('⚠️ Servicio de email NO configurado - Agrega MAIL_USER y MAIL_PASSWORD en tu archivo .env');
+    }
+  }
+
+  async sendOrderConfirmation(orderData: {
+    customerEmail: string;
+    customerName: string;
+    numeroVenta: number;
+    fecha: string;
+    orderType: string;
+    customerAddress?: string;
+    tiempoEstimado?: string;
+    products: Array<{ name: string; cantidad: number; price: number }>;
+    subtotal: number;
+    costoEnvio: number;
+    total: number;
+  }) {
+    // Si no está configurado, salir sin error
+    if (!this.isConfigured) {
+      console.log('⚠️ Email no enviado - servicio no configurado. Crea un archivo .env con las variables MAIL_*');
+      return;
     }
 
-    async sendOrderConfirmation(orderData: {
-        customerEmail: string;
-        customerName: string;
-        numeroVenta: number;
-        fecha: string;
-        orderType: string;
-        customerAddress?: string;
-        tiempoEstimado?: string;
-        products: Array<{ name: string; cantidad: number; price: number }>;
-        subtotal: number;
-        costoEnvio: number;
-        total: number;
-    }) {
-        const {
-            customerEmail,
-            customerName,
-            numeroVenta,
-            fecha,
-            orderType,
-            customerAddress,
-            tiempoEstimado,
-            products,
-            subtotal,
-            costoEnvio,
-            total,
-        } = orderData;
+    const {
+      customerEmail,
+      customerName,
+      numeroVenta,
+      fecha,
+      orderType,
+      customerAddress,
+      tiempoEstimado,
+      products,
+      subtotal,
+      costoEnvio,
+      total,
+    } = orderData;
 
-        // Generar la tabla de productos
-        const productRows = products
-            .map(
-                (p) => `
+    // Generar la tabla de productos
+    const productRows = products
+      .map(
+        (p) => `
         <tr>
           <td style="padding: 8px; border-bottom: 1px solid #eee;">(${p.cantidad}) ${p.name}</td>
           <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$ ${p.price.toLocaleString('es-CL')}</td>
         </tr>
       `,
-            )
-            .join('');
+      )
+      .join('');
 
-        const htmlContent = `
+    const htmlContent = `
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -197,23 +214,23 @@ export class MailService {
           <span class="info-value">${orderType === 'delivery' ? 'Envío a domicilio' : orderType}</span>
         </div>
         ${customerAddress
-                ? `
+        ? `
         <div class="info-row">
           <span class="info-label">Dirección:</span>
           <span class="info-value">${customerAddress}</span>
         </div>
         `
-                : ''
-            }
+        : ''
+      }
         ${tiempoEstimado
-                ? `
+        ? `
         <div class="info-row">
           <span class="info-label">Tiempo estimado:</span>
           <span class="info-value">${tiempoEstimado}</span>
         </div>
         `
-                : ''
-            }
+        : ''
+      }
       </div>
 
       <table class="products-table">
@@ -253,17 +270,17 @@ export class MailService {
 </html>
     `;
 
-        try {
-            await this.transporter.sendMail({
-                from: process.env.MAIL_FROM || process.env.MAIL_USER,
-                to: customerEmail,
-                subject: `¡Pedido confirmado! #${numeroVenta}`,
-                html: htmlContent,
-            });
-            console.log(`✅ Email enviado a ${customerEmail}`);
-        } catch (error) {
-            console.error('❌ Error al enviar email:', error);
-            // No lanzamos error para no interrumpir la creación de la orden
-        }
+    try {
+      await this.transporter.sendMail({
+        from: process.env.MAIL_FROM || process.env.MAIL_USER,
+        to: customerEmail,
+        subject: `¡Pedido confirmado! #${numeroVenta}`,
+        html: htmlContent,
+      });
+      console.log(`✅ Email enviado a ${customerEmail}`);
+    } catch (error) {
+      console.error('❌ Error al enviar email:', error);
+      // No lanzamos error para no interrumpir la creación de la orden
     }
+  }
 }

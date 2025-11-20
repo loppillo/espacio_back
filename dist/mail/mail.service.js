@@ -37,17 +37,30 @@ const common_1 = require("@nestjs/common");
 const nodemailer = __importStar(require("nodemailer"));
 let MailService = class MailService {
     constructor() {
-        this.transporter = nodemailer.createTransport({
-            host: process.env.MAIL_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.MAIL_PORT) || 587,
-            secure: false,
-            auth: {
-                user: process.env.MAIL_USER,
-                pass: process.env.MAIL_PASSWORD,
-            },
-        });
+        const hasCredentials = process.env.MAIL_USER && process.env.MAIL_PASSWORD;
+        if (hasCredentials) {
+            this.transporter = nodemailer.createTransport({
+                host: process.env.MAIL_HOST || 'smtp.gmail.com',
+                port: parseInt(process.env.MAIL_PORT) || 587,
+                secure: false,
+                auth: {
+                    user: process.env.MAIL_USER,
+                    pass: process.env.MAIL_PASSWORD,
+                },
+            });
+            this.isConfigured = true;
+            console.log('✅ Servicio de email configurado correctamente');
+        }
+        else {
+            this.isConfigured = false;
+            console.warn('⚠️ Servicio de email NO configurado - Agrega MAIL_USER y MAIL_PASSWORD en tu archivo .env');
+        }
     }
     async sendOrderConfirmation(orderData) {
+        if (!this.isConfigured) {
+            console.log('⚠️ Email no enviado - servicio no configurado. Crea un archivo .env con las variables MAIL_*');
+            return;
+        }
         const { customerEmail, customerName, numeroVenta, fecha, orderType, customerAddress, tiempoEstimado, products, subtotal, costoEnvio, total, } = orderData;
         const productRows = products
             .map((p) => `

@@ -1,5 +1,6 @@
 export declare class MailService {
     private transporter;
+    private isConfigured;
     constructor();
     sendOrderConfirmation(orderData: {
         customerEmail: string;
