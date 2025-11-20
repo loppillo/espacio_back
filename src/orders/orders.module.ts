@@ -11,6 +11,7 @@ import { Propina } from 'src/propina/entities/propina.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 import { PrintService } from './print/print.service';
 import { OrdersGateway } from './orders.gateway';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OrdersGateway } from './orders.gateway';
       Mesa,
       ProductsOrders,
     ]),
+    MailModule,
   ],
   controllers: [OrdersController],
   providers: [
@@ -34,5 +36,5 @@ import { OrdersGateway } from './orders.gateway';
     OrdersGateway, // ✅ SOLO ahora tiene sentido exportarlo
   ],
 })
-export class OrdersModule {}
+export class OrdersModule { }
 

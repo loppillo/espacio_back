@@ -24,8 +24,9 @@ const propina_entity_1 = require("../propina/entities/propina.entity");
 const mesa_entity_1 = require("../mesas/entities/mesa.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
 const orders_gateway_1 = require("./orders.gateway");
+const mail_service_1 = require("../mail/mail.service");
 let OrdersService = class OrdersService {
-    constructor(dataSource, orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, productsOrdersRepository, ordersGateway) {
+    constructor(dataSource, orderRepository, userRepository, customerRepository, productRepository, propinaRepository, mesaRepository, productsOrdersRepository, ordersGateway, mailService) {
         this.dataSource = dataSource;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
@@ -35,6 +36,7 @@ let OrdersService = class OrdersService {
         this.mesaRepository = mesaRepository;
         this.productsOrdersRepository = productsOrdersRepository;
         this.ordersGateway = ordersGateway;
+        this.mailService = mailService;
     }
     async update(id, dto) {
         const order = await this.orderRepository.findOne({
@@ -223,6 +225,37 @@ let OrdersService = class OrdersService {
         });
         const sanitized = this.sanitizeOrder(full);
         Promise.resolve().then(() => this.ordersGateway.notifyNewOrder(sanitized));
+        if (customer.customerEmail) {
+            try {
+                const productsForEmail = ops.map(op => ({
+                    name: op.product.name,
+                    cantidad: op.cantidad,
+                    price: op.subtotal,
+                }));
+                await this.mailService.sendOrderConfirmation({
+                    customerEmail: customer.customerEmail,
+                    customerName: customer.customerName,
+                    numeroVenta: nextNumeroVenta,
+                    fecha: new Date().toLocaleString('es-CL', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    }),
+                    orderType: 'Envío a domicilio',
+                    customerAddress: customer.customerAddress || 'No especificada',
+                    tiempoEstimado: '50 minutos',
+                    products: productsForEmail,
+                    subtotal: total,
+                    costoEnvio: propina,
+                    total: order.total,
+                });
+            }
+            catch (error) {
+                console.error('Error al enviar email, pero la orden se creó correctamente:', error);
+            }
+        }
         return sanitized;
     }
     async findAll() {
@@ -590,6 +623,7 @@ exports.OrdersService = OrdersService = __decorate([
         typeorm_1.Repository,
         typeorm_1.Repository,
         typeorm_1.Repository,
-        orders_gateway_1.OrdersGateway])
+        orders_gateway_1.OrdersGateway,
+        mail_service_1.MailService])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

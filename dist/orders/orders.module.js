@@ -20,6 +20,7 @@ const propina_entity_1 = require("../propina/entities/propina.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
 const print_service_1 = require("./print/print.service");
 const orders_gateway_1 = require("./orders.gateway");
+const mail_module_1 = require("../mail/mail.module");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -35,6 +36,7 @@ exports.OrdersModule = OrdersModule = __decorate([
                 mesa_entity_1.Mesa,
                 products_order_entity_1.ProductsOrders,
             ]),
+            mail_module_1.MailModule,
         ],
         controllers: [orders_controller_1.OrdersController],
         providers: [

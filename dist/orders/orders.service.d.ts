@@ -10,6 +10,7 @@ import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 import { OrdersGateway } from './orders.gateway';
+import { MailService } from 'src/mail/mail.service';
 export declare class OrdersService {
     private dataSource;
     private readonly orderRepository;
@@ -20,7 +21,8 @@ export declare class OrdersService {
     private readonly mesaRepository;
     private readonly productsOrdersRepository;
     private ordersGateway;
-    constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway);
+    private mailService;
+    constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway, mailService: MailService);
     update(id: number, dto: UpdateOrderDto & {
         propinaTipo?: string;
         propinaValor?: number;

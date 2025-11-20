@@ -23,6 +23,7 @@ import { JwtAuthGuard } from './auth/guard/jwt-auth.guard';
 import { RolesGuard } from './roles/roles.guard';
 import { OrdersGateway } from './orders/orders.gateway';
 import { ThemeModule } from './theme/theme.module';
+import { MailModule } from './mail/mail.module';
 
 
 @Module({
@@ -41,7 +42,7 @@ import { ThemeModule } from './theme/theme.module';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule],
+    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule],
   controllers: [AppController],
   providers: [AppService, OrdersGateway],
 })
