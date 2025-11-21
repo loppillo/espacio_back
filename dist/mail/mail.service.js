@@ -21,13 +21,23 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -39,17 +49,33 @@ let MailService = class MailService {
     constructor() {
         const hasCredentials = process.env.MAIL_USER && process.env.MAIL_PASSWORD;
         if (hasCredentials) {
+            const port = parseInt(process.env.MAIL_PORT) || 587;
+            const isSecure = process.env.MAIL_IS_SECURE === 'true' || port === 465;
+            const host = process.env.MAIL_HOST || 'smtp.gmail.com';
             this.transporter = nodemailer.createTransport({
-                host: process.env.MAIL_HOST || 'smtp.gmail.com',
-                port: parseInt(process.env.MAIL_PORT) || 587,
-                secure: false,
+                host: host,
+                port: port,
+                secure: isSecure,
+                requireTLS: isSecure,
                 auth: {
                     user: process.env.MAIL_USER,
                     pass: process.env.MAIL_PASSWORD,
                 },
+                tls: {
+                    rejectUnauthorized: false,
+                    minVersion: 'TLSv1.2',
+                    servername: host,
+                },
+                connectionTimeout: 30000,
+                greetingTimeout: 30000,
+                socketTimeout: 30000,
+                debug: false,
+                logger: false,
             });
             this.isConfigured = true;
             console.log('✅ Servicio de email configurado correctamente');
+            console.log(`📧 Host: ${host}, Puerto: ${port}, Secure: ${isSecure}`);
+            console.log(`🔐 Usuario: ${process.env.MAIL_USER}`);
         }
         else {
             this.isConfigured = false;
@@ -58,7 +84,7 @@ let MailService = class MailService {
     }
     async sendOrderConfirmation(orderData) {
         if (!this.isConfigured) {
-            console.log('⚠️ Email no enviado - servicio no configurado. Crea un archivo .env con las variables MAIL_*');
+            console.log('⚠️ Email no enviado - servicio no configurado');
             return;
         }
         const { customerEmail, customerName, numeroVenta, fecha, orderType, customerAddress, tiempoEstimado, products, subtotal, costoEnvio, total, } = orderData;
@@ -265,16 +291,17 @@ let MailService = class MailService {
 </html>
     `;
         try {
-            await this.transporter.sendMail({
-                from: process.env.MAIL_FROM || process.env.MAIL_USER,
+            console.log(`📤 Enviando email a ${customerEmail}...`);
+            const info = await this.transporter.sendMail({
+                from: `"Espacio Boulevard" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`,
                 to: customerEmail,
                 subject: `¡Pedido confirmado! #${numeroVenta}`,
                 html: htmlContent,
             });
-            console.log(`✅ Email enviado a ${customerEmail}`);
+            console.log(`✅ Email enviado: ${info.messageId}`);
         }
         catch (error) {
-            console.error('❌ Error al enviar email:', error);
+            console.error('❌ Error al enviar email:', error.message);
         }
     }
 };
