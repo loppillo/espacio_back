@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, PrimaryColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, PrimaryColumn, DeleteDateColumn } from 'typeorm';
 import { Order } from 'src/orders/entities/order.entity';
 import { Product } from 'src/products/entities/product.entity';
 
@@ -26,4 +26,7 @@ export class ProductsOrders {
 
   @Column('int')
   subtotal: number;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt?: Date;
 }

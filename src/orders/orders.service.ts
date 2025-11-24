@@ -467,15 +467,32 @@ export class OrdersService {
     return updatedOrder;
   }
 
-  async getHistorialPorMesa(mesaId: number) {
-    const pedidos = await this.orderRepository.find({
-      where: { mesaId }, // ✅ usa la columna directa
-      relations: ['orderProducts', 'orderProducts.product'],
-      order: { createdAt: 'DESC' },
-    });
+  async getHistorialPorMesa(mesaId: number, fecha?: string) {
+    let queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+      .leftJoinAndSelect('orderProducts.product', 'product')
+      .where('order.mesaId = :mesaId', { mesaId })
+      .orderBy('order.createdAt', 'DESC');
+
+    // Si se proporciona fecha, filtrar por ese día específico
+    if (fecha) {
+      const inicio = new Date(fecha);
+      inicio.setHours(0, 0, 0, 0);
+
+      const fin = new Date(fecha);
+      fin.setHours(23, 59, 59, 999);
+
+      queryBuilder = queryBuilder.andWhere(
+        'order.createdAt BETWEEN :inicio AND :fin',
+        { inicio, fin }
+      );
+    }
+
+    const pedidos = await queryBuilder.getMany();
 
     if (!pedidos.length) {
-      console.warn('⚠️ No se encontraron pedidos para la mesa', mesaId);
+      console.warn('⚠️ No se encontraron pedidos para la mesa', mesaId, fecha ? `en la fecha ${fecha}` : '');
       return [];
     }
 
@@ -487,6 +504,13 @@ export class OrdersService {
         status: pedido.status,
         estado: pedido.estado,
         createdAt: pedido.createdAt,
+        fechaHora: pedido.createdAt.toLocaleString('es-CL', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         propina: pedido.propina,
         totalProductos,
         totalPedido: totalProductos + (pedido.propina || 0),
@@ -809,6 +833,196 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  // ==========================================
+  // 🔹 Métodos CRUD específicos para Mesa
+  // ==========================================
+
+  /**
+   * Crear una orden para una mesa específica
+   */
+  async crearOrdenPorMesa(mesaId: number, createOrderDto: CreateOrderDto) {
+    // Validar que la mesa existe
+    const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+    if (!mesa) {
+      throw new NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+    }
+
+    // Asignar el mesaId al DTO
+    createOrderDto.mesaId = mesaId;
+
+    // Usar el método create existente
+    return this.create(createOrderDto);
+  }
+
+  /**
+   * Obtener todas las órdenes de una mesa específica
+   * @param mesaId - ID de la mesa
+   * @param estado - Opcional: filtrar por estado ('activo', 'pagado', 'cancelado')
+   */
+  async obtenerOrdenesPorMesa(mesaId: number, estado?: string) {
+    // Validar que la mesa existe
+    const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+    if (!mesa) {
+      throw new NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+    }
+
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+      .leftJoinAndSelect('orderProducts.product', 'product')
+      .leftJoinAndSelect('order.customer', 'customer')
+      .leftJoinAndSelect('order.mesa', 'mesa')
+      .where('order.mesaId = :mesaId', { mesaId })
+      .orderBy('order.createdAt', 'DESC');
+
+    // Filtro opcional por estado
+    if (estado) {
+      queryBuilder.andWhere('order.estado = :estado', { estado });
+    }
+
+    const ordenes = await queryBuilder.getMany();
+
+    // Devolver órdenes sanitizadas
+    return ordenes.map(orden => this.sanitizeOrder(orden));
+  }
+
+  /**
+   * Obtener una orden específica de una mesa
+   */
+  async obtenerOrdenEspecifica(mesaId: number, ordenId: number) {
+    // Validar que la mesa existe
+    const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+    if (!mesa) {
+      throw new NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+    }
+
+    // Buscar la orden
+    const orden = await this.orderRepository.findOne({
+      where: { id: ordenId, mesaId },
+      relations: {
+        orderProducts: {
+          product: true,
+        },
+        customer: true,
+        mesa: true,
+      }
+    });
+
+    if (!orden) {
+      throw new NotFoundException(
+        `Orden con ID ${ordenId} no encontrada para la mesa ${mesaId}`
+      );
+    }
+
+    return this.sanitizeOrder(orden);
+  }
+
+  /**
+   * Actualizar una orden específica de una mesa
+   */
+  async actualizarOrdenPorMesa(
+    mesaId: number,
+    ordenId: number,
+    updateOrderDto: UpdateOrderDto
+  ) {
+    // Validar que la mesa existe
+    const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+    if (!mesa) {
+      throw new NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+    }
+
+    // Validar que la orden existe y pertenece a la mesa
+    const orden = await this.orderRepository.findOne({
+      where: { id: ordenId, mesaId },
+      relations: ['mesa'],
+    });
+
+    if (!orden) {
+      throw new NotFoundException(
+        `Orden con ID ${ordenId} no encontrada para la mesa ${mesaId}`
+      );
+    }
+
+    // Usar el método update existente
+    return this.update(ordenId, updateOrderDto);
+  }
+
+  /**
+   * Cancelar un producto de una orden específica (soft delete)
+   */
+  async cancelarProducto(mesaId: number, ordenId: number, productId: number) {
+    // Validar que la mesa existe
+    const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+    if (!mesa) {
+      throw new NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+    }
+
+    // Validar que la orden existe y pertenece a la mesa
+    const orden = await this.orderRepository.findOne({
+      where: { id: ordenId, mesaId },
+      relations: ['orderProducts', 'orderProducts.product'],
+    });
+
+    if (!orden) {
+      throw new NotFoundException(
+        `Orden con ID ${ordenId} no encontrada para la mesa ${mesaId}`
+      );
+    }
+
+    // Buscar el producto en la orden
+    const orderProduct = await this.productsOrdersRepository.findOne({
+      where: { orderId: ordenId, productId },
+    });
+
+    if (!orderProduct) {
+      throw new NotFoundException(
+        `Producto con ID ${productId} no encontrado en la orden ${ordenId}`
+      );
+    }
+
+    // Verificar si ya está cancelado
+    if (orderProduct.deletedAt) {
+      throw new BadRequestException('El producto ya está cancelado');
+    }
+
+    // Soft delete del producto
+    await this.productsOrdersRepository.softRemove(orderProduct);
+
+    // Obtener productos restantes (no cancelados)
+    const remainingProducts = await this.productsOrdersRepository.find({
+      where: { orderId: ordenId },
+    });
+
+    // Recalcular total
+    const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
+
+    // Actualizar orden
+    orden.total = newTotal + (orden.propina || 0);
+
+    // Si no quedan productos activos, marcar la orden
+    if (remainingProducts.length === 0) {
+      orden.status = 'vacío';
+      orden.propina = 0;
+      orden.total = 0;
+    }
+
+    await this.orderRepository.save(orden);
+
+    // Retornar orden actualizada completa
+    const updatedOrder = await this.orderRepository.findOne({
+      where: { id: ordenId },
+      relations: {
+        orderProducts: {
+          product: true,
+        },
+        customer: true,
+        mesa: true,
+      }
+    });
+
+    return this.sanitizeOrder(updatedOrder);
   }
 
 }

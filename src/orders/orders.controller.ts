@@ -17,7 +17,7 @@ export class OrdersController {
     private readonly printService: PrintService
   ) { }
 
-    @Patch(':id')
+  @Patch(':id')
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(+id, updateOrderDto);
   }
@@ -28,9 +28,9 @@ export class OrdersController {
   }
 
   @Get(':id')
-async getById(@Param('id') id: number) {
-  return this.ordersService.getById(id);
-}
+  async getById(@Param('id') id: number) {
+    return this.ordersService.getById(id);
+  }
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {
@@ -38,9 +38,12 @@ async getById(@Param('id') id: number) {
   }
 
   @Get('historial/:mesaId')
-  async getHistorialPorMesa(@Param('mesaId') mesaId: number) {
-    console.log('🧩 Mesa ID recibido:', mesaId);
-    return this.ordersService.getHistorialPorMesa(+mesaId);
+  async getHistorialPorMesa(
+    @Param('mesaId') mesaId: number,
+    @Query('fecha') fecha?: string
+  ) {
+    console.log('🧩 Mesa ID recibido:', mesaId, 'Fecha:', fecha);
+    return this.ordersService.getHistorialPorMesa(+mesaId, fecha);
   }
 
 
@@ -158,5 +161,70 @@ async getById(@Param('id') id: number) {
     return this.ordersService.cancelar(id);
   }
 
+  // ==========================================
+  // 🔹 CRUD específico para Mesa
+  // ==========================================
+
+  /**
+   * Crear una orden para una mesa específica
+   * POST /orders/mesa/:mesaId
+   */
+  @Post('mesa/:mesaId')
+  async crearOrdenPorMesa(
+    @Param('mesaId', ParseIntPipe) mesaId: number,
+    @Body() createOrderDto: CreateOrderDto
+  ) {
+    return this.ordersService.crearOrdenPorMesa(mesaId, createOrderDto);
+  }
+
+  /**
+   * Obtener todas las órdenes de una mesa específica
+   * GET /orders/mesa/:mesaId
+   */
+  @Get('mesa/:mesaId')
+  async obtenerOrdenesPorMesa(
+    @Param('mesaId', ParseIntPipe) mesaId: number,
+    @Query('estado') estado?: string
+  ) {
+    return this.ordersService.obtenerOrdenesPorMesa(mesaId, estado);
+  }
+
+  /**
+   * Obtener una orden específica de una mesa
+   * GET /orders/mesa/:mesaId/orden/:ordenId
+   */
+  @Get('mesa/:mesaId/orden/:ordenId')
+  async obtenerOrdenEspecifica(
+    @Param('mesaId', ParseIntPipe) mesaId: number,
+    @Param('ordenId', ParseIntPipe) ordenId: number
+  ) {
+    return this.ordersService.obtenerOrdenEspecifica(mesaId, ordenId);
+  }
+
+  /**
+   * Actualizar una orden específica de una mesa
+   * PATCH /orders/mesa/:mesaId/orden/:ordenId
+   */
+  @Patch('mesa/:mesaId/orden/:ordenId')
+  async actualizarOrdenPorMesa(
+    @Param('mesaId', ParseIntPipe) mesaId: number,
+    @Param('ordenId', ParseIntPipe) ordenId: number,
+    @Body() updateOrderDto: UpdateOrderDto
+  ) {
+    return this.ordersService.actualizarOrdenPorMesa(mesaId, ordenId, updateOrderDto);
+  }
+
+  /**
+   * Cancelar un producto específico de una orden (soft delete)
+   * PATCH /orders/mesa/:mesaId/orden/:ordenId/producto/:productId/cancelar
+   */
+  @Patch('mesa/:mesaId/orden/:ordenId/producto/:productId/cancelar')
+  async cancelarProducto(
+    @Param('mesaId', ParseIntPipe) mesaId: number,
+    @Param('ordenId', ParseIntPipe) ordenId: number,
+    @Param('productId', ParseIntPipe) productId: number
+  ) {
+    return this.ordersService.cancelarProducto(mesaId, ordenId, productId);
+  }
 
 }
