@@ -19,7 +19,7 @@ export class UsersService {
     try {
       // Verificar si el usuario ya existe
       const existingUser = await this.userRepository.findOne({
-        where: { name: createUserDto.name },
+        where: { username: createUserDto.username },
       });
 
       if (existingUser) {
@@ -110,8 +110,8 @@ export class UsersService {
     return { message: `Usuario con ID ${id} eliminado correctamente` };
   }
 
-  async findByUsername(name: string): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { name } });
+  async findByUsername(username: string): Promise<User | undefined> {
+    return this.userRepository.findOne({ where: { username } });
   }
 
   async validateUser(username: string, password: string): Promise<User | null> {
