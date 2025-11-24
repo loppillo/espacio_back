@@ -46,6 +46,10 @@ __decorate([
     (0, typeorm_1.Column)('int'),
     __metadata("design:type", Number)
 ], ProductsOrders.prototype, "subtotal", void 0);
+__decorate([
+    (0, typeorm_1.DeleteDateColumn)({ nullable: true }),
+    __metadata("design:type", Date)
+], ProductsOrders.prototype, "deletedAt", void 0);
 exports.ProductsOrders = ProductsOrders = __decorate([
     (0, typeorm_1.Entity)('order_products')
 ], ProductsOrders);

@@ -40,9 +40,9 @@ let OrdersController = class OrdersController {
     create(createOrderDto) {
         return this.ordersService.create(createOrderDto);
     }
-    async getHistorialPorMesa(mesaId) {
-        console.log('🧩 Mesa ID recibido:', mesaId);
-        return this.ordersService.getHistorialPorMesa(+mesaId);
+    async getHistorialPorMesa(mesaId, fecha) {
+        console.log('🧩 Mesa ID recibido:', mesaId, 'Fecha:', fecha);
+        return this.ordersService.getHistorialPorMesa(+mesaId, fecha);
     }
     creates(createOrderDto) {
         return this.ordersService.creates(createOrderDto);
@@ -104,6 +104,21 @@ let OrdersController = class OrdersController {
     async cancelar(id) {
         return this.ordersService.cancelar(id);
     }
+    async crearOrdenPorMesa(mesaId, createOrderDto) {
+        return this.ordersService.crearOrdenPorMesa(mesaId, createOrderDto);
+    }
+    async obtenerOrdenesPorMesa(mesaId, estado) {
+        return this.ordersService.obtenerOrdenesPorMesa(mesaId, estado);
+    }
+    async obtenerOrdenEspecifica(mesaId, ordenId) {
+        return this.ordersService.obtenerOrdenEspecifica(mesaId, ordenId);
+    }
+    async actualizarOrdenPorMesa(mesaId, ordenId, updateOrderDto) {
+        return this.ordersService.actualizarOrdenPorMesa(mesaId, ordenId, updateOrderDto);
+    }
+    async cancelarProducto(mesaId, ordenId, productId) {
+        return this.ordersService.cancelarProducto(mesaId, ordenId, productId);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -137,8 +152,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)('historial/:mesaId'),
     __param(0, (0, common_1.Param)('mesaId')),
+    __param(1, (0, common_1.Query)('fecha')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getHistorialPorMesa", null);
 __decorate([
@@ -244,6 +260,48 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "cancelar", null);
+__decorate([
+    (0, common_1.Post)('mesa/:mesaId'),
+    __param(0, (0, common_1.Param)('mesaId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, create_order_dto_1.CreateOrderDto]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "crearOrdenPorMesa", null);
+__decorate([
+    (0, common_1.Get)('mesa/:mesaId'),
+    __param(0, (0, common_1.Param)('mesaId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Query)('estado')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "obtenerOrdenesPorMesa", null);
+__decorate([
+    (0, common_1.Get)('mesa/:mesaId/orden/:ordenId'),
+    __param(0, (0, common_1.Param)('mesaId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Param)('ordenId', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "obtenerOrdenEspecifica", null);
+__decorate([
+    (0, common_1.Patch)('mesa/:mesaId/orden/:ordenId'),
+    __param(0, (0, common_1.Param)('mesaId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Param)('ordenId', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, update_order_dto_1.UpdateOrderDto]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "actualizarOrdenPorMesa", null);
+__decorate([
+    (0, common_1.Patch)('mesa/:mesaId/orden/:ordenId/producto/:productId/cancelar'),
+    __param(0, (0, common_1.Param)('mesaId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Param)('ordenId', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Param)('productId', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "cancelarProducto", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),

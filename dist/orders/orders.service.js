@@ -326,14 +326,23 @@ let OrdersService = class OrdersService {
         await this.orderRepository.save(updatedOrder);
         return updatedOrder;
     }
-    async getHistorialPorMesa(mesaId) {
-        const pedidos = await this.orderRepository.find({
-            where: { mesaId },
-            relations: ['orderProducts', 'orderProducts.product'],
-            order: { createdAt: 'DESC' },
-        });
+    async getHistorialPorMesa(mesaId, fecha) {
+        let queryBuilder = this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+            .leftJoinAndSelect('orderProducts.product', 'product')
+            .where('order.mesaId = :mesaId', { mesaId })
+            .orderBy('order.createdAt', 'DESC');
+        if (fecha) {
+            const inicio = new Date(fecha);
+            inicio.setHours(0, 0, 0, 0);
+            const fin = new Date(fecha);
+            fin.setHours(23, 59, 59, 999);
+            queryBuilder = queryBuilder.andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
+        }
+        const pedidos = await queryBuilder.getMany();
         if (!pedidos.length) {
-            console.warn('⚠️ No se encontraron pedidos para la mesa', mesaId);
+            console.warn('⚠️ No se encontraron pedidos para la mesa', mesaId, fecha ? `en la fecha ${fecha}` : '');
             return [];
         }
         return pedidos.map(pedido => {
@@ -344,6 +353,13 @@ let OrdersService = class OrdersService {
                 status: pedido.status,
                 estado: pedido.estado,
                 createdAt: pedido.createdAt,
+                fechaHora: pedido.createdAt.toLocaleString('es-CL', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }),
                 propina: pedido.propina,
                 totalProductos,
                 totalPedido: totalProductos + (pedido.propina || 0),
@@ -602,6 +618,112 @@ let OrdersService = class OrdersService {
             throw new common_1.NotFoundException('Pedido no encontrado');
         }
         return order;
+    }
+    async crearOrdenPorMesa(mesaId, createOrderDto) {
+        const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+        if (!mesa) {
+            throw new common_1.NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+        }
+        createOrderDto.mesaId = mesaId;
+        return this.create(createOrderDto);
+    }
+    async obtenerOrdenesPorMesa(mesaId, estado) {
+        const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+        if (!mesa) {
+            throw new common_1.NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+        }
+        const queryBuilder = this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+            .leftJoinAndSelect('orderProducts.product', 'product')
+            .leftJoinAndSelect('order.customer', 'customer')
+            .leftJoinAndSelect('order.mesa', 'mesa')
+            .where('order.mesaId = :mesaId', { mesaId })
+            .orderBy('order.createdAt', 'DESC');
+        if (estado) {
+            queryBuilder.andWhere('order.estado = :estado', { estado });
+        }
+        const ordenes = await queryBuilder.getMany();
+        return ordenes.map(orden => this.sanitizeOrder(orden));
+    }
+    async obtenerOrdenEspecifica(mesaId, ordenId) {
+        const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+        if (!mesa) {
+            throw new common_1.NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+        }
+        const orden = await this.orderRepository.findOne({
+            where: { id: ordenId, mesaId },
+            relations: {
+                orderProducts: {
+                    product: true,
+                },
+                customer: true,
+                mesa: true,
+            }
+        });
+        if (!orden) {
+            throw new common_1.NotFoundException(`Orden con ID ${ordenId} no encontrada para la mesa ${mesaId}`);
+        }
+        return this.sanitizeOrder(orden);
+    }
+    async actualizarOrdenPorMesa(mesaId, ordenId, updateOrderDto) {
+        const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+        if (!mesa) {
+            throw new common_1.NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+        }
+        const orden = await this.orderRepository.findOne({
+            where: { id: ordenId, mesaId },
+            relations: ['mesa'],
+        });
+        if (!orden) {
+            throw new common_1.NotFoundException(`Orden con ID ${ordenId} no encontrada para la mesa ${mesaId}`);
+        }
+        return this.update(ordenId, updateOrderDto);
+    }
+    async cancelarProducto(mesaId, ordenId, productId) {
+        const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
+        if (!mesa) {
+            throw new common_1.NotFoundException(`Mesa con ID ${mesaId} no encontrada`);
+        }
+        const orden = await this.orderRepository.findOne({
+            where: { id: ordenId, mesaId },
+            relations: ['orderProducts', 'orderProducts.product'],
+        });
+        if (!orden) {
+            throw new common_1.NotFoundException(`Orden con ID ${ordenId} no encontrada para la mesa ${mesaId}`);
+        }
+        const orderProduct = await this.productsOrdersRepository.findOne({
+            where: { orderId: ordenId, productId },
+        });
+        if (!orderProduct) {
+            throw new common_1.NotFoundException(`Producto con ID ${productId} no encontrado en la orden ${ordenId}`);
+        }
+        if (orderProduct.deletedAt) {
+            throw new common_1.BadRequestException('El producto ya está cancelado');
+        }
+        await this.productsOrdersRepository.softRemove(orderProduct);
+        const remainingProducts = await this.productsOrdersRepository.find({
+            where: { orderId: ordenId },
+        });
+        const newTotal = remainingProducts.reduce((sum, op) => sum + op.subtotal, 0);
+        orden.total = newTotal + (orden.propina || 0);
+        if (remainingProducts.length === 0) {
+            orden.status = 'vacío';
+            orden.propina = 0;
+            orden.total = 0;
+        }
+        await this.orderRepository.save(orden);
+        const updatedOrder = await this.orderRepository.findOne({
+            where: { id: ordenId },
+            relations: {
+                orderProducts: {
+                    product: true,
+                },
+                customer: true,
+                mesa: true,
+            }
+        });
+        return this.sanitizeOrder(updatedOrder);
     }
 };
 exports.OrdersService = OrdersService;

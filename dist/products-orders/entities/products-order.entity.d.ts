@@ -8,4 +8,5 @@ export declare class ProductsOrders {
     cantidad: number;
     precioUnitario: number;
     subtotal: number;
+    deletedAt?: Date;
 }

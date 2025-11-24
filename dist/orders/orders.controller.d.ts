@@ -14,12 +14,13 @@ export declare class OrdersController {
     obtenerPendientes(): Promise<Order[]>;
     getById(id: number): Promise<Order>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
-    getHistorialPorMesa(mesaId: number): Promise<{
+    getHistorialPorMesa(mesaId: number, fecha?: string): Promise<{
         numeroVenta: number;
         mesaId: number;
         status: string;
         estado: string;
         createdAt: Date;
+        fechaHora: string;
         propina: number;
         totalProductos: number;
         totalPedido: number;
@@ -70,4 +71,9 @@ export declare class OrdersController {
     cancelar(id: number): Promise<{
         message: string;
     }>;
+    crearOrdenPorMesa(mesaId: number, createOrderDto: CreateOrderDto): Promise<any>;
+    obtenerOrdenesPorMesa(mesaId: number, estado?: string): Promise<any[]>;
+    obtenerOrdenEspecifica(mesaId: number, ordenId: number): Promise<any>;
+    actualizarOrdenPorMesa(mesaId: number, ordenId: number, updateOrderDto: UpdateOrderDto): Promise<Order>;
+    cancelarProducto(mesaId: number, ordenId: number, productId: number): Promise<any>;
 }
