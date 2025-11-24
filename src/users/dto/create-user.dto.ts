@@ -22,5 +22,3 @@ export class CreateUserDto {
   @IsString()
   tipo_usuario: string;
 }
-
-
