@@ -6,6 +6,7 @@ import {
   ArrayNotEmpty,
   IsString,
   ValidateNested,
+  IsNumber,
 } from 'class-validator';
 
 
@@ -46,4 +47,17 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => OrderProductDto)
   products: OrderProductDto[];
+}
+
+export class ProductoCantidadDto {
+  @IsNumber()
+  productId: number;
+  @IsNumber()
+  cantidad: number;
+}
+export class AgregarProductosDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductoCantidadDto)
+  productos: ProductoCantidadDto[];
 }

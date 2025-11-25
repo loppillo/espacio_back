@@ -1025,4 +1025,62 @@ export class OrdersService {
     return this.sanitizeOrder(updatedOrder);
   }
 
+  async agregarProductosAOrden(mesaId: number, ordenId: number, productos: { productId: number; cantidad: number }[]) {
+    // 1. Buscar la orden y verificar que pertenezca a la mesa
+    const orden = await this.orderRepository.findOne({
+      where: { id: ordenId, mesaId: mesaId }, // Ajusta 'mesaId' si tu relación se llama diferente (ej. 'mesa')
+      relations: ['orderProducts', 'orderProducts.product'], // Ajusta nombres de relaciones
+    });
+    if (!orden) {
+      throw new NotFoundException(`Orden ${ordenId} no encontrada en la mesa ${mesaId}`);
+    }
+    if (orden.status === 'Pagado' || orden.status === 'Cancelado') {
+      throw new BadRequestException('No se pueden agregar productos a una orden cerrada');
+    }
+    // 2. Iterar sobre los productos a agregar/actualizar
+    for (const item of productos) {
+      const producto = await this.productRepository.findOne({ where: { id: item.productId } });
+      if (!producto) continue; // O lanzar error si prefieres
+      // Buscar si el producto ya existe en la orden
+      let orderProduct = orden.orderProducts.find((op) => op.product.id === item.productId);
+      if (orderProduct) {
+        // === ACTUALIZAR CANTIDAD ===
+        // El frontend envía la NUEVA cantidad total, no el delta.
+        orderProduct.cantidad = item.cantidad;
+        orderProduct.subtotal = orderProduct.cantidad * producto.price;
+        
+        if (orderProduct.cantidad <= 0) {
+            await this.productsOrdersRepository.remove(orderProduct);
+        } else {
+            await this.productsOrdersRepository.save(orderProduct);
+        }
+      } else {
+        // === AGREGAR NUEVO PRODUCTO ===
+        if (item.cantidad > 0) {
+            const newOrderProduct = this.productsOrdersRepository.create({
+              order: orden,
+              product: producto,
+              cantidad: item.cantidad,
+              precioUnitario: producto.price,
+              subtotal: item.cantidad * producto.price,
+            });
+            await this.productsOrdersRepository.save(newOrderProduct);
+        }
+      }
+    }
+    // 3. Recalcular y guardar el total de la orden
+    const ordenActualizada = await this.orderRepository.findOne({
+      where: { id: ordenId },
+      relations: ['orderProducts'],
+    });
+    
+    if (ordenActualizada) {
+        const nuevoTotal = ordenActualizada.orderProducts.reduce((sum, op) => sum + Number(op.subtotal), 0);
+        ordenActualizada.total = nuevoTotal;
+        return this.orderRepository.save(ordenActualizada);
+    }
+    
+    return orden;
+  }
+
 }

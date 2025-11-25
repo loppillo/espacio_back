@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { AgregarProductosDto, CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -225,6 +225,15 @@ export class OrdersController {
     @Param('productId', ParseIntPipe) productId: number
   ) {
     return this.ordersService.cancelarProducto(mesaId, ordenId, productId);
+  }
+
+  @Post('mesa/:mesaId/orden/:ordenId/productos')
+  async agregarProductosAOrden(
+    @Param('mesaId', ParseIntPipe) mesaId: number,
+    @Param('ordenId', ParseIntPipe) ordenId: number,
+    @Body() dto: AgregarProductosDto,
+  ) {
+    return this.ordersService.agregarProductosAOrden(mesaId, ordenId, dto.productos);
   }
 
 }
