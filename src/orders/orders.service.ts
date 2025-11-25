@@ -796,11 +796,11 @@ export class OrdersService {
 
       // Productos
       items: order.orderProducts?.map(op => ({
-        name: op.product.name,
+        name: op.product?.name || 'Producto desconocido',
         cantidad: op.cantidad,
         precio: op.precioUnitario,
         subtotal: op.subtotal,
-        imageUrl: op.product.imageUrl ?? null,
+        imageUrl: op.product?.imageUrl ?? null,
       })) ?? [],
     };
   }
