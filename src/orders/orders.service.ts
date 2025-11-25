@@ -885,7 +885,7 @@ export class OrdersService {
     const ordenes = await queryBuilder.getMany();
 
     // Devolver órdenes sanitizadas
-      return ordenes; 
+    return ordenes;
   }
 
   /**
@@ -1039,32 +1039,33 @@ export class OrdersService {
     }
     // 2. Iterar sobre los productos a agregar/actualizar
     for (const item of productos) {
+      if (!item) continue;
       const producto = await this.productRepository.findOne({ where: { id: item.productId } });
       if (!producto) continue; // O lanzar error si prefieres
       // Buscar si el producto ya existe en la orden
-      let orderProduct = orden.orderProducts.find((op) => op.product.id === item.productId);
+      let orderProduct = orden.orderProducts.find((op) => op.productId === item.productId);
       if (orderProduct) {
         // === ACTUALIZAR CANTIDAD ===
         // El frontend envía la NUEVA cantidad total, no el delta.
         orderProduct.cantidad = item.cantidad;
         orderProduct.subtotal = orderProduct.cantidad * producto.price;
-        
+
         if (orderProduct.cantidad <= 0) {
-            await this.productsOrdersRepository.remove(orderProduct);
+          await this.productsOrdersRepository.remove(orderProduct);
         } else {
-            await this.productsOrdersRepository.save(orderProduct);
+          await this.productsOrdersRepository.save(orderProduct);
         }
       } else {
         // === AGREGAR NUEVO PRODUCTO ===
         if (item.cantidad > 0) {
-            const newOrderProduct = this.productsOrdersRepository.create({
-              order: orden,
-              product: producto,
-              cantidad: item.cantidad,
-              precioUnitario: producto.price,
-              subtotal: item.cantidad * producto.price,
-            });
-            await this.productsOrdersRepository.save(newOrderProduct);
+          const newOrderProduct = this.productsOrdersRepository.create({
+            order: orden,
+            product: producto,
+            cantidad: item.cantidad,
+            precioUnitario: producto.price,
+            subtotal: item.cantidad * producto.price,
+          });
+          await this.productsOrdersRepository.save(newOrderProduct);
         }
       }
     }
@@ -1073,13 +1074,13 @@ export class OrdersService {
       where: { id: ordenId },
       relations: ['orderProducts'],
     });
-    
+
     if (ordenActualizada) {
-        const nuevoTotal = ordenActualizada.orderProducts.reduce((sum, op) => sum + Number(op.subtotal), 0);
-        ordenActualizada.total = nuevoTotal;
-        return this.orderRepository.save(ordenActualizada);
+      const nuevoTotal = ordenActualizada.orderProducts.reduce((sum, op) => sum + Number(op.subtotal), 0);
+      ordenActualizada.total = nuevoTotal;
+      return this.orderRepository.save(ordenActualizada);
     }
-    
+
     return orden;
   }
 
