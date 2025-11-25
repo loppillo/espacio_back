@@ -773,7 +773,7 @@ export class OrdersService {
       createdAt: order.createdAt ?? new Date(),
       paymentMethod: order.paymentMethod ?? 'pendiente',
       numeroVenta: order.numeroVenta ?? null,
-
+      orderProducts: order.orderProducts, // 👈 ¡Asegúrate 
       // Mesa simplificada
       mesaId: order.mesa?.id ?? null,
       mesa: order.mesa
@@ -885,7 +885,7 @@ export class OrdersService {
     const ordenes = await queryBuilder.getMany();
 
     // Devolver órdenes sanitizadas
-    return ordenes.map(orden => this.sanitizeOrder(orden));
+      return ordenes; 
   }
 
   /**
