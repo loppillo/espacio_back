@@ -23,6 +23,13 @@ import { RolesGuard } from 'src/roles/roles.guard';
 @Controller('mesas')
 export class MesaController {
   constructor(private readonly mesaService: MesaService) {}
+
+  @Patch(':id/pagar')
+async marcarPedidoPagado(@Param('id') mesaId: number) {
+  return await this.mesaService.marcarPedidoPagado(mesaId);
+}
+
+
   @Get(':id/detalle-actual')
 async getDetalleMesaActual(@Param('id', ParseIntPipe) id: number) {
   return this.mesaService.obtenerDetalleMesaActual(id);
@@ -84,10 +91,7 @@ async getHistorialPorMesas(@Query('mesaId', ParseIntPipe) mesaId: number) {
     return this.mesaService.actualizarEstadoMesa(id, status);
   }
 
-  @Patch(':id/pagar')
-async marcarPedidoPagado(@Param('id') mesaId: number) {
-  return await this.mesaService.marcarPedidoPagado(mesaId);
-}
+
 
 
   @Get(':id')

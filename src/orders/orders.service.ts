@@ -832,7 +832,7 @@ export class OrdersService {
       throw new NotFoundException('Pedido no encontrado');
     }
 
-    return order;
+    return this.sanitizeOrder(order);
   }
 
   // ==========================================
