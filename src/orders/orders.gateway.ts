@@ -50,7 +50,7 @@ export interface OrderDTO {
 export class OrdersGateway {
   @WebSocketServer()
   server: Server;
-@SubscribeMessage('printTicket')
+  @SubscribeMessage('printTicket')
   async handlePrint(@MessageBody() data: any) {
     try {
       const filePath = `ticket-${Date.now()}.pdf`;
@@ -80,10 +80,10 @@ export class OrdersGateway {
   }
 
 
-notifyNewOrder(order: any) {
-  const sanitized = this.sanitizeOrder(order);
-  this.server.emit('newOrder', sanitized);
-}
+  notifyNewOrder(order: any) {
+    const sanitized = this.sanitizeOrder(order);
+    this.server.emit('newOrder', sanitized);
+  }
 
   // Emitir actualización de pedido
   notifyOrderUpdated(order: Order) {
@@ -96,47 +96,47 @@ notifyNewOrder(order: any) {
     this.server.emit('mesaStatusUpdated', { mesaId, status });
   }
 
-  
-   broadcast(theme: any) {
+
+  broadcast(theme: any) {
     this.server.emit('themeUpdated', theme);
   }
 
 
   // Evitar referencias circulares y objetos grandes
- sanitizeOrder(order: Order): OrderDTO {
-  return {
-    id: order.id,
-    tableNumber: order.tableNumber ?? null,
-    orderType: order.orderType,
-    detalle_venta: order.detalle_venta ?? null,
-    estado: order.estado,
-    propina: order.propina,
-    status: order.status,
-    total: order.total,
-    createdAt: order.createdAt,
-    paymentMethod: order.paymentMethod ?? null,
-    numeroVenta: order.numeroVenta,
-    mesa: order.mesa
-      ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa }
-      : null,
-    customer: order.customer
-      ? {
+  sanitizeOrder(order: Order): OrderDTO {
+    return {
+      id: order.id,
+      tableNumber: order.tableNumber ?? null,
+      orderType: order.orderType,
+      detalle_venta: order.detalle_venta ?? null,
+      estado: order.estado,
+      propina: order.propina,
+      status: order.status,
+      total: order.total,
+      createdAt: order.createdAt,
+      paymentMethod: order.paymentMethod ?? null,
+      numeroVenta: order.numeroVenta,
+      mesa: order.mesa
+        ? { id: order.mesa.id, numero_mesa: order.mesa.numero_mesa }
+        : null,
+      customer: order.customer
+        ? {
           id: order.customer.id,
           name: order.customer.customerName,
           email: order.customer.customerEmail,
           phone: order.customer.customerPhone,
         }
-      : null,
-    products: order.orderProducts?.map(op => ({
-      productId: op.product.id,
-      name: op.product.name,
-      cantidad: op.cantidad,
-      precioUnitario: op.precioUnitario,
-      subtotal: op.subtotal,
-      imageUrl: op.product.imageUrl ?? undefined,
-    })) || [],
-  };
-}
+        : null,
+      products: order.orderProducts?.map(op => ({
+        productId: op.product?.id,
+        name: op.product?.name || 'Producto no disponible',
+        cantidad: op.cantidad,
+        precioUnitario: op.precioUnitario,
+        subtotal: op.subtotal,
+        imageUrl: op.product?.imageUrl ?? undefined,
+      })) || [],
+    };
+  }
 
 
 

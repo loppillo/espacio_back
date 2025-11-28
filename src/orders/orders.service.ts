@@ -416,9 +416,9 @@ export class OrdersService {
     const productos = orders.flatMap(order =>
       order.orderProducts.map(op => ({
         orderId: order.id,
-        productoId: op.product.id,
-        nombre: op.product.name,
-        precio: op.product.price,
+        productoId: op.product?.id,
+        nombre: op.product?.name || 'Producto no disponible',
+        precio: op.product?.price || 0,
         cantidad: op.cantidad,
       })),
     );
@@ -515,8 +515,8 @@ export class OrdersService {
         totalProductos,
         totalPedido: totalProductos + (pedido.propina || 0),
         products: pedido.orderProducts.map(op => ({
-          id: op.product.id,
-          nombre: op.product.name,
+          id: op.product?.id,
+          nombre: op.product?.name || 'Producto no disponible',
           cantidad: op.cantidad,
           precio: op.precioUnitario,
           subtotal: op.subtotal,
