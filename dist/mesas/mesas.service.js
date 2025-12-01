@@ -133,8 +133,8 @@ let MesaService = class MesaService {
         }
         const productos = orders.flatMap(order => order.orderProducts.map(op => ({
             orderId: order.id,
-            productoId: op.product.id,
-            nombre: op.product.name,
+            productoId: op.product?.id,
+            nombre: op.product?.name || 'Producto no disponible',
             cantidad: op.cantidad,
             precioUnitario: op.precioUnitario,
             subtotal: op.subtotal,
@@ -180,8 +180,8 @@ let MesaService = class MesaService {
                 totalProductos,
                 totalFinal: totalProductos + (pedido.propina || 0),
                 productos: pedido.orderProducts.map(op => ({
-                    id: op.product.id,
-                    nombre: op.product.name,
+                    id: op.product?.id,
+                    nombre: op.product?.name || 'Producto no disponible',
                     cantidad: op.cantidad,
                     precioUnitario: op.precioUnitario,
                     subtotal: op.subtotal,

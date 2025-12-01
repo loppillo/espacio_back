@@ -6,6 +6,7 @@ import { Order } from 'src/orders/entities/order.entity';
 export declare class MesaController {
     private readonly mesaService;
     constructor(mesaService: MesaService);
+    marcarPedidoPagado(mesaId: number): Promise<Mesa>;
     getDetalleMesaActual(id: number): Promise<Mesa>;
     getHistorialPorMesas(mesaId: number): Promise<any[]>;
     findAll(): Promise<Mesa[]>;
@@ -16,7 +17,6 @@ export declare class MesaController {
     update(id: number, updateMesaDto: UpdateMesaDto): Promise<Mesa>;
     remove(id: number): Promise<void>;
     actualizarEstadoMesa(id: number, status: string): Promise<Mesa>;
-    marcarPedidoPagado(mesaId: number): Promise<Mesa>;
     getMesa(id: number): Promise<Mesa>;
     crearNuevoPedido(id: number): Promise<Order>;
     getPedidosActuales(id: number, numeroVenta: number): Promise<Order[]>;

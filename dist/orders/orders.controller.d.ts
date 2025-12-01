@@ -1,5 +1,5 @@
 import { OrdersService } from './orders.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { AgregarProductosDto, CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Order } from './entities/order.entity';
@@ -12,7 +12,7 @@ export declare class OrdersController {
     constructor(ordersService: OrdersService, orderRepository: Repository<Order>, printService: PrintService);
     update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order>;
     obtenerPendientes(): Promise<Order[]>;
-    getById(id: number): Promise<Order>;
+    getById(id: number): Promise<any>;
     create(createOrderDto: CreateOrderDto): Promise<any>;
     getHistorialPorMesa(mesaId: number, fecha?: string): Promise<{
         numeroVenta: number;
@@ -72,8 +72,9 @@ export declare class OrdersController {
         message: string;
     }>;
     crearOrdenPorMesa(mesaId: number, createOrderDto: CreateOrderDto): Promise<any>;
-    obtenerOrdenesPorMesa(mesaId: number, estado?: string): Promise<any[]>;
+    obtenerOrdenesPorMesa(mesaId: number, estado?: string): Promise<Order[]>;
     obtenerOrdenEspecifica(mesaId: number, ordenId: number): Promise<any>;
     actualizarOrdenPorMesa(mesaId: number, ordenId: number, updateOrderDto: UpdateOrderDto): Promise<Order>;
     cancelarProducto(mesaId: number, ordenId: number, productId: number): Promise<any>;
+    agregarProductosAOrden(mesaId: number, ordenId: number, dto: AgregarProductosDto): Promise<Order>;
 }

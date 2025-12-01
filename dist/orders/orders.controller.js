@@ -119,6 +119,9 @@ let OrdersController = class OrdersController {
     async cancelarProducto(mesaId, ordenId, productId) {
         return this.ordersService.cancelarProducto(mesaId, ordenId, productId);
     }
+    async agregarProductosAOrden(mesaId, ordenId, dto) {
+        return this.ordersService.agregarProductosAOrden(mesaId, ordenId, dto.productos);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -302,6 +305,15 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number, Number]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "cancelarProducto", null);
+__decorate([
+    (0, common_1.Post)('mesa/:mesaId/orden/:ordenId/productos'),
+    __param(0, (0, common_1.Param)('mesaId', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Param)('ordenId', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, create_order_dto_1.AgregarProductosDto]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "agregarProductosAOrden", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),

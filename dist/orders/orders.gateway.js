@@ -104,12 +104,12 @@ let OrdersGateway = class OrdersGateway {
                 }
                 : null,
             products: order.orderProducts?.map(op => ({
-                productId: op.product.id,
-                name: op.product.name,
+                productId: op.product?.id,
+                name: op.product?.name || 'Producto no disponible',
                 cantidad: op.cantidad,
                 precioUnitario: op.precioUnitario,
                 subtotal: op.subtotal,
-                imageUrl: op.product.imageUrl ?? undefined,
+                imageUrl: op.product?.imageUrl ?? undefined,
             })) || [],
         };
     }

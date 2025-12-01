@@ -50,7 +50,7 @@ let UsersService = class UsersService {
     async create(createUserDto) {
         try {
             const existingUser = await this.userRepository.findOne({
-                where: { name: createUserDto.name },
+                where: { username: createUserDto.username },
             });
             if (existingUser) {
                 throw new common_1.ConflictException('El nombre de usuario ya existe');
@@ -114,8 +114,8 @@ let UsersService = class UsersService {
         await this.userRepository.delete(id);
         return { message: `Usuario con ID ${id} eliminado correctamente` };
     }
-    async findByUsername(name) {
-        return this.userRepository.findOne({ where: { name } });
+    async findByUsername(username) {
+        return this.userRepository.findOne({ where: { username } });
     }
     async validateUser(username, password) {
         const user = await this.findByUsername(username);

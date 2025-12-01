@@ -27,11 +27,11 @@ let ProductsController = class ProductsController {
         const imagePath = file ? `/uploads/${file.filename}` : undefined;
         return this.productsService.updateImage(id, body, imagePath);
     }
-    buscarProductos(nombre, categorias, page = '1', limit = '10') {
+    buscarProductos(nombre, categorias, page = '1', limit = '10', includeImages = 'true', lightweight = 'false') {
         const categoryIds = categorias
             ? categorias.split(',').map((id) => parseInt(id, 10))
             : undefined;
-        return this.productsService.buscarPorNombre(nombre, categoryIds, parseInt(page, 10), parseInt(limit, 10));
+        return this.productsService.buscarPorNombre(nombre, categoryIds, parseInt(page, 10), parseInt(limit, 10), includeImages === 'true', lightweight === 'true');
     }
     buscarProducto(nombre, categorias) {
         const categoryIds = categorias
@@ -110,8 +110,10 @@ __decorate([
     __param(1, (0, common_1.Query)('categorias')),
     __param(2, (0, common_1.Query)('page')),
     __param(3, (0, common_1.Query)('limit')),
+    __param(4, (0, common_1.Query)('includeImages')),
+    __param(5, (0, common_1.Query)('lightweight')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "buscarProductos", null);
 __decorate([

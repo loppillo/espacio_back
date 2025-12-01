@@ -12,4 +12,11 @@ export declare class CreateOrderDto {
     mesaId?: number;
     products: OrderProductDto[];
 }
+export declare class ProductoCantidadDto {
+    productId: number;
+    cantidad: number;
+}
+export declare class AgregarProductosDto {
+    productos: ProductoCantidadDto[];
+}
 export {};

@@ -18,10 +18,12 @@ const product_entity_1 = require("./entities/product.entity");
 const typeorm_1 = require("@nestjs/typeorm");
 const category_entity_1 = require("../categories/entities/category.entity");
 const typeorm_2 = require("typeorm");
+const cache_service_1 = require("../common/cache.service");
 let ProductsService = class ProductsService {
-    constructor(categoryRepository, proRepository) {
+    constructor(categoryRepository, proRepository, cacheService) {
         this.categoryRepository = categoryRepository;
         this.proRepository = proRepository;
+        this.cacheService = cacheService;
     }
     async createProductWithImage(name, imageUrl) {
         const newProduct = this.proRepository.create({
@@ -42,7 +44,9 @@ let ProductsService = class ProductsService {
             ...rest,
             categories,
         });
-        return await this.proRepository.save(product);
+        const saved = await this.proRepository.save(product);
+        this.cacheService.invalidatePattern('products:search:.*');
+        return saved;
     }
     async updateImage(id, body, imagePath) {
         if (body.categories && typeof body.categories === 'string') {
@@ -83,6 +87,7 @@ let ProductsService = class ProductsService {
             product.imageUrl = imagePath;
         }
         const saved = await this.proRepository.save(product);
+        this.cacheService.invalidatePattern('products:search:.*');
         return this.normalizeProduct(saved);
     }
     normalizeProduct(product) {
@@ -148,13 +153,23 @@ let ProductsService = class ProductsService {
             })),
         }));
     }
-    async buscarPorNombre(nombre, categoryIds, page = 1, limit = 10) {
+    async buscarPorNombre(nombre, categoryIds, page = 1, limit = 10, includeImages = true, lightweight = false) {
+        const cacheKey = `products:search:${nombre || 'all'}:${categoryIds?.join(',') || 'all'}:${page}:${limit}:${includeImages}:${lightweight}`;
+        const cached = this.cacheService.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
         const baseUrl = 'https://espacioboulevard.com';
         page = Math.max(1, page);
         limit = Math.max(1, limit);
         const skip = (page - 1) * limit;
-        const query = this.proRepository.createQueryBuilder('product')
-            .leftJoinAndSelect('product.categories', 'category');
+        const query = this.proRepository.createQueryBuilder('product');
+        if (!lightweight || (categoryIds && categoryIds.length > 0)) {
+            query.leftJoinAndSelect('product.categories', 'category');
+        }
+        else {
+            query.leftJoin('product.categories', 'category');
+        }
         if (nombre) {
             query.andWhere('product.name LIKE :nombre', { nombre: `%${nombre}%` });
         }
@@ -162,30 +177,50 @@ let ProductsService = class ProductsService {
             query.andWhere('category.id IN (:...categoryIds)', { categoryIds });
         }
         const total = await query.getCount();
+        if (lightweight) {
+            query.select(['product.id', 'product.name', 'product.price']);
+            if (categoryIds && categoryIds.length > 0) {
+                query.addSelect(['category.id']);
+            }
+        }
         const productos = await query
             .skip(skip)
             .take(limit)
             .orderBy('product.id', 'DESC')
             .getMany();
-        const data = productos.map((producto) => ({
-            id: producto.id,
-            name: producto.name,
-            description: producto.description,
-            price: producto.price,
-            imageUrl: producto.imageUrl
-                ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}`
-                : null,
-            categories: producto.categories.map((cat) => ({
-                id: cat.id,
-                nombre: cat.nombre,
-                icono: cat.icono,
-            })),
-        }));
-        return {
+        let data;
+        if (lightweight) {
+            data = productos.map((producto) => ({
+                id: producto.id,
+                name: producto.name,
+                price: producto.price,
+                categoryIds: producto.categories?.map(cat => cat.id) || [],
+            }));
+        }
+        else {
+            data = productos.map((producto) => ({
+                id: producto.id,
+                name: producto.name,
+                description: producto.description,
+                price: producto.price,
+                imageUrl: includeImages && producto.imageUrl
+                    ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}`
+                    : null,
+                categories: producto.categories?.map((cat) => ({
+                    id: cat.id,
+                    nombre: cat.nombre,
+                    icono: cat.icono,
+                })) || [],
+            }));
+        }
+        const result = {
             data,
             total,
             currentPage: page,
         };
+        const ttl = lightweight ? 5 * 60 * 1000 : 2 * 60 * 1000;
+        this.cacheService.set(cacheKey, result, ttl);
+        return result;
     }
     async buscarPorNombres(nombre, categoryIds) {
         const baseUrl = 'https://espacioboulevard.com';
@@ -220,7 +255,9 @@ let ProductsService = class ProductsService {
         return await this.proRepository.findOneBy({ id });
     }
     async remove(id) {
-        return await this.proRepository.delete(id);
+        const result = await this.proRepository.delete(id);
+        this.cacheService.invalidatePattern('products:search:.*');
+        return result;
     }
 };
 exports.ProductsService = ProductsService;
@@ -229,6 +266,7 @@ exports.ProductsService = ProductsService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
     __param(1, (0, typeorm_1.InjectRepository)(product_entity_1.Product)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        cache_service_1.CacheService])
 ], ProductsService);
 //# sourceMappingURL=products.service.js.map

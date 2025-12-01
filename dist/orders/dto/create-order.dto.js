@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateOrderDto = void 0;
+exports.AgregarProductosDto = exports.ProductoCantidadDto = exports.CreateOrderDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class OrderProductDto {
@@ -62,4 +62,24 @@ __decorate([
     (0, class_transformer_1.Type)(() => OrderProductDto),
     __metadata("design:type", Array)
 ], CreateOrderDto.prototype, "products", void 0);
+class ProductoCantidadDto {
+}
+exports.ProductoCantidadDto = ProductoCantidadDto;
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], ProductoCantidadDto.prototype, "productId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], ProductoCantidadDto.prototype, "cantidad", void 0);
+class AgregarProductosDto {
+}
+exports.AgregarProductosDto = AgregarProductosDto;
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => ProductoCantidadDto),
+    __metadata("design:type", Array)
+], AgregarProductosDto.prototype, "productos", void 0);
 //# sourceMappingURL=create-order.dto.js.map

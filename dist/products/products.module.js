@@ -17,6 +17,7 @@ const order_entity_1 = require("../orders/entities/order.entity");
 const multer_1 = require("@nestjs/platform-express/multer");
 const multer_2 = require("multer");
 const path_1 = require("path");
+const cache_service_1 = require("../common/cache.service");
 let ProductsModule = class ProductsModule {
 };
 exports.ProductsModule = ProductsModule;
@@ -34,7 +35,7 @@ exports.ProductsModule = ProductsModule = __decorate([
             }),
         ],
         controllers: [products_controller_1.ProductsController],
-        providers: [products_service_1.ProductsService],
+        providers: [products_service_1.ProductsService, cache_service_1.CacheService],
     })
 ], ProductsModule);
 //# sourceMappingURL=products.module.js.map

@@ -9,17 +9,35 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuthCredentialsDto = void 0;
+exports.LightweightProductResponse = exports.LightweightProductDto = void 0;
 const class_validator_1 = require("class-validator");
-class AuthCredentialsDto {
+class LightweightProductDto {
 }
-exports.AuthCredentialsDto = AuthCredentialsDto;
+exports.LightweightProductDto = LightweightProductDto;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", Number)
+], LightweightProductDto.prototype, "id", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
-], AuthCredentialsDto.prototype, "username", void 0);
+], LightweightProductDto.prototype, "name", void 0);
 __decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0, { message: 'El precio no puede ser negativo' }),
+    __metadata("design:type", Number)
+], LightweightProductDto.prototype, "price", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], AuthCredentialsDto.prototype, "password", void 0);
-//# sourceMappingURL=AuthCredentialsDto.dto.js.map
+], LightweightProductDto.prototype, "thumbnailUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], LightweightProductDto.prototype, "categoryIds", void 0);
+class LightweightProductResponse {
+}
+exports.LightweightProductResponse = LightweightProductResponse;
+//# sourceMappingURL=lightweight-product.dto.js.map

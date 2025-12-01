@@ -4,10 +4,13 @@ import { Category } from 'src/categories/entities/category.entity';
 import { Repository } from 'typeorm';
 import { PaginationDto } from './dto/PaginationDto.dto';
 import { ProductDto } from './dto/productDTO.dto';
+import { CacheService } from '../common/cache.service';
+import { LightweightProductDto } from './dto/lightweight-product.dto';
 export declare class ProductsService {
     private readonly categoryRepository;
     private readonly proRepository;
-    constructor(categoryRepository: Repository<Category>, proRepository: Repository<Product>);
+    private readonly cacheService;
+    constructor(categoryRepository: Repository<Category>, proRepository: Repository<Product>, cacheService: CacheService);
     createProductWithImage(name: string, imageUrl: string): Promise<Product>;
     create(createProductDto: CreateProductDto): Promise<Product>;
     updateImage(id: number, body: any, imagePath?: string): Promise<{
@@ -24,8 +27,8 @@ export declare class ProductsService {
     private normalizeProduct;
     findAll(page?: number, limit?: number): Promise<PaginationDto<ProductDto>>;
     findAlls(): Promise<ProductDto[]>;
-    buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number): Promise<{
-        data: ProductDto[];
+    buscarPorNombre(nombre?: string, categoryIds?: number[], page?: number, limit?: number, includeImages?: boolean, lightweight?: boolean): Promise<{
+        data: ProductDto[] | LightweightProductDto[];
         total: number;
         currentPage: number;
     }>;

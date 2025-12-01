@@ -7,7 +7,8 @@ export declare class AuthService {
     constructor(userService: UsersService, jwtService: JwtService);
     validateUser(username: string, password: string): Promise<{
         id: number;
-        name: string;
+        username: string;
+        full_name: string;
         profileImage: string;
         role: string;
         tipo_usuario: string;

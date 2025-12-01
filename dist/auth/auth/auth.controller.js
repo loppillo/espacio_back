@@ -22,7 +22,7 @@ let AuthController = class AuthController {
         this.authService = authService;
     }
     async login(dto) {
-        const user = await this.authService.validateUser(dto.name, dto.password);
+        const user = await this.authService.validateUser(dto.username, dto.password);
         if (!user)
             return { message: 'Usuario o contraseña incorrecta' };
         return this.authService.login(user);

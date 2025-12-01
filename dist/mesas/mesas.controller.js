@@ -21,6 +21,9 @@ let MesaController = class MesaController {
     constructor(mesaService) {
         this.mesaService = mesaService;
     }
+    async marcarPedidoPagado(mesaId) {
+        return await this.mesaService.marcarPedidoPagado(mesaId);
+    }
     async getDetalleMesaActual(id) {
         return this.mesaService.obtenerDetalleMesaActual(id);
     }
@@ -51,9 +54,6 @@ let MesaController = class MesaController {
     async actualizarEstadoMesa(id, status) {
         return this.mesaService.actualizarEstadoMesa(id, status);
     }
-    async marcarPedidoPagado(mesaId) {
-        return await this.mesaService.marcarPedidoPagado(mesaId);
-    }
     getMesa(id) {
         return this.mesaService.getMesa(id);
     }
@@ -68,6 +68,13 @@ let MesaController = class MesaController {
     }
 };
 exports.MesaController = MesaController;
+__decorate([
+    (0, common_1.Patch)(':id/pagar'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], MesaController.prototype, "marcarPedidoPagado", null);
 __decorate([
     (0, common_1.Get)(':id/detalle-actual'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
@@ -139,13 +146,6 @@ __decorate([
     __metadata("design:paramtypes", [Number, String]),
     __metadata("design:returntype", Promise)
 ], MesaController.prototype, "actualizarEstadoMesa", null);
-__decorate([
-    (0, common_1.Patch)(':id/pagar'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], MesaController.prototype, "marcarPedidoPagado", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

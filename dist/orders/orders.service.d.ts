@@ -80,10 +80,14 @@ export declare class OrdersService {
     }>;
     private sanitizeOrder;
     private generarNumeroVenta;
-    getById(id: number): Promise<Order>;
+    getById(id: number): Promise<any>;
     crearOrdenPorMesa(mesaId: number, createOrderDto: CreateOrderDto): Promise<any>;
-    obtenerOrdenesPorMesa(mesaId: number, estado?: string): Promise<any[]>;
+    obtenerOrdenesPorMesa(mesaId: number, estado?: string): Promise<Order[]>;
     obtenerOrdenEspecifica(mesaId: number, ordenId: number): Promise<any>;
     actualizarOrdenPorMesa(mesaId: number, ordenId: number, updateOrderDto: UpdateOrderDto): Promise<Order>;
     cancelarProducto(mesaId: number, ordenId: number, productId: number): Promise<any>;
+    agregarProductosAOrden(mesaId: number, ordenId: number, productos: {
+        productId: number;
+        cantidad: number;
+    }[]): Promise<Order>;
 }

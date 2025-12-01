@@ -294,9 +294,9 @@ let OrdersService = class OrdersService {
         }
         const productos = orders.flatMap(order => order.orderProducts.map(op => ({
             orderId: order.id,
-            productoId: op.product.id,
-            nombre: op.product.name,
-            precio: op.product.price,
+            productoId: op.product?.id,
+            nombre: op.product?.name || 'Producto no disponible',
+            precio: op.product?.price || 0,
             cantidad: op.cantidad,
         })));
         return productos;
@@ -364,8 +364,8 @@ let OrdersService = class OrdersService {
                 totalProductos,
                 totalPedido: totalProductos + (pedido.propina || 0),
                 products: pedido.orderProducts.map(op => ({
-                    id: op.product.id,
-                    nombre: op.product.name,
+                    id: op.product?.id,
+                    nombre: op.product?.name || 'Producto no disponible',
                     cantidad: op.cantidad,
                     precio: op.precioUnitario,
                     subtotal: op.subtotal,
@@ -571,6 +571,7 @@ let OrdersService = class OrdersService {
             createdAt: order.createdAt ?? new Date(),
             paymentMethod: order.paymentMethod ?? 'pendiente',
             numeroVenta: order.numeroVenta ?? null,
+            orderProducts: order.orderProducts,
             mesaId: order.mesa?.id ?? null,
             mesa: order.mesa
                 ? {
@@ -588,11 +589,11 @@ let OrdersService = class OrdersService {
                 }
                 : null,
             items: order.orderProducts?.map(op => ({
-                name: op.product.name,
+                name: op.product?.name || 'Producto desconocido',
                 cantidad: op.cantidad,
                 precio: op.precioUnitario,
                 subtotal: op.subtotal,
-                imageUrl: op.product.imageUrl ?? null,
+                imageUrl: op.product?.imageUrl ?? null,
             })) ?? [],
         };
     }
@@ -617,7 +618,7 @@ let OrdersService = class OrdersService {
         if (!order) {
             throw new common_1.NotFoundException('Pedido no encontrado');
         }
-        return order;
+        return this.sanitizeOrder(order);
     }
     async crearOrdenPorMesa(mesaId, createOrderDto) {
         const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
@@ -644,7 +645,7 @@ let OrdersService = class OrdersService {
             queryBuilder.andWhere('order.estado = :estado', { estado });
         }
         const ordenes = await queryBuilder.getMany();
-        return ordenes.map(orden => this.sanitizeOrder(orden));
+        return ordenes;
     }
     async obtenerOrdenEspecifica(mesaId, ordenId) {
         const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
@@ -724,6 +725,58 @@ let OrdersService = class OrdersService {
             }
         });
         return this.sanitizeOrder(updatedOrder);
+    }
+    async agregarProductosAOrden(mesaId, ordenId, productos) {
+        const orden = await this.orderRepository.findOne({
+            where: { id: ordenId, mesaId: mesaId },
+            relations: ['orderProducts', 'orderProducts.product'],
+        });
+        if (!orden) {
+            throw new common_1.NotFoundException(`Orden ${ordenId} no encontrada en la mesa ${mesaId}`);
+        }
+        if (orden.status === 'Pagado' || orden.status === 'Cancelado') {
+            throw new common_1.BadRequestException('No se pueden agregar productos a una orden cerrada');
+        }
+        for (const item of productos) {
+            if (!item)
+                continue;
+            const producto = await this.productRepository.findOne({ where: { id: item.productId } });
+            if (!producto)
+                continue;
+            let orderProduct = orden.orderProducts.find((op) => op.productId === item.productId);
+            if (orderProduct) {
+                orderProduct.cantidad = item.cantidad;
+                orderProduct.subtotal = orderProduct.cantidad * producto.price;
+                if (orderProduct.cantidad <= 0) {
+                    await this.productsOrdersRepository.remove(orderProduct);
+                }
+                else {
+                    await this.productsOrdersRepository.save(orderProduct);
+                }
+            }
+            else {
+                if (item.cantidad > 0) {
+                    const newOrderProduct = this.productsOrdersRepository.create({
+                        order: orden,
+                        product: producto,
+                        cantidad: item.cantidad,
+                        precioUnitario: producto.price,
+                        subtotal: item.cantidad * producto.price,
+                    });
+                    await this.productsOrdersRepository.save(newOrderProduct);
+                }
+            }
+        }
+        const ordenActualizada = await this.orderRepository.findOne({
+            where: { id: ordenId },
+            relations: ['orderProducts'],
+        });
+        if (ordenActualizada) {
+            const nuevoTotal = ordenActualizada.orderProducts.reduce((sum, op) => sum + Number(op.subtotal), 0);
+            ordenActualizada.total = nuevoTotal;
+            return this.orderRepository.save(ordenActualizada);
+        }
+        return orden;
     }
 };
 exports.OrdersService = OrdersService;

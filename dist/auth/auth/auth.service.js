@@ -55,7 +55,7 @@ let AuthService = class AuthService {
         return { access_token: this.jwtService.sign(payload), role: user.role };
     }
     async register(dto) {
-        const userExist = await this.userService.findByUsername(dto.name);
+        const userExist = await this.userService.findByUsername(dto.username);
         if (userExist) {
             throw new Error('El usuario ya existe');
         }

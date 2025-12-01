@@ -12,7 +12,7 @@ export declare class UsersService {
     remove(id: number): Promise<{
         message: string;
     }>;
-    findByUsername(name: string): Promise<User | undefined>;
+    findByUsername(username: string): Promise<User | undefined>;
     validateUser(username: string, password: string): Promise<User | null>;
     private deleteOldImage;
 }

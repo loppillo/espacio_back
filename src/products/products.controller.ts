@@ -10,9 +10,9 @@ import { PaginationDto } from './dto/PaginationDto.dto';
 import { ProductDto } from './dto/productDTO.dto';
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
-@Put(':id')
+  @Put(':id')
   @UseInterceptors(FileInterceptor('image'))
   async updateProduct(
     @Param('id') id: number,
@@ -25,36 +25,40 @@ export class ProductsController {
 
 
 
-@Get('buscar')
-buscarProductos(
-  @Query('nombre') nombre?: string,
-  @Query('categorias') categorias?: string, // puede ser "1,2,3"
-  @Query('page') page: string = '1',
-  @Query('limit') limit: string = '10',
-) {
-  const categoryIds = categorias
-    ? categorias.split(',').map((id) => parseInt(id, 10))
-    : undefined;
+  @Get('buscar')
+  buscarProductos(
+    @Query('nombre') nombre?: string,
+    @Query('categorias') categorias?: string, // puede ser "1,2,3"
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('includeImages') includeImages: string = 'true', // nuevo parámetro
+    @Query('lightweight') lightweight: string = 'false', // nuevo parámetro
+  ) {
+    const categoryIds = categorias
+      ? categorias.split(',').map((id) => parseInt(id, 10))
+      : undefined;
 
-  return this.productsService.buscarPorNombre(
-    nombre,
-    categoryIds,
-    parseInt(page, 10),
-    parseInt(limit, 10),
-  );
-}
+    return this.productsService.buscarPorNombre(
+      nombre,
+      categoryIds,
+      parseInt(page, 10),
+      parseInt(limit, 10),
+      includeImages === 'true',
+      lightweight === 'true',
+    );
+  }
 
-@Get('buscars')
-buscarProducto(
-  @Query('nombre') nombre?: string,
-  @Query('categorias') categorias?: string
-) {
-  const categoryIds = categorias
-    ? categorias.split(',').map((id) => parseInt(id, 10))
-    : undefined;
+  @Get('buscars')
+  buscarProducto(
+    @Query('nombre') nombre?: string,
+    @Query('categorias') categorias?: string
+  ) {
+    const categoryIds = categorias
+      ? categorias.split(',').map((id) => parseInt(id, 10))
+      : undefined;
 
-  return this.productsService.buscarPorNombres(nombre, categoryIds);
-}
+    return this.productsService.buscarPorNombres(nombre, categoryIds);
+  }
 
 
 
@@ -84,12 +88,12 @@ buscarProducto(
       product,
     };
   }
-  
+
 
   @Get('finds')
-async findAlls(): Promise<ProductDto[]> {
-  return this.productsService.findAlls();
-}
+  async findAlls(): Promise<ProductDto[]> {
+    return this.productsService.findAlls();
+  }
 
 
   @Get('find')
@@ -115,63 +119,63 @@ async findAlls(): Promise<ProductDto[]> {
   }
 
 
- @Post('crear')
-@UseInterceptors(
-  FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
-      },
+  @Post('crear')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, file.fieldname + '-' + uniqueSuffix + extname(file.originalname));
+        },
+      }),
     }),
-  }),
-)
-async create(
-  @Body() body: any,
-  @UploadedFile() file?: Express.Multer.File,
-) {
-  // ✅ Parsear categoryIds si viene como string
-  let categoryIds: number[] = [];
+  )
+  async create(
+    @Body() body: any,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    // ✅ Parsear categoryIds si viene como string
+    let categoryIds: number[] = [];
 
 
-if (body.categoryIds) {
-  if (Array.isArray(body.categoryIds)) {
-    // Vienen múltiples categoryIds (ej: ['1', '2', '3'])
-    categoryIds = body.categoryIds.map((id: string) => parseInt(id, 10));
-  } else if (typeof body.categoryIds === 'string') {
-    // Puede venir como JSON, CSV o número suelto
-    if (body.categoryIds.startsWith('[')) {
-      categoryIds = JSON.parse(body.categoryIds).map((id: any) => parseInt(id, 10));
-    } else if (body.categoryIds.includes(',')) {
-      categoryIds = body.categoryIds.split(',').map((id: string) => parseInt(id, 10));
-    } else {
-      // 🟢 Caso de una sola categoría
-      categoryIds = [parseInt(body.categoryIds, 10)];
+    if (body.categoryIds) {
+      if (Array.isArray(body.categoryIds)) {
+        // Vienen múltiples categoryIds (ej: ['1', '2', '3'])
+        categoryIds = body.categoryIds.map((id: string) => parseInt(id, 10));
+      } else if (typeof body.categoryIds === 'string') {
+        // Puede venir como JSON, CSV o número suelto
+        if (body.categoryIds.startsWith('[')) {
+          categoryIds = JSON.parse(body.categoryIds).map((id: any) => parseInt(id, 10));
+        } else if (body.categoryIds.includes(',')) {
+          categoryIds = body.categoryIds.split(',').map((id: string) => parseInt(id, 10));
+        } else {
+          // 🟢 Caso de una sola categoría
+          categoryIds = [parseInt(body.categoryIds, 10)];
+        }
+      }
     }
+
+    // ✅ Manejar imagen
+    const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+
+    // ✅ Crear producto usando el servicio
+    const product = await this.productsService.create({
+      ...body,
+      categoryIds,
+      imageUrl,
+    });
+
+    // ✅ Devolver URL completa
+    return {
+      ...product,
+      imageUrl: product.imageUrl
+        ? `https://espacioboulevard.com${product.imageUrl}`
+        : null,
+    };
   }
-}
 
-  // ✅ Manejar imagen
-  const imageUrl = file ? `/uploads/${file.filename}` : undefined;
 
-  // ✅ Crear producto usando el servicio
-  const product = await this.productsService.create({
-    ...body,
-    categoryIds,
-    imageUrl,
-  });
-
-  // ✅ Devolver URL completa
-  return {
-    ...product,
-    imageUrl: product.imageUrl
-      ? `https://espacioboulevard.com${product.imageUrl}`
-      : null,
-  };
-}
-
-  
 
 
 }
