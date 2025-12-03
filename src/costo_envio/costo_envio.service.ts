@@ -8,29 +8,34 @@ import { Repository } from 'typeorm';
 @Injectable()
 export class CostoEnvioService {
   constructor(
-      @InjectRepository(CostoEnvio)
-      private readonly costoEnvioRepository: Repository<CostoEnvio>,
-      
-    ) {}
+    @InjectRepository(CostoEnvio)
+    private readonly costoEnvioRepository: Repository<CostoEnvio>,
+
+  ) { }
 
 
   async create(createCostoEnvioDto: CreateCostoEnvioDto) {
-    return await this.costoEnvioRepository.create(createCostoEnvioDto);
+    const costoEnvio = this.costoEnvioRepository.create(createCostoEnvioDto);
+    return await this.costoEnvioRepository.save(costoEnvio);
   }
 
-  findAll() {
-    return `This action returns all costoEnvio`;
+  async findAll() {
+    return await this.costoEnvioRepository.find({
+      order: { id: 'DESC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} costoEnvio`;
+  async findOne(id: number) {
+    return await this.costoEnvioRepository.findOne({ where: { id } });
   }
 
-  update(id: number, updateCostoEnvioDto: UpdateCostoEnvioDto) {
-    return `This action updates a #${id} costoEnvio`;
+  async update(id: number, updateCostoEnvioDto: UpdateCostoEnvioDto) {
+    await this.costoEnvioRepository.update(id, updateCostoEnvioDto);
+    return await this.costoEnvioRepository.findOne({ where: { id } });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} costoEnvio`;
+  async remove(id: number) {
+    await this.costoEnvioRepository.delete(id);
+    return { message: `Costo de envío con ID ${id} eliminado correctamente` };
   }
 }
