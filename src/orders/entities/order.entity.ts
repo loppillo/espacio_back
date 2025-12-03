@@ -23,7 +23,7 @@ export class Order {
   @Column({ type: 'varchar', default: 'activo' })
   estado: string;
 
-  @Column('int')
+  @Column('int', { default: 0 })
   propina: number;
 
   @Column()

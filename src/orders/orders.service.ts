@@ -244,7 +244,6 @@ export class OrdersService {
     let order = this.orderRepository.create({
       detalle_venta: createOrderDto.detalle_venta,
       status: 'pendiente',
-      propina:0,
       orderType,
       paymentMethod: createOrderDto.paymentMethod || 'pendiente',
       numeroVenta: nextNumeroVenta,
