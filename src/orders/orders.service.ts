@@ -156,15 +156,19 @@ export class OrdersService {
 
     const orderProducts = products.map(p => {
       const productEntity = productEntities.find(pe => pe.id === p.id)!;
-      const subtotal = productEntity.price * p.cantidad;
+
+      const price = isNaN(Number(productEntity.price)) ? 0 : Number(productEntity.price);
+      const cantidad = isNaN(Number(p.cantidad)) ? 0 : Number(p.cantidad);
+
+      const subtotal = price * cantidad;
 
       total += subtotal;
 
       return this.productsOrdersRepository.create({
         orderId: savedOrder.id,          // ✅ obligatorio según tu entidad
         productId: productEntity.id,     // ✅ obligatorio
-        cantidad: p.cantidad,
-        precioUnitario: productEntity.price,
+        cantidad: cantidad,
+        precioUnitario: price,
         subtotal,
       });
     });
@@ -172,7 +176,8 @@ export class OrdersService {
     await this.productsOrdersRepository.save(orderProducts);
 
     // ✅ Total final
-    savedOrder.total = total + safePropina;
+    const safeTotal = isNaN(Number(total)) ? 0 : Number(total);
+    savedOrder.total = safeTotal + safePropina;
     await this.orderRepository.save(savedOrder);
 
     // ✅ Actualizar mesa
@@ -282,15 +287,19 @@ export class OrdersService {
 
     for (const p of products) {
       const prod = productEntities.find(x => x.id === p.id);
-      const subtotal = prod.price * p.cantidad;
+
+      const price = isNaN(Number(prod.price)) ? 0 : Number(prod.price);
+      const cantidad = isNaN(Number(p.cantidad)) ? 0 : Number(p.cantidad);
+
+      const subtotal = price * cantidad;
 
       total += subtotal;
 
       const op = this.productsOrdersRepository.create({
         orderId: order.id,        // ✅ necesario por PK compuesta
         productId: prod.id,       // ✅ necesario
-        cantidad: p.cantidad,
-        precioUnitario: prod.price,
+        cantidad: cantidad,
+        precioUnitario: price,
         subtotal,
         order: order,             // ✅ relación ok
         product: prod             // ✅ relación ok
@@ -313,7 +322,7 @@ export class OrdersService {
       });
 
       if (costoEnvioData) {
-        costoEnvio = costoEnvioData.precio_envio;
+        costoEnvio = isNaN(Number(costoEnvioData.precio_envio)) ? 0 : Number(costoEnvioData.precio_envio);
       }
     } catch (error) {
       console.error('Error al obtener costo de envío, usando 0:', error);
@@ -322,7 +331,8 @@ export class OrdersService {
     // -----------------------------
     // G) Actualizar total con costo de envío
     // -----------------------------
-    order.total = total + costoEnvio;
+    const safeTotal = isNaN(Number(total)) ? 0 : Number(total);
+    order.total = safeTotal + costoEnvio;
 
     await this.orderRepository.save(order);
 
