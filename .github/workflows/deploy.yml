@@ -1,35 +1,74 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+# -----------------------------------------------------------
+# Workflow: Deploy - espacio_back
+# Ubicación: .github/workflows/deploy.yml
+#
+# Objetivo:
+#   - Desplegar automáticamente el backend NestJS (espacio_back)
+#     en el VPS cuando el workflow de CI ("CI - espacio_back")
+#     termine correctamente (conclusion == success).
+#
+#   - El despliegue se hace vía SSH usando la acción appleboy/ssh-action,
+#     conectando al VPS con los secrets configurados en el repositorio:
+#       - VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_SSH_PORT
+#       - VPS_PROJECT_PATH, VPS_PM2_APP
+# -----------------------------------------------------------
+
 name: Deploy - espacio_back
 
 on:
-  push:
-    branches: [ "main" ]
+  # Este workflow NO se ejecuta directamente con el push,
+  # sino cuando el workflow de CI ("CI - espacio_back") termina.
+  workflow_run:
+    workflows: ["CI - espacio_back"]   # Debe coincidir con el "name" del CI
+    types:
+      - completed                      # Se dispara al completarse (éxito o fallo)
 
 jobs:
   deploy:
+    # Solo se ejecuta si el CI terminó con éxito.
+    # Si el CI falla, el deploy se salta automáticamente.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     runs-on: ubuntu-latest
+
+    # Environment "production" solo etiqueta el deploy para historial
+    # (lo verás en Settings → Environments si quieres usarlo más adelante)
+    environment: production
 
     steps:
       - name: Deploy to VPS via SSH
+        # Acción que abre una sesión SSH hacia el VPS y ejecuta el script definido
         uses: appleboy/ssh-action@v1.0.0
         with:
+          # Host/IP público del VPS (secret: VPS_HOST)
           host: ${{ secrets.VPS_HOST }}
+
+          # Usuario con el que te conectas al VPS (secret: VPS_USER)
           username: ${{ secrets.VPS_USER }}
+
+          # Clave privada SSH en formato OpenSSH (secret: VPS_SSH_KEY)
           key: ${{ secrets.VPS_SSH_KEY }}
+
+          # Puerto SSH del VPS (en tu caso: 5898, secret: VPS_SSH_PORT)
           port: ${{ secrets.VPS_SSH_PORT }}
+
+          # Script que se ejecuta DENTRO del VPS una vez establecida la conexión
           script: |
+            # Ir al directorio del proyecto (secret: VPS_PROJECT_PATH, ej: /root/espacio_back)
             cd ${{ secrets.VPS_PROJECT_PATH }}
 
             echo ">>> Haciendo git pull..."
             git pull origin main
 
-            echo ">>> Instalando dependencias..."
+            echo ">>> Instalando dependencias (npm ci || npm install)..."
             npm ci || npm install
 
             echo ">>> Build de NestJS..."
             npm run build
 
-            echo ">>> Reiniciando PM2 (prd_backend)..."
+            echo ">>> Reiniciando PM2..."
+            # Nombre del proceso PM2 (secret: VPS_PM2_APP, ej: prd_backend)
             pm2 restart ${{ secrets.VPS_PM2_APP }}
 
             echo ">>> Estado PM2:"

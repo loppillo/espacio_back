@@ -1,3 +1,20 @@
+# -----------------------------------------------------------
+# Ruta del archivo: .github/workflows/ci.yml
+# Workflow: CI - espacio_back
+#
+# Objetivo:
+#   - Ejecutar validaciones automáticas cada vez que se hace push
+#     o pull request contra la rama main.
+#   - Validar:
+#       1. Instalación correcta de dependencias
+#       2. Compilación correcta del proyecto NestJS
+#
+# Este workflow es el que habilita el pipeline profesional:
+#   - Si CI falla => NO hay Deploy
+#   - Si CI pasa  => Ejecuta Deploy - espacio_back
+# -----------------------------------------------------------
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+
 name: CI - espacio_back
 
 on:
@@ -11,17 +28,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      # 1. Descarga el código del repositorio
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      # 2. Usa Node.js versión 20 (LTS recomendado)
+      - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      # 3. Instala dependencias de forma limpia (npm ci)
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Build project
+      # 4. Ejecuta el build del backend NestJS
+      - name: Compilar proyecto NestJS
         run: npm run build
