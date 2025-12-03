@@ -116,14 +116,20 @@ export class OrdersService {
     // ✅ Numero de venta antes de crear el pedido
     const numeroVenta = await this.generarNumeroVenta();
 
+    // ✅ Validar propina
+    const safePropina = isNaN(Number(propina)) ? 0 : Number(propina);
+
+    // ✅ Validar numero de mesa
+    const safeTableNumber = isNaN(Number(mesa.numero_mesa)) ? 0 : Number(mesa.numero_mesa);
+
     // ✅ Crear pedido base
     const newOrder = this.orderRepository.create({
-      tableNumber: Number(mesa.numero_mesa),
+      tableNumber: safeTableNumber,
       orderType,
       estado: 'activo',
       status: 'pendiente',
       paymentMethod: '',
-      propina,
+      propina: safePropina,
       total: 0,
       numeroVenta,
       mesa,
@@ -166,7 +172,7 @@ export class OrdersService {
     await this.productsOrdersRepository.save(orderProducts);
 
     // ✅ Total final
-    savedOrder.total = total + propina;
+    savedOrder.total = total + safePropina;
     await this.orderRepository.save(savedOrder);
 
     // ✅ Actualizar mesa
