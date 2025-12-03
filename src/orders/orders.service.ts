@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
@@ -17,7 +17,7 @@ import { CostoEnvio } from 'src/costo_envio/entities/costo_envio.entity';
 
 @Injectable()
 export class OrdersService {
-
+public readonly logger = new Logger(OrdersService.name);
   constructor(
     @InjectDataSource() private dataSource: DataSource,
     @InjectRepository(Order)
@@ -107,19 +107,19 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
-    console.log('🚀 STARTING CREATE ORDER', createOrderDto);
+    this.logger.log('🚀 STARTING CREATE ORDER', createOrderDto);
     const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
 
     // ✅ Validar mesa
-    console.log('🔍 Buscando mesa ID:', mesaId);
+    this.logger.log(`🔍 Buscando mesa ID: ${mesaId}`);
     const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
     if (!mesa) throw new BadRequestException('La mesa no existe');
-    console.log('✅ Mesa encontrada:', mesa);
+    this.logger.log(`✅ Mesa encontrada: ${JSON.stringify(mesa)}`);
 
     // ✅ Numero de venta antes de crear el pedido
-    console.log('🔢 Generando numero de venta...');
+    this.logger.log('🔢 Generando numero de venta...');
     const numeroVenta = await this.generarNumeroVenta();
-    console.log('✅ Numero de venta generado:', numeroVenta);
+    this.logger.log(`✅ Numero de venta generado: ${numeroVenta}`);
     const safeNumeroVenta = isNaN(Number(numeroVenta)) ? 1 : Number(numeroVenta);
 
     // ✅ Validar propina
@@ -128,7 +128,7 @@ export class OrdersService {
     // ✅ Validar numero de mesa
     const safeTableNumber = isNaN(Number(mesa.numero_mesa)) ? 0 : Number(mesa.numero_mesa);
 
-    console.log('DEBUG CREATE ORDER:', {
+    this.logger.debug('DEBUG CREATE ORDER:', {
       propina, safePropina,
       tableNumber: mesa.numero_mesa, safeTableNumber,
       numeroVenta, safeNumeroVenta
@@ -855,16 +855,16 @@ export class OrdersService {
 
   private async generarNumeroVenta(): Promise<number> {
     try {
-      console.log('   ↳ Ejecutando query MAX(numeroVenta)...');
+      this.logger.debug('   ↳ Ejecutando query MAX(numeroVenta)...');
       const { max } = await this.orderRepository
         .createQueryBuilder('order')
         .select('MAX(order.numeroVenta)', 'max')
         .getRawOne();
 
-      console.log('   ↳ Resultado MAX:', max);
+      this.logger.debug(`   ↳ Resultado MAX: ${max}`);
       return (max || 0) + 1;
     } catch (error) {
-      console.error('❌ Error en generarNumeroVenta:', error);
+      this.logger.error('❌ Error en generarNumeroVenta:', error);
       throw error;
     }
   }
