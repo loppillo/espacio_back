@@ -17,7 +17,7 @@ import { CostoEnvio } from 'src/costo_envio/entities/costo_envio.entity';
 
 @Injectable()
 export class OrdersService {
-public readonly logger = new Logger(OrdersService.name);
+  private readonly logger = new Logger(OrdersService.name);
   constructor(
     @InjectDataSource() private dataSource: DataSource,
     @InjectRepository(Order)
