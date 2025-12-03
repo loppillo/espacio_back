@@ -39,7 +39,7 @@ import { MailModule } from './mail/mail.module';
       port: 3306,
       username: 'usuario_node',
       password: 'siQA8Ew(wbaGEs',
-      database: 'pub_app',
+      database: 'prd_espacio-bl',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
