@@ -7,15 +7,17 @@ import { UpdateCostoEnvioDto } from './dto/update-costo_envio.dto';
 export class CostoEnvioController {
   constructor(private readonly costoEnvioService: CostoEnvioService) {}
 
-  @Post()
-  create(@Body() createCostoEnvioDto: CreateCostoEnvioDto) {
-    return this.costoEnvioService.create(createCostoEnvioDto);
-  }
 
   @Get()
   findAll() {
     return this.costoEnvioService.findAll();
   }
+
+  @Post()
+  create(@Body() createCostoEnvioDto: CreateCostoEnvioDto) {
+    return this.costoEnvioService.create(createCostoEnvioDto);
+  }
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {
