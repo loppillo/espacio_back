@@ -32,9 +32,6 @@ export class CreateSOrderDto {
   @IsNumber()
   total?: number;
 
-  @IsOptional()
-  @IsNumber()
-  propina?: number;
 
   @IsOptional()
   @IsString()
