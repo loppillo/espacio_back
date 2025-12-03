@@ -36,6 +36,7 @@ export class CreateOrderDto {
   @IsString()
   status: string;
 
+  @IsOptional()
   @IsString()
   paymentMethod: string;
 
