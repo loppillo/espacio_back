@@ -115,6 +115,7 @@ export class OrdersService {
 
     // ✅ Numero de venta antes de crear el pedido
     const numeroVenta = await this.generarNumeroVenta();
+    const safeNumeroVenta = isNaN(Number(numeroVenta)) ? 1 : Number(numeroVenta);
 
     // ✅ Validar propina
     const safePropina = isNaN(Number(propina)) ? 0 : Number(propina);
@@ -122,16 +123,22 @@ export class OrdersService {
     // ✅ Validar numero de mesa
     const safeTableNumber = isNaN(Number(mesa.numero_mesa)) ? 0 : Number(mesa.numero_mesa);
 
+    console.log('DEBUG CREATE ORDER:', {
+      propina, safePropina,
+      tableNumber: mesa.numero_mesa, safeTableNumber,
+      numeroVenta, safeNumeroVenta
+    });
+
     // ✅ Crear pedido base
     const newOrder = this.orderRepository.create({
       tableNumber: safeTableNumber,
       orderType,
       estado: 'activo',
       status: 'pendiente',
-      paymentMethod: '',
+      paymentMethod: createOrderDto.paymentMethod || '',
       propina: safePropina,
       total: 0,
-      numeroVenta,
+      numeroVenta: safeNumeroVenta,
       mesa,
       detalle_venta: createOrderDto.detalle_venta || null,
     });
@@ -177,6 +184,9 @@ export class OrdersService {
 
     // ✅ Total final
     const safeTotal = isNaN(Number(total)) ? 0 : Number(total);
+
+    console.log('DEBUG TOTAL:', { total, safeTotal, safePropina, finalTotal: safeTotal + safePropina });
+
     savedOrder.total = safeTotal + safePropina;
     await this.orderRepository.save(savedOrder);
 

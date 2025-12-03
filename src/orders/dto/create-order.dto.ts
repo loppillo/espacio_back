@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 
 
-class OrderProductDto {
+export class OrderProductDto {
   @IsInt()
   id: number; // id del producto
 
