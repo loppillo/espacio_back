@@ -107,14 +107,19 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
+    console.log('🚀 STARTING CREATE ORDER', createOrderDto);
     const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
 
     // ✅ Validar mesa
+    console.log('🔍 Buscando mesa ID:', mesaId);
     const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
     if (!mesa) throw new BadRequestException('La mesa no existe');
+    console.log('✅ Mesa encontrada:', mesa);
 
     // ✅ Numero de venta antes de crear el pedido
+    console.log('🔢 Generando numero de venta...');
     const numeroVenta = await this.generarNumeroVenta();
+    console.log('✅ Numero de venta generado:', numeroVenta);
     const safeNumeroVenta = isNaN(Number(numeroVenta)) ? 1 : Number(numeroVenta);
 
     // ✅ Validar propina
@@ -849,12 +854,19 @@ export class OrdersService {
 
 
   private async generarNumeroVenta(): Promise<number> {
-    const { max } = await this.orderRepository
-      .createQueryBuilder('order')
-      .select('MAX(order.numeroVenta)', 'max')
-      .getRawOne();
+    try {
+      console.log('   ↳ Ejecutando query MAX(numeroVenta)...');
+      const { max } = await this.orderRepository
+        .createQueryBuilder('order')
+        .select('MAX(order.numeroVenta)', 'max')
+        .getRawOne();
 
-    return (max || 0) + 1;
+      console.log('   ↳ Resultado MAX:', max);
+      return (max || 0) + 1;
+    } catch (error) {
+      console.error('❌ Error en generarNumeroVenta:', error);
+      throw error;
+    }
   }
 
 
