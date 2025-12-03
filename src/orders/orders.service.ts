@@ -126,7 +126,11 @@ export class OrdersService {
     const safePropina = Number(propina ?? 0) || 0;
 
     // ✅ Validar numero de mesa
-    const safeTableNumber = Number(mesa.numero_mesa ?? 0) || 0;
+   const safeTableNumber = parseInt(mesa.numero_mesa, 10);
+
+if (isNaN(safeTableNumber)) {
+  throw new BadRequestException(`El número de mesa es inválido: ${mesa.numero_mesa}`);
+}
 
     this.logger.debug('DEBUG CREATE ORDER:', {
       propina, safePropina,
