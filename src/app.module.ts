@@ -6,7 +6,6 @@ import { UsersModule } from './users/users.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
-import { PropinaModule } from './propina/propina.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -25,6 +24,7 @@ import { RolesGuard } from './roles/roles.guard';
 import { OrdersGateway } from './orders/orders.gateway';
 import { ThemeModule } from './theme/theme.module';
 import { MailModule } from './mail/mail.module';
+import { CostoEnvioModule } from './costo_envio/costo_envio.module';
 
 
 @Module({
@@ -47,7 +47,7 @@ import { MailModule } from './mail/mail.module';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, PropinaModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule],
+    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule, CostoEnvioModule],
   controllers: [AppController],
   providers: [AppService, OrdersGateway],
 })

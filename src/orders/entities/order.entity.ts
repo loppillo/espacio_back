@@ -2,7 +2,6 @@ import { Customer } from 'src/customer/entities/customer.entity';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 import { Product } from 'src/products/entities/product.entity';
-import { Propina } from 'src/propina/entities/propina.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToOne, ManyToMany, JoinTable, DeleteDateColumn, OneToMany } from 'typeorm';
 
@@ -21,7 +20,6 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   detalle_venta: string;
 
-
   @Column({ type: 'varchar', default: 'activo' })
   estado: string;
 
@@ -38,7 +36,7 @@ export class Order {
   createdAt: Date;
 
   @Column({ type: 'varchar', nullable: true })
-paymentMethod: string | null;
+  paymentMethod: string | null;
 
   @ManyToOne(() => User, user => user.id)
   @JoinColumn({ name: 'userId' })
@@ -48,7 +46,7 @@ paymentMethod: string | null;
   @JoinColumn({ name: 'customerId' })
   customer: Customer;
 
- @OneToMany(() => ProductsOrders, po => po.order, { eager: true })
+  @OneToMany(() => ProductsOrders, po => po.order, { eager: true })
   orderProducts: ProductsOrders[];
 
   @ManyToOne(() => Mesa, mesa => mesa.orders, { nullable: true })
@@ -64,7 +62,7 @@ paymentMethod: string | null;
   @Column()
   numeroVenta: number;
 
- @Column({ type: 'int', nullable: true })
-mesaId: number | null;
+  @Column({ type: 'int', nullable: true })
+  mesaId: number | null;
 
 }

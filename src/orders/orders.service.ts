@@ -7,12 +7,12 @@ import { DataSource, In, Repository } from 'typeorm';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Product } from 'src/products/entities/product.entity';
-import { Propina } from 'src/propina/entities/propina.entity';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 import { OrdersGateway } from './orders.gateway';
 import { MailService } from 'src/mail/mail.service';
+import { CostoEnvio } from 'src/costo_envio/entities/costo_envio.entity';
 
 
 @Injectable()
@@ -28,12 +28,12 @@ export class OrdersService {
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    @InjectRepository(Propina)
-    private readonly propinaRepository: Repository<Propina>,
     @InjectRepository(Mesa)
     private readonly mesaRepository: Repository<Mesa>,
     @InjectRepository(ProductsOrders)
     private readonly productsOrdersRepository: Repository<ProductsOrders>,
+    @InjectRepository(CostoEnvio)
+    private readonly costoEnvioRepository: Repository<CostoEnvio>,
     private ordersGateway: OrdersGateway,
     private mailService: MailService,
   ) { }
@@ -192,7 +192,7 @@ export class OrdersService {
 
 
   async creates(createOrderDto: CreateSOrderDto) {
-    const { products = [], propina = 0, orderType = 'delivery' } = createOrderDto;
+    const { products = [], orderType = 'delivery' } = createOrderDto;
 
     if (orderType !== 'delivery') {
       throw new BadRequestException('Este método solo permite pedidos de delivery.');
@@ -243,7 +243,6 @@ export class OrdersService {
     // -----------------------------
     let order = this.orderRepository.create({
       detalle_venta: createOrderDto.detalle_venta,
-      propina,
       status: 'pendiente',
       orderType,
       paymentMethod: createOrderDto.paymentMethod || 'pendiente',
@@ -298,14 +297,31 @@ export class OrdersService {
     await this.productsOrdersRepository.save(ops);
 
     // -----------------------------
-    // F) Actualizar total
+    // F) Obtener costo de envío
     // -----------------------------
-    order.total = total + propina;
+    let costoEnvio = 0;
+    try {
+      const costoEnvioData = await this.costoEnvioRepository.findOne({
+        where: {},
+        order: { id: 'DESC' },
+      });
+
+      if (costoEnvioData) {
+        costoEnvio = costoEnvioData.precio_envio;
+      }
+    } catch (error) {
+      console.error('Error al obtener costo de envío, usando 0:', error);
+    }
+
+    // -----------------------------
+    // G) Actualizar total con costo de envío
+    // -----------------------------
+    order.total = total + costoEnvio;
 
     await this.orderRepository.save(order);
 
     // -----------------------------
-    // G) Retornar full order
+    // H) Retornar full order
     // -----------------------------
     const full = await this.orderRepository.findOne({
       where: { id: order.id },
@@ -319,7 +335,7 @@ export class OrdersService {
     );
 
     // -----------------------------
-    // H) Enviar email de confirmación
+    // I) Enviar email de confirmación
     // -----------------------------
     if (customer.customerEmail) {
       try {
@@ -345,7 +361,7 @@ export class OrdersService {
           tiempoEstimado: '50 minutos',
           products: productsForEmail,
           subtotal: total,
-          costoEnvio: propina, // usando propina como costo de envío
+          costoEnvio: costoEnvio,
           total: order.total,
         });
       } catch (error) {
