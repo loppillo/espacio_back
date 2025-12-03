@@ -120,13 +120,13 @@ export class OrdersService {
     this.logger.log('🔢 Generando numero de venta...');
     const numeroVenta = await this.generarNumeroVenta();
     this.logger.log(`✅ Numero de venta generado: ${numeroVenta}`);
-    const safeNumeroVenta = isNaN(Number(numeroVenta)) ? 1 : Number(numeroVenta);
+    const safeNumeroVenta = Number(numeroVenta ?? 1) || 1;
 
     // ✅ Validar propina
-    const safePropina = isNaN(Number(propina)) ? 0 : Number(propina);
+    const safePropina = Number(propina ?? 0) || 0;
 
     // ✅ Validar numero de mesa
-    const safeTableNumber = isNaN(Number(mesa.numero_mesa)) ? 0 : Number(mesa.numero_mesa);
+    const safeTableNumber = Number(mesa.numero_mesa ?? 0) || 0;
 
     this.logger.debug('DEBUG CREATE ORDER:', {
       propina, safePropina,
