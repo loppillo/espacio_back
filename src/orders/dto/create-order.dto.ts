@@ -20,7 +20,6 @@ export class OrderProductDto {
 
 export class CreateOrderDto {
   @IsOptional()
-  @IsInt()
   tableNumber?: number;
 
   @IsString()

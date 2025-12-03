@@ -857,21 +857,30 @@ if (isNaN(safeTableNumber)) {
   }
 
 
-  private async generarNumeroVenta(): Promise<number> {
-    try {
-      this.logger.debug('   ↳ Ejecutando query MAX(numeroVenta)...');
-      const { max } = await this.orderRepository
-        .createQueryBuilder('order')
-        .select('MAX(order.numeroVenta)', 'max')
-        .getRawOne();
+private async generarNumeroVenta(): Promise<number> {
+  try {
+    this.logger.debug('   ↳ Ejecutando query MAX(numeroVenta)...');
 
-      this.logger.debug(`   ↳ Resultado MAX: ${max}`);
-      return (max || 0) + 1;
-    } catch (error) {
-      this.logger.error('❌ Error en generarNumeroVenta:', error);
-      throw error;
+    const { max } = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('MAX(order.numeroVenta)', 'max')
+      .getRawOne();
+
+    this.logger.debug(`   ↳ Resultado RAW MAX:`, max);
+
+    const parsed = parseInt(max, 10);
+
+    if (isNaN(parsed)) {
+      this.logger.error(`❌ MAX(numeroVenta) devolvió valor inválido: ${max}`);
+      return 1;
     }
+
+    return parsed + 1;
+  } catch (error) {
+    this.logger.error('❌ Error en generarNumeroVenta:', error);
+    throw error;
   }
+}
 
 
   async getById(id: number) {
