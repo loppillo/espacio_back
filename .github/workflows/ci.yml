@@ -32,11 +32,11 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      # 2. Usa Node.js versión 20 (LTS recomendado)
+       # 2. Usa Node.js versión 18 (igual que en el VPS)
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18.20.8'   # o '18.x' si prefieres rango
           cache: 'npm'
 
       # 3. Instala dependencias de forma limpia (npm ci)
