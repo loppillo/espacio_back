@@ -5,24 +5,25 @@ import { User } from 'src/users/entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Product } from 'src/products/entities/product.entity';
-import { Propina } from 'src/propina/entities/propina.entity';
 import { CreateSOrderDto } from './dto/create.sorder';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 import { OrdersGateway } from './orders.gateway';
 import { MailService } from 'src/mail/mail.service';
+import { CostoEnvio } from 'src/costo_envio/entities/costo_envio.entity';
 export declare class OrdersService {
     private dataSource;
     private readonly orderRepository;
     private readonly userRepository;
     private readonly customerRepository;
     private readonly productRepository;
-    private readonly propinaRepository;
     private readonly mesaRepository;
     private readonly productsOrdersRepository;
+    private readonly costoEnvioRepository;
     private ordersGateway;
     private mailService;
-    constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, propinaRepository: Repository<Propina>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, ordersGateway: OrdersGateway, mailService: MailService);
+    private readonly logger;
+    constructor(dataSource: DataSource, orderRepository: Repository<Order>, userRepository: Repository<User>, customerRepository: Repository<Customer>, productRepository: Repository<Product>, mesaRepository: Repository<Mesa>, productsOrdersRepository: Repository<ProductsOrders>, costoEnvioRepository: Repository<CostoEnvio>, ordersGateway: OrdersGateway, mailService: MailService);
     update(id: number, dto: UpdateOrderDto & {
         propinaTipo?: string;
         propinaValor?: number;

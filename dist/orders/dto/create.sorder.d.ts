@@ -8,7 +8,6 @@ export declare class CreateSOrderDto {
     customerId?: number;
     cantidad?: number;
     total?: number;
-    propina?: number;
     status?: string;
     orderType?: string;
     paymentMethod?: string;

@@ -9,17 +9,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreatePropinaDto = void 0;
+exports.CreateCostoEnvioDto = void 0;
 const class_validator_1 = require("class-validator");
-class CreatePropinaDto {
+class CreateCostoEnvioDto {
 }
-exports.CreatePropinaDto = CreatePropinaDto;
+exports.CreateCostoEnvioDto = CreateCostoEnvioDto;
 __decorate([
-    (0, class_validator_1.IsDecimal)({ decimal_digits: '3', force_decimal: true }, { message: 'El valor debe ser un decimal con 3 dígitos decimales, por ejemplo, 2.000' }),
+    (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
-], CreatePropinaDto.prototype, "amount", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], CreatePropinaDto.prototype, "orderId", void 0);
-//# sourceMappingURL=create-propina.dto.js.map
+], CreateCostoEnvioDto.prototype, "precio_envio", void 0);
+//# sourceMappingURL=create-costo_envio.dto.js.map

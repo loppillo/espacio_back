@@ -15,7 +15,6 @@ const users_module_1 = require("./users/users.module");
 const categories_module_1 = require("./categories/categories.module");
 const products_module_1 = require("./products/products.module");
 const orders_module_1 = require("./orders/orders.module");
-const propina_module_1 = require("./propina/propina.module");
 const typeorm_1 = require("@nestjs/typeorm");
 const serve_static_1 = require("@nestjs/serve-static");
 const path_1 = require("path");
@@ -29,6 +28,7 @@ const horarios_module_1 = require("./horarios/horarios.module");
 const orders_gateway_1 = require("./orders/orders.gateway");
 const theme_module_1 = require("./theme/theme.module");
 const mail_module_1 = require("./mail/mail.module");
+const costo_envio_module_1 = require("./costo_envio/costo_envio.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -45,7 +45,7 @@ exports.AppModule = AppModule = __decorate([
                 port: 3306,
                 username: 'usuario_node',
                 password: 'siQA8Ew(wbaGEs',
-                database: 'pub_app',
+                database: 'prd_espacio-bl',
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
                 synchronize: true,
             }),
@@ -53,7 +53,7 @@ exports.AppModule = AppModule = __decorate([
                 rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
                 serveRoot: '/uploads',
             }),
-            users_module_1.UsersModule, categories_module_1.CategoriesModule, gastos_module_1.GastosModule, products_module_1.ProductsModule, orders_module_1.OrdersModule, propina_module_1.PropinaModule, customer_module_1.CustomerModule, mesas_module_1.MesasModule, gastos_module_1.GastosModule, categoria_gasto_module_1.CategoriaGastoModule, auth_module_1.AuthModule, products_orders_module_1.ProductsOrdersModule, horarios_module_1.HorariosModule, theme_module_1.ThemeModule, mail_module_1.MailModule
+            users_module_1.UsersModule, categories_module_1.CategoriesModule, gastos_module_1.GastosModule, products_module_1.ProductsModule, orders_module_1.OrdersModule, customer_module_1.CustomerModule, mesas_module_1.MesasModule, gastos_module_1.GastosModule, categoria_gasto_module_1.CategoriaGastoModule, auth_module_1.AuthModule, products_orders_module_1.ProductsOrdersModule, horarios_module_1.HorariosModule, theme_module_1.ThemeModule, mail_module_1.MailModule, costo_envio_module_1.CostoEnvioModule
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, orders_gateway_1.OrdersGateway],

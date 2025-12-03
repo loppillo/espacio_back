@@ -9,11 +9,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AgregarProductosDto = exports.ProductoCantidadDto = exports.CreateOrderDto = void 0;
+exports.AgregarProductosDto = exports.ProductoCantidadDto = exports.CreateOrderDto = exports.OrderProductDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class OrderProductDto {
 }
+exports.OrderProductDto = OrderProductDto;
 __decorate([
     (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
@@ -27,7 +28,6 @@ class CreateOrderDto {
 exports.CreateOrderDto = CreateOrderDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], CreateOrderDto.prototype, "tableNumber", void 0);
 __decorate([
@@ -48,6 +48,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "status", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "paymentMethod", void 0);

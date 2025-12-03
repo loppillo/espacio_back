@@ -16,11 +16,11 @@ const typeorm_1 = require("@nestjs/typeorm");
 const customer_entity_1 = require("../customer/entities/customer.entity");
 const product_entity_1 = require("../products/entities/product.entity");
 const mesa_entity_1 = require("../mesas/entities/mesa.entity");
-const propina_entity_1 = require("../propina/entities/propina.entity");
 const products_order_entity_1 = require("../products-orders/entities/products-order.entity");
 const print_service_1 = require("./print/print.service");
 const orders_gateway_1 = require("./orders.gateway");
 const mail_module_1 = require("../mail/mail.module");
+const costo_envio_entity_1 = require("../costo_envio/entities/costo_envio.entity");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -30,11 +30,11 @@ exports.OrdersModule = OrdersModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([
                 order_entity_1.Order,
                 user_entity_1.User,
-                propina_entity_1.Propina,
                 customer_entity_1.Customer,
                 product_entity_1.Product,
                 mesa_entity_1.Mesa,
                 products_order_entity_1.ProductsOrders,
+                costo_envio_entity_1.CostoEnvio,
             ]),
             mail_module_1.MailModule,
         ],

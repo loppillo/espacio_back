@@ -1,4 +1,4 @@
-declare class OrderProductDto {
+export declare class OrderProductDto {
     id: number;
     cantidad: number;
 }
@@ -19,4 +19,3 @@ export declare class ProductoCantidadDto {
 export declare class AgregarProductosDto {
     productos: ProductoCantidadDto[];
 }
-export {};

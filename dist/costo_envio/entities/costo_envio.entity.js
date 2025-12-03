@@ -9,26 +9,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Propina = void 0;
-const order_entity_1 = require("../../orders/entities/order.entity");
+exports.CostoEnvio = void 0;
 const typeorm_1 = require("typeorm");
-let Propina = class Propina {
+let CostoEnvio = class CostoEnvio {
 };
-exports.Propina = Propina;
+exports.CostoEnvio = CostoEnvio;
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
-], Propina.prototype, "id", void 0);
+], CostoEnvio.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal'),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", Number)
-], Propina.prototype, "amount", void 0);
-__decorate([
-    (0, typeorm_1.OneToOne)(() => order_entity_1.Order, order => order.propina, { cascade: true, eager: true }),
-    (0, typeorm_1.JoinColumn)(),
-    __metadata("design:type", order_entity_1.Order)
-], Propina.prototype, "order", void 0);
-exports.Propina = Propina = __decorate([
-    (0, typeorm_1.Entity)('tips')
-], Propina);
-//# sourceMappingURL=propina.entity.js.map
+], CostoEnvio.prototype, "precio_envio", void 0);
+exports.CostoEnvio = CostoEnvio = __decorate([
+    (0, typeorm_1.Entity)('costo_envio')
+], CostoEnvio);
+//# sourceMappingURL=costo_envio.entity.js.map

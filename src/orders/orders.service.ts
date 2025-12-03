@@ -110,35 +110,60 @@ export class OrdersService {
     this.logger.log('🚀 STARTING CREATE ORDER', createOrderDto);
     const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
 
-    // ✅ Validar mesa
-    this.logger.log(`🔍 Buscando mesa ID: ${mesaId}`);
-    const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
+    // 1️⃣ Validaciones iniciales (Mesa y Productos)
+    if (!products || products.length === 0) {
+      throw new BadRequestException('El pedido debe tener productos');
+    }
+
+    const [mesa, productEntities] = await Promise.all([
+      this.mesaRepository.findOne({ where: { id: Number(mesaId) } }),
+      this.productRepository.findBy({ id: In(products.map(p => p.id)) }),
+    ]);
+
     if (!mesa) throw new BadRequestException('La mesa no existe');
-    this.logger.log(`✅ Mesa encontrada: ${JSON.stringify(mesa)}`);
 
-    // ✅ Numero de venta antes de crear el pedido
-    this.logger.log('🔢 Generando numero de venta...');
+    if (productEntities.length !== products.length) {
+      throw new BadRequestException('Uno o más productos no existen');
+    }
+
+    // 2️⃣ Cálculos en memoria (Total y Estructuras)
+    let totalProductos = 0;
+    const orderProductsData: ProductsOrders[] = [];
+
+    // Map para acceso rápido a entidades de producto
+    const productMap = new Map(productEntities.map(p => [p.id, p]));
+
+    for (const p of products) {
+      const productEntity = productMap.get(p.id)!;
+      const price = Number(productEntity.price) || 0;
+      const cantidad = Number(p.cantidad) || 0;
+      const subtotal = price * cantidad;
+
+      totalProductos += subtotal;
+
+      // Preparamos la instancia pero aun no tiene el ID de la orden
+      const op = this.productsOrdersRepository.create({
+        productId: productEntity.id,
+        cantidad,
+        precioUnitario: price,
+        subtotal,
+      });
+      orderProductsData.push(op);
+    }
+
+    const safePropina = Number(propina) || 0;
+    const totalFinal = totalProductos + safePropina;
+    const safeTableNumber = parseInt(mesa.numero_mesa, 10);
+
+    if (isNaN(safeTableNumber)) {
+      throw new BadRequestException(`El número de mesa es inválido: ${mesa.numero_mesa}`);
+    }
+
+    // 3️⃣ Generar número de venta
     const numeroVenta = await this.generarNumeroVenta();
-    this.logger.log(`✅ Numero de venta generado: ${numeroVenta}`);
-    const safeNumeroVenta = Number(numeroVenta ?? 1) || 1;
+    const safeNumeroVenta = Number(numeroVenta) || 1;
 
-    // ✅ Validar propina
-    const safePropina = Number(propina ?? 0) || 0;
-
-    // ✅ Validar numero de mesa
-   const safeTableNumber = parseInt(mesa.numero_mesa, 10);
-
-if (isNaN(safeTableNumber)) {
-  throw new BadRequestException(`El número de mesa es inválido: ${mesa.numero_mesa}`);
-}
-
-    this.logger.debug('DEBUG CREATE ORDER:', {
-      propina, safePropina,
-      tableNumber: mesa.numero_mesa, safeTableNumber,
-      numeroVenta, safeNumeroVenta
-    });
-
-    // ✅ Crear pedido base
+    // 4️⃣ Crear y Guardar Orden (Una sola transacción idealmente, pero aquí secuencial)
     const newOrder = this.orderRepository.create({
       tableNumber: safeTableNumber,
       orderType,
@@ -146,76 +171,41 @@ if (isNaN(safeTableNumber)) {
       status: 'pendiente',
       paymentMethod: createOrderDto.paymentMethod || '',
       propina: safePropina,
-      total: 0,
+      total: totalFinal,
       numeroVenta: safeNumeroVenta,
-      mesa,
+      mesa, // Relación directa
+      mesaId: mesa.id, // ID explícito si es necesario
       detalle_venta: createOrderDto.detalle_venta || null,
     });
 
-    // ✅ Guardar pedido base
-    let savedOrder = await this.orderRepository.save(newOrder);
+    const savedOrder = await this.orderRepository.save(newOrder);
 
-    // ✅ Validar productos
-    if (!products || products.length === 0) {
-      throw new BadRequestException('El pedido debe tener productos');
-    }
+    // 5️⃣ Asignar ID de orden a productos y guardarlos
+    orderProductsData.forEach(op => op.orderId = savedOrder.id);
+    await this.productsOrdersRepository.save(orderProductsData);
 
-    const productIds = products.map(p => p.id);
-    const productEntities = await this.productRepository.findBy({ id: In(productIds) });
-
-    if (productEntities.length !== products.length) {
-      throw new BadRequestException('Uno o más productos no existen');
-    }
-
-    // ✅ Crear orderProducts
-    let total = 0;
-
-    const orderProducts = products.map(p => {
-      const productEntity = productEntities.find(pe => pe.id === p.id)!;
-
-      const price = isNaN(Number(productEntity.price)) ? 0 : Number(productEntity.price);
-      const cantidad = isNaN(Number(p.cantidad)) ? 0 : Number(p.cantidad);
-
-      const subtotal = price * cantidad;
-
-      total += subtotal;
-
-      return this.productsOrdersRepository.create({
-        orderId: savedOrder.id,          // ✅ obligatorio según tu entidad
-        productId: productEntity.id,     // ✅ obligatorio
-        cantidad: cantidad,
-        precioUnitario: price,
-        subtotal,
-      });
-    });
-
-    await this.productsOrdersRepository.save(orderProducts);
-
-    // ✅ Total final
-    const safeTotal = isNaN(Number(total)) ? 0 : Number(total);
-
-    console.log('DEBUG TOTAL:', { total, safeTotal, safePropina, finalTotal: safeTotal + safePropina });
-
-    savedOrder.total = safeTotal + safePropina;
-    await this.orderRepository.save(savedOrder);
-
-    // ✅ Actualizar mesa
+    // 6️⃣ Actualizar Mesa
     mesa.status = 'ocupada';
     await this.mesaRepository.save(mesa);
 
-    // ✅ Cargar pedido final
+    // 7️⃣ Respuesta y Notificaciones
+    // Re-consultamos para devolver la estructura completa con relaciones si es necesario,
+    // o construimos la respuesta manualmente para ahorrar query.
+    // Por consistencia con el frontend, solemos devolver todo.
     const fullOrder = await this.orderRepository.findOne({
       where: { id: savedOrder.id },
       relations: ['customer', 'orderProducts', 'orderProducts.product', 'mesa'],
     });
 
+    if (!fullOrder) throw new NotFoundException('Error al recuperar la orden creada');
+
     const sanitized = this.sanitizeOrder(fullOrder);
 
-    // ✅ WebSocket
-    Promise.resolve().then(() => {
-      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-      this.ordersGateway.notifyNewOrder(sanitized);
-    });
+    // WebSocket (Async)
+    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    this.ordersGateway.notifyNewOrder(sanitized);
+
+    this.logger.log(`✅ Orden creada con éxito: ID ${savedOrder.id} - Total: ${totalFinal}`);
 
     return sanitized;
   }
@@ -857,30 +847,30 @@ if (isNaN(safeTableNumber)) {
   }
 
 
-private async generarNumeroVenta(): Promise<number> {
-  try {
-    this.logger.debug('   ↳ Ejecutando query MAX(numeroVenta)...');
+  private async generarNumeroVenta(): Promise<number> {
+    try {
+      this.logger.debug('   ↳ Ejecutando query MAX(numeroVenta)...');
 
-    const { max } = await this.orderRepository
-      .createQueryBuilder('order')
-      .select('MAX(order.numeroVenta)', 'max')
-      .getRawOne();
+      const { max } = await this.orderRepository
+        .createQueryBuilder('order')
+        .select('MAX(order.numeroVenta)', 'max')
+        .getRawOne();
 
-    this.logger.debug(`   ↳ Resultado RAW MAX:`, max);
+      this.logger.debug(`   ↳ Resultado RAW MAX:`, max);
 
-    const parsed = parseInt(max, 10);
+      const parsed = parseInt(max, 10);
 
-    if (isNaN(parsed)) {
-      this.logger.error(`❌ MAX(numeroVenta) devolvió valor inválido: ${max}`);
-      return 1;
+      if (isNaN(parsed)) {
+        this.logger.error(`❌ MAX(numeroVenta) devolvió valor inválido: ${max}`);
+        return 1;
+      }
+
+      return parsed + 1;
+    } catch (error) {
+      this.logger.error('❌ Error en generarNumeroVenta:', error);
+      throw error;
     }
-
-    return parsed + 1;
-  } catch (error) {
-    this.logger.error('❌ Error en generarNumeroVenta:', error);
-    throw error;
   }
-}
 
 
   async getById(id: number) {

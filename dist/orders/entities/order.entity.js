@@ -40,7 +40,7 @@ __decorate([
     __metadata("design:type", String)
 ], Order.prototype, "estado", void 0);
 __decorate([
-    (0, typeorm_1.Column)('int'),
+    (0, typeorm_1.Column)('int', { default: 0 }),
     __metadata("design:type", Number)
 ], Order.prototype, "propina", void 0);
 __decorate([
@@ -56,7 +56,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Order.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Order.prototype, "paymentMethod", void 0);
 __decorate([

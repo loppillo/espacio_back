@@ -6,21 +6,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PropinaModule = void 0;
+exports.CostoEnvioModule = void 0;
 const common_1 = require("@nestjs/common");
-const propina_service_1 = require("./propina.service");
-const propina_controller_1 = require("./propina.controller");
+const costo_envio_service_1 = require("./costo_envio.service");
+const costo_envio_controller_1 = require("./costo_envio.controller");
+const costo_envio_entity_1 = require("./entities/costo_envio.entity");
 const typeorm_1 = require("@nestjs/typeorm");
-const propina_entity_1 = require("./entities/propina.entity");
-const order_entity_1 = require("../orders/entities/order.entity");
-let PropinaModule = class PropinaModule {
+let CostoEnvioModule = class CostoEnvioModule {
 };
-exports.PropinaModule = PropinaModule;
-exports.PropinaModule = PropinaModule = __decorate([
+exports.CostoEnvioModule = CostoEnvioModule;
+exports.CostoEnvioModule = CostoEnvioModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([propina_entity_1.Propina]), typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order])],
-        controllers: [propina_controller_1.PropinaController],
-        providers: [propina_service_1.PropinaService],
+        imports: [typeorm_1.TypeOrmModule.forFeature([costo_envio_entity_1.CostoEnvio])],
+        controllers: [costo_envio_controller_1.CostoEnvioController],
+        providers: [costo_envio_service_1.CostoEnvioService],
     })
-], PropinaModule);
-//# sourceMappingURL=propina.module.js.map
+], CostoEnvioModule);
+//# sourceMappingURL=costo_envio.module.js.map

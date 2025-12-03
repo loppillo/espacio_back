@@ -12,69 +12,69 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PropinaController = void 0;
+exports.CostoEnvioController = void 0;
 const common_1 = require("@nestjs/common");
-const propina_service_1 = require("./propina.service");
-const create_propina_dto_1 = require("./dto/create-propina.dto");
-const update_propina_dto_1 = require("./dto/update-propina.dto");
-let PropinaController = class PropinaController {
-    constructor(propinaService) {
-        this.propinaService = propinaService;
-    }
-    create(createPropinaDto) {
-        return this.propinaService.create(createPropinaDto);
+const costo_envio_service_1 = require("./costo_envio.service");
+const create_costo_envio_dto_1 = require("./dto/create-costo_envio.dto");
+const update_costo_envio_dto_1 = require("./dto/update-costo_envio.dto");
+let CostoEnvioController = class CostoEnvioController {
+    constructor(costoEnvioService) {
+        this.costoEnvioService = costoEnvioService;
     }
     findAll() {
-        return this.propinaService.findAll();
+        return this.costoEnvioService.findAll();
+    }
+    create(createCostoEnvioDto) {
+        return this.costoEnvioService.create(createCostoEnvioDto);
     }
     findOne(id) {
-        return this.propinaService.findOne(+id);
+        return this.costoEnvioService.findOne(+id);
     }
-    update(id, updatePropinaDto) {
-        return this.propinaService.update(+id, updatePropinaDto);
+    update(id, updateCostoEnvioDto) {
+        return this.costoEnvioService.update(+id, updateCostoEnvioDto);
     }
     remove(id) {
-        return this.propinaService.remove(+id);
+        return this.costoEnvioService.remove(+id);
     }
 };
-exports.PropinaController = PropinaController;
-__decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_propina_dto_1.CreatePropinaDto]),
-    __metadata("design:returntype", void 0)
-], PropinaController.prototype, "create", null);
+exports.CostoEnvioController = CostoEnvioController;
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], PropinaController.prototype, "findAll", null);
+], CostoEnvioController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_costo_envio_dto_1.CreateCostoEnvioDto]),
+    __metadata("design:returntype", void 0)
+], CostoEnvioController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
-], PropinaController.prototype, "findOne", null);
+], CostoEnvioController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_propina_dto_1.UpdatePropinaDto]),
+    __metadata("design:paramtypes", [String, update_costo_envio_dto_1.UpdateCostoEnvioDto]),
     __metadata("design:returntype", void 0)
-], PropinaController.prototype, "update", null);
+], CostoEnvioController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
-], PropinaController.prototype, "remove", null);
-exports.PropinaController = PropinaController = __decorate([
-    (0, common_1.Controller)('propina'),
-    __metadata("design:paramtypes", [propina_service_1.PropinaService])
-], PropinaController);
-//# sourceMappingURL=propina.controller.js.map
+], CostoEnvioController.prototype, "remove", null);
+exports.CostoEnvioController = CostoEnvioController = __decorate([
+    (0, common_1.Controller)('costo-envio'),
+    __metadata("design:paramtypes", [costo_envio_service_1.CostoEnvioService])
+], CostoEnvioController);
+//# sourceMappingURL=costo_envio.controller.js.map
