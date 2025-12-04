@@ -106,106 +106,86 @@ export class OrdersService {
     });
   }
 
-  async create(createOrderDto: CreateOrderDto) {
-    this.logger.log('🚀 STARTING CREATE ORDER', createOrderDto);
+async create(createOrderDto: CreateOrderDto) {
     const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
 
-    // 1️⃣ Validaciones iniciales (Mesa y Productos)
+    // ✅ Validar mesa
+    const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
+    if (!mesa) throw new BadRequestException('La mesa no existe');
+
+    // ✅ Numero de venta antes de crear el pedido
+    const numeroVenta = await this.generarNumeroVenta();
+
+    // ✅ Crear pedido base
+    const newOrder = this.orderRepository.create({
+      tableNumber: Number(mesa.numero_mesa),
+      orderType,
+      estado: 'activo',
+      status: 'pendiente',
+      paymentMethod: '',
+      propina,
+      total: 0,
+      numeroVenta,
+      mesa,
+      detalle_venta: createOrderDto.detalle_venta || null,
+    });
+
+    // ✅ Guardar pedido base
+    let savedOrder = await this.orderRepository.save(newOrder);
+
+    // ✅ Validar productos
     if (!products || products.length === 0) {
       throw new BadRequestException('El pedido debe tener productos');
     }
 
-    const [mesa, productEntities] = await Promise.all([
-      this.mesaRepository.findOne({ where: { id: Number(mesaId) } }),
-      this.productRepository.findBy({ id: In(products.map(p => p.id)) }),
-    ]);
-
-    if (!mesa) throw new BadRequestException('La mesa no existe');
+    const productIds = products.map(p => p.id);
+    const productEntities = await this.productRepository.findBy({ id: In(productIds) });
 
     if (productEntities.length !== products.length) {
       throw new BadRequestException('Uno o más productos no existen');
     }
 
-    // 2️⃣ Cálculos en memoria (Total y Estructuras)
-    let totalProductos = 0;
-    const orderProductsData: ProductsOrders[] = [];
+    // ✅ Crear orderProducts
+    let total = 0;
 
-    // Map para acceso rápido a entidades de producto
-    const productMap = new Map(productEntities.map(p => [p.id, p]));
+    const orderProducts = products.map(p => {
+      const productEntity = productEntities.find(pe => pe.id === p.id)!;
+      const subtotal = productEntity.price * p.cantidad;
 
-    for (const p of products) {
-      const productEntity = productMap.get(p.id)!;
-      const price = Number(productEntity.price) || 0;
-      const cantidad = Number(p.cantidad) || 0;
-      const subtotal = price * cantidad;
+      total += subtotal;
 
-      totalProductos += subtotal;
-
-      // Preparamos la instancia pero aun no tiene el ID de la orden
-      const op = this.productsOrdersRepository.create({
-        productId: productEntity.id,
-        cantidad,
-        precioUnitario: price,
+      return this.productsOrdersRepository.create({
+        orderId: savedOrder.id,          // ✅ obligatorio según tu entidad
+        productId: productEntity.id,     // ✅ obligatorio
+        cantidad: p.cantidad,
+        precioUnitario: productEntity.price,
         subtotal,
       });
-      orderProductsData.push(op);
-    }
-
-    const safePropina = Number(propina) || 0;
-    const totalFinal = totalProductos + safePropina;
-    const safeTableNumber = parseInt(mesa.numero_mesa, 10);
-
-    if (isNaN(safeTableNumber)) {
-      throw new BadRequestException(`El número de mesa es inválido: ${mesa.numero_mesa}`);
-    }
-
-    // 3️⃣ Generar número de venta
-    const numeroVenta = await this.generarNumeroVenta();
-    const safeNumeroVenta = Number(numeroVenta) || 1;
-
-    // 4️⃣ Crear y Guardar Orden (Una sola transacción idealmente, pero aquí secuencial)
-    const newOrder = this.orderRepository.create({
-      tableNumber: safeTableNumber,
-      orderType,
-      estado: 'activo',
-      status: 'pendiente',
-      paymentMethod: createOrderDto.paymentMethod || '',
-      propina: safePropina,
-      total: totalFinal,
-      numeroVenta: safeNumeroVenta,
-      mesa, // Relación directa
-      mesaId: mesa.id, // ID explícito si es necesario
-      detalle_venta: createOrderDto.detalle_venta || null,
     });
 
-    const savedOrder = await this.orderRepository.save(newOrder);
+    await this.productsOrdersRepository.save(orderProducts);
 
-    // 5️⃣ Asignar ID de orden a productos y guardarlos
-    orderProductsData.forEach(op => op.orderId = savedOrder.id);
-    await this.productsOrdersRepository.save(orderProductsData);
+    // ✅ Total final
+    savedOrder.total = total + propina;
+    await this.orderRepository.save(savedOrder);
 
-    // 6️⃣ Actualizar Mesa
+    // ✅ Actualizar mesa
     mesa.status = 'ocupada';
     await this.mesaRepository.save(mesa);
 
-    // 7️⃣ Respuesta y Notificaciones
-    // Re-consultamos para devolver la estructura completa con relaciones si es necesario,
-    // o construimos la respuesta manualmente para ahorrar query.
-    // Por consistencia con el frontend, solemos devolver todo.
+    // ✅ Cargar pedido final
     const fullOrder = await this.orderRepository.findOne({
       where: { id: savedOrder.id },
       relations: ['customer', 'orderProducts', 'orderProducts.product', 'mesa'],
     });
 
-    if (!fullOrder) throw new NotFoundException('Error al recuperar la orden creada');
-
     const sanitized = this.sanitizeOrder(fullOrder);
 
-    // WebSocket (Async)
-    this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
-    this.ordersGateway.notifyNewOrder(sanitized);
-
-    this.logger.log(`✅ Orden creada con éxito: ID ${savedOrder.id} - Total: ${totalFinal}`);
+    // ✅ WebSocket
+    Promise.resolve().then(() => {
+      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+      this.ordersGateway.notifyNewOrder(sanitized);
+    });
 
     return sanitized;
   }
