@@ -396,12 +396,21 @@ export class OrdersService {
 
 
   async findAll() {
-    return await this.orderRepository
+    const orders = await this.orderRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.orderProducts', 'orderProducts')
       .leftJoinAndSelect('orderProducts.product', 'product')
-      .orderBy('product.price', 'ASC') // o 'DESC' si querés descendente
+      .orderBy('product.price', 'ASC')
       .getMany();
+
+    // Sanitizar valores numéricos para evitar NaN
+    return orders.map(order => ({
+      ...order,
+      tableNumber: Number(order.tableNumber) || 0,
+      total: Number(order.total) || 0,
+      propina: Number(order.propina) || 0,
+      numeroVenta: Number(order.numeroVenta) || 0,
+    }));
   }
 
   async findOne(id: number) {

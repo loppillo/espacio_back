@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsOptional,
   IsInt,
@@ -7,41 +7,57 @@ import {
   IsString,
   ValidateNested,
   IsNumber,
+  Min,
 } from 'class-validator';
 
 
 export class OrderProductDto {
   @IsInt()
+  @Transform(({ value }) => parseInt(value, 10) || 0)
   id: number; // id del producto
 
   @IsInt()
+  @Min(1)
+  @Transform(({ value }) => parseInt(value, 10) || 1)
   cantidad: number;
 }
 
 export class CreateOrderDto {
   @IsOptional()
+  @Transform(({ value }) => parseInt(value, 10) || 0)
   tableNumber?: number;
 
+  @IsOptional()
   @IsString()
-  orderType: string;
+  orderType?: string;
 
   @IsOptional()
   @IsString()
   detalle_venta?: string;
 
+  @IsOptional()
   @IsInt()
-  propina: number;
-
-  @IsString()
-  status: string;
+  @Min(0)
+  @Transform(({ value }) => parseInt(value, 10) || 0)
+  propina?: number;
 
   @IsOptional()
   @IsString()
-  paymentMethod: string;
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
 
   @IsOptional()
   @IsInt()
+  @Transform(({ value }) => parseInt(value, 10) || 0)
   mesaId?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Transform(({ value }) => parseInt(value, 10) || undefined)
+  customerId?: number;
 
   @IsArray()
   @ValidateNested({ each: true })

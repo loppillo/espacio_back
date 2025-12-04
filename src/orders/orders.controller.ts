@@ -27,8 +27,13 @@ export class OrdersController {
     return this.ordersService.obtenerPendientes();
   }
 
+  @Get()
+  findAll() {
+    return this.ordersService.findAll();
+  }
+
   @Get(':id')
-  async getById(@Param('id') id: number) {
+  async getById(@Param('id', ParseIntPipe) id: number) {
     return this.ordersService.getById(id);
   }
 
@@ -52,14 +57,9 @@ export class OrdersController {
     return this.ordersService.creates(createOrderDto);
   }
 
-  @Get()
-  findAll() {
-    return this.ordersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(+id);
+  @Get(':id/detail')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.findOne(id);
   }
 
   @Delete(':id')
