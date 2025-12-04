@@ -116,15 +116,46 @@ export class ProductsService {
     return this.normalizeProduct(saved);
   }
 
+  /**
+   * Sanitiza y valida una URL de imagen.
+   * Retorna null si la URL es inválida o no es una imagen válida.
+   */
+  private sanitizeImageUrl(imageUrl: string | null | undefined): string | null {
+    if (!imageUrl || imageUrl.trim() === '') {
+      return null;
+    }
+
+    const baseUrl = 'https://espacioboulevard.com';
+
+    // Si ya es una URL completa válida con nuestro dominio
+    if (imageUrl.startsWith(baseUrl)) {
+      return imageUrl;
+    }
+
+    // Si es una ruta relativa válida de uploads
+    if (imageUrl.startsWith('/uploads/')) {
+      return `${baseUrl}${imageUrl}`;
+    }
+
+    // Si empieza con uploads/ sin slash
+    if (imageUrl.startsWith('uploads/')) {
+      return `${baseUrl}/${imageUrl}`;
+    }
+
+    // Si es una URL externa válida (http/https)
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+
+    // URL inválida (como "150?text=No+Image") - retornar null
+    console.warn(`⚠️ URL de imagen inválida ignorada: ${imageUrl}`);
+    return null;
+  }
+
   private normalizeProduct(product: Product) {
     return {
       ...product,
-      imageUrl:
-        product.imageUrl && product.imageUrl.includes('/uploads/')
-          ? product.imageUrl.startsWith('http')
-            ? product.imageUrl
-            : `https://espacioboulevard.com${product.imageUrl}`
-          : null,
+      imageUrl: this.sanitizeImageUrl(product.imageUrl),
     };
   }
 
@@ -161,9 +192,7 @@ export class ProductsService {
             name,
             description,
             price,
-            imageUrl: imageUrl
-              ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
-              : null,
+            imageUrl: this.sanitizeImageUrl(imageUrl),
             // 👇 devolver array de categorías en lugar de solo la primera
             categories: categories.map((cat) => ({
               id: cat.id,
@@ -187,9 +216,7 @@ export class ProductsService {
       name,
       description,
       price,
-      imageUrl: imageUrl
-        ? `https://espacioboulevard.com/${imageUrl.replace(/^\/+/, '')}`
-        : null,
+      imageUrl: this.sanitizeImageUrl(imageUrl),
       categories: categories.map((cat) => ({
         id: cat.id,
         nombre: cat.nombre,
@@ -273,9 +300,7 @@ export class ProductsService {
         name: producto.name,
         description: producto.description,
         price: producto.price,
-        imageUrl: includeImages && producto.imageUrl
-          ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}`
-          : null,
+        imageUrl: includeImages ? this.sanitizeImageUrl(producto.imageUrl) : null,
         categories: producto.categories?.map((cat) => ({
           id: cat.id,
           nombre: cat.nombre,
@@ -325,9 +350,7 @@ export class ProductsService {
       name: producto.name,
       description: producto.description,
       price: producto.price,
-      imageUrl: producto.imageUrl
-        ? `${baseUrl}/${producto.imageUrl.replace(/^\/+/, '')}`
-        : null,
+      imageUrl: this.sanitizeImageUrl(producto.imageUrl),
       categories: producto.categories.map((cat) => ({
         id: cat.id,
         nombre: cat.nombre,
