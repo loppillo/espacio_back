@@ -106,34 +106,23 @@ export class OrdersService {
     });
   }
 
-async create(createOrderDto: CreateOrderDto) {
+  async create(createOrderDto: CreateOrderDto) {
     const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
 
     // ✅ Validar mesa
     const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
     if (!mesa) throw new BadRequestException('La mesa no existe');
 
+    // ✅ Sanitizar numero de mesa (extraer solo dígitos si es necesario)
+    const tableNumber = parseInt(String(mesa.numero_mesa).replace(/\D/g, ''), 10) || 0;
+
+    // ✅ Sanitizar propina
+    const safePropina = Number(propina) || 0;
+
     // ✅ Numero de venta antes de crear el pedido
     const numeroVenta = await this.generarNumeroVenta();
 
-    // ✅ Crear pedido base
-    const newOrder = this.orderRepository.create({
-      tableNumber: Number(mesa.numero_mesa),
-      orderType,
-      estado: 'activo',
-      status: 'pendiente',
-      paymentMethod: '',
-      propina,
-      total: 0,
-      numeroVenta,
-      mesa,
-      detalle_venta: createOrderDto.detalle_venta || null,
-    });
-
-    // ✅ Guardar pedido base
-    let savedOrder = await this.orderRepository.save(newOrder);
-
-    // ✅ Validar productos
+    // ✅ Validar productos antes de crear la orden
     if (!products || products.length === 0) {
       throw new BadRequestException('El pedido debe tener productos');
     }
@@ -145,29 +134,53 @@ async create(createOrderDto: CreateOrderDto) {
       throw new BadRequestException('Uno o más productos no existen');
     }
 
-    // ✅ Crear orderProducts
+    // ✅ Calcular total y preparar orderProducts
     let total = 0;
-
-    const orderProducts = products.map(p => {
+    const orderProductsData = products.map(p => {
       const productEntity = productEntities.find(pe => pe.id === p.id)!;
-      const subtotal = productEntity.price * p.cantidad;
+      const price = Number(productEntity.price) || 0;
+      const cantidad = Number(p.cantidad) || 0;
+      const subtotal = price * cantidad;
 
       total += subtotal;
 
-      return this.productsOrdersRepository.create({
-        orderId: savedOrder.id,          // ✅ obligatorio según tu entidad
-        productId: productEntity.id,     // ✅ obligatorio
-        cantidad: p.cantidad,
-        precioUnitario: productEntity.price,
+      return {
+        productId: productEntity.id,
+        cantidad,
+        precioUnitario: price,
         subtotal,
-      });
+      };
     });
 
-    await this.productsOrdersRepository.save(orderProducts);
+    // ✅ Sanitizar total final
+    const safeTotal = (Number(total) || 0) + safePropina;
 
-    // ✅ Total final
-    savedOrder.total = total + propina;
-    await this.orderRepository.save(savedOrder);
+    // ✅ Crear pedido con total calculado
+    const newOrder = this.orderRepository.create({
+      tableNumber,
+      orderType,
+      estado: 'activo',
+      status: 'pendiente',
+      paymentMethod: '',
+      propina: safePropina,
+      total: safeTotal,
+      numeroVenta,
+      mesa,
+      detalle_venta: createOrderDto.detalle_venta || null,
+    });
+
+    // ✅ Guardar pedido
+    const savedOrder = await this.orderRepository.save(newOrder);
+
+    // ✅ Crear y guardar orderProducts con orderId
+    const orderProducts = orderProductsData.map(op =>
+      this.productsOrdersRepository.create({
+        orderId: savedOrder.id,
+        ...op,
+      })
+    );
+
+    await this.productsOrdersRepository.save(orderProducts);
 
     // ✅ Actualizar mesa
     mesa.status = 'ocupada';
