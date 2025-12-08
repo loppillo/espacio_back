@@ -25,6 +25,7 @@ import { OrdersGateway } from './orders/orders.gateway';
 import { ThemeModule } from './theme/theme.module';
 import { MailModule } from './mail/mail.module';
 import { CostoEnvioModule } from './costo_envio/costo_envio.module';
+import { TicketBarModule } from './ticket-bar/ticket-bar.module';
 
 
 @Module({
@@ -47,7 +48,7 @@ import { CostoEnvioModule } from './costo_envio/costo_envio.module';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule, CostoEnvioModule],
+    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule, CostoEnvioModule, TicketBarModule],
   controllers: [AppController],
   providers: [AppService, OrdersGateway],
 })
