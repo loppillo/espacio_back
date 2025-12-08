@@ -29,7 +29,7 @@ export class TicketBar {
     @JoinColumn({ name: 'idUser' })
     user: User;
 
-    @Column()
+    @Column({ nullable: true })
     idUser: number;
 
     @ManyToOne(() => Product)
@@ -38,4 +38,7 @@ export class TicketBar {
 
     @Column()
     idProduct: number;
+
+    @Column({ type: 'int', default: 1 })
+    cantidad: number;
 }

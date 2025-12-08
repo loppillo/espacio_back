@@ -18,10 +18,14 @@ export class CreateTicketBarDto {
     estadoTicket: number;
 
     @IsNumber()
-    @IsNotEmpty()
-    idUser: number;
+    @IsOptional()
+    idUser?: number;
 
     @IsNumber()
     @IsNotEmpty()
     idProduct: number;
+
+    @IsNumber()
+    @IsOptional()
+    cantidad?: number;
 }
