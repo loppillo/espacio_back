@@ -17,11 +17,6 @@ import { UpdateTicketBarDto } from './dto/update-ticket-bar.dto';
 export class TicketBarController {
     constructor(private readonly ticketBarService: TicketBarService) { }
 
-    @Post()
-    create(@Body() createTicketBarDto: CreateTicketBarDto) {
-        return this.ticketBarService.create(createTicketBarDto);
-    }
-
     @Get()
     findAll() {
         return this.ticketBarService.findAll();
@@ -53,5 +48,9 @@ export class TicketBarController {
     @Delete(':id')
     remove(@Param('id', ParseIntPipe) id: number) {
         return this.ticketBarService.remove(id);
+    }
+     @Post()
+    create(@Body() createTicketBarDto: CreateTicketBarDto) {
+        return this.ticketBarService.create(createTicketBarDto);
     }
 }
