@@ -6,6 +6,7 @@ import {
     PrimaryGeneratedColumn,
     ManyToOne,
     JoinColumn,
+    CreateDateColumn,
 } from 'typeorm';
 
 @Entity('ticketBar')
@@ -38,6 +39,9 @@ export class TicketBar {
 
     @Column()
     idProduct: number;
+
+    @CreateDateColumn()
+    createdAt: Date;
 
     @Column({ type: 'int', default: 1 })
     cantidad: number;
