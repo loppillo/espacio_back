@@ -12,6 +12,8 @@
 #     conectando al VPS con los secrets configurados en el repositorio:
 #       - VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_SSH_PORT
 #       - VPS_PROJECT_PATH, VPS_PM2_APP
+# Comando cambiado por simple git pull
+# git pull origin main
 # -----------------------------------------------------------
 
 name: Deploy - espacio_back
@@ -59,7 +61,7 @@ jobs:
             cd ${{ secrets.VPS_PROJECT_PATH }}
 
             echo ">>> Haciendo git pull..."
-            git pull origin main
+            git pull
 
             echo ">>> Instalando dependencias (npm ci || npm install)..."
             npm ci || npm install
