@@ -36,7 +36,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18.20.8'   # o '18.x' si prefieres rango
+          node-version: '22.21.0'   # o '18.x' si prefieres rango
           cache: 'npm'
 
       # 3. Instala dependencias de forma limpia (npm ci)
