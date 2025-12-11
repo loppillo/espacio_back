@@ -24,7 +24,7 @@ export class EtaService {
     private readonly etaRepository: Repository<Eta>,
   ) {
     // Carga de variables de entorno con valores por defecto seguros
-    this.apiKey = this.configService.get<string>('ORS_API_KEY', 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjIyNTc0NjcxMWE0YjQyNmViZjIyYzc1YmUwZGQ3YzFmIiwiaCI6Im11cm11cjY0In0=');
+    this.apiKey = this.configService.get<string>('ORS_API_KEY', '');
     this.velocidadKmh = parseFloat(this.configService.get<string>('VELOCIDAD_KMH', '25.0'));
     this.minutosColchon = parseInt(this.configService.get<string>('MINUTOS_COLCHON', '10'));
   }
