@@ -12,6 +12,7 @@ import { PrintService } from './print/print.service';
 import { OrdersGateway } from './orders.gateway';
 import { MailModule } from 'src/mail/mail.module';
 import { CostoEnvio } from 'src/costo_envio/entities/costo_envio.entity';
+import { EtaModule } from 'src/eta/eta.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CostoEnvio } from 'src/costo_envio/entities/costo_envio.entity';
       CostoEnvio,
     ]),
     MailModule,
+    EtaModule,
   ],
   controllers: [OrdersController],
   providers: [

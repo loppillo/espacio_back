@@ -13,6 +13,7 @@ import { ProductsOrders } from 'src/products-orders/entities/products-order.enti
 import { OrdersGateway } from './orders.gateway';
 import { MailService } from 'src/mail/mail.service';
 import { CostoEnvio } from 'src/costo_envio/entities/costo_envio.entity';
+import { EtaService } from 'src/eta/eta.service';
 
 
 @Injectable()
@@ -36,6 +37,7 @@ export class OrdersService {
     private readonly costoEnvioRepository: Repository<CostoEnvio>,
     private ordersGateway: OrdersGateway,
     private mailService: MailService,
+    private readonly etaService: EtaService,
   ) { }
 
 
@@ -204,7 +206,7 @@ export class OrdersService {
   }
 
 
-  async creates(createOrderDto: CreateSOrderDto) {
+ async creates(createOrderDto: CreateSOrderDto) {
     const { products = [], orderType = 'delivery' } = createOrderDto;
 
     if (orderType !== 'delivery') {
@@ -220,13 +222,11 @@ export class OrdersService {
       customer = await this.customerRepository.findOne({
         where: { id: createOrderDto.customerId }
       });
-
       if (!customer) throw new NotFoundException('Cliente no encontrado');
     }
 
     if (!customer && createOrderDto.newCustomer) {
       const nc = createOrderDto.newCustomer;
-
       customer = await this.customerRepository.save(
         this.customerRepository.create({
           customerName: nc.customerName,
@@ -260,7 +260,7 @@ export class OrdersService {
       orderType,
       paymentMethod: createOrderDto.paymentMethod || 'pendiente',
       numeroVenta: nextNumeroVenta,
-      total: 0,         // se recalcula luego
+      total: 0,
       customer,
     });
 
@@ -274,7 +274,6 @@ export class OrdersService {
     }
 
     const productIds = products.map(p => p.id);
-
     const productEntities = await this.productRepository.findBy({ id: In(productIds) });
 
     if (productEntities.length !== products.length) {
@@ -289,28 +288,24 @@ export class OrdersService {
 
     for (const p of products) {
       const prod = productEntities.find(x => x.id === p.id);
-
       const price = isNaN(Number(prod.price)) ? 0 : Number(prod.price);
       const cantidad = isNaN(Number(p.cantidad)) ? 0 : Number(p.cantidad);
-
       const subtotal = price * cantidad;
 
       total += subtotal;
 
       const op = this.productsOrdersRepository.create({
-        orderId: order.id,        // ✅ necesario por PK compuesta
-        productId: prod.id,       // ✅ necesario
+        orderId: order.id,
+        productId: prod.id,
         cantidad: cantidad,
         precioUnitario: price,
         subtotal,
-        order: order,             // ✅ relación ok
-        product: prod             // ✅ relación ok
+        order: order,
+        product: prod
       });
-
       ops.push(op);
     }
 
-    // Guardar order_products
     await this.productsOrdersRepository.save(ops);
 
     // -----------------------------
@@ -322,7 +317,6 @@ export class OrdersService {
         where: {},
         order: { id: 'DESC' },
       });
-
       if (costoEnvioData) {
         costoEnvio = isNaN(Number(costoEnvioData.precio_envio)) ? 0 : Number(costoEnvioData.precio_envio);
       }
@@ -339,7 +333,7 @@ export class OrdersService {
     await this.orderRepository.save(order);
 
     // -----------------------------
-    // H) Retornar full order
+    // H) Retornar full order y Notificar
     // -----------------------------
     const full = await this.orderRepository.findOne({
       where: { id: order.id },
@@ -351,6 +345,31 @@ export class OrdersService {
     Promise.resolve().then(() =>
       this.ordersGateway.notifyNewOrder(sanitized)
     );
+
+    // ============================================================
+    // NUEVA LÓGICA: CALCULAR ETA ANTES DE ENVIAR EMAIL
+    // ============================================================
+    let tiempoEstimadoFinal = '50 minutos'; // Valor por defecto (Fallback)
+
+    if (customer.customerAddress) {
+      try {
+        // Llamamos a tu servicio calculateEta
+        // Nota: order.id y customer.id son opcionales en tu servicio, pero útiles para logs
+        const etaResult = await this.etaService.calculateEta(
+          customer.customerAddress, 
+          order.id, 
+          customer.id
+        );
+
+        // Si el servicio devuelve tiempo_min, lo formateamos
+        if (etaResult && etaResult.tiempo_min) {
+            tiempoEstimadoFinal = `${etaResult.tiempo_min} minutos`;
+        }
+      } catch (error) {
+        // Si falla el cálculo de ruta, solo logueamos y mantenemos el valor por defecto '50 minutos'
+        console.warn(`No se pudo calcular ETA para orden #${order.numeroVenta}:`, error.message);
+      }
+    }
 
     // -----------------------------
     // I) Enviar email de confirmación
@@ -376,7 +395,10 @@ export class OrdersService {
           }),
           orderType: 'Envío a domicilio',
           customerAddress: customer.customerAddress || 'No especificada',
-          tiempoEstimado: '50 minutos',
+          
+          // AQUÍ USAMOS LA VARIABLE CALCULADA
+          tiempoEstimado: tiempoEstimadoFinal, 
+          
           products: productsForEmail,
           subtotal: total,
           costoEnvio: costoEnvio,
