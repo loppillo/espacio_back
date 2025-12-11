@@ -24,6 +24,9 @@ export class User {
   @Column({ nullable: true })
   tipo_usuario: string;
 
+  @Column({ type: 'date', nullable: true })
+  fecha_nacimiento: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 
