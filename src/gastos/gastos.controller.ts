@@ -5,6 +5,7 @@ import { UpdateGastoDto } from './dto/update-gasto.dto';
 import { Gasto } from './entities/gasto.entity';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/roles/roles.guard';
+import { RangoFechaDto } from './dto/rango-fecha.dto';
 
 @Controller('gastos')
 export class GastosController {
@@ -92,7 +93,179 @@ async getAnual(
     return this.expensesService.remove(id);
   }
 
+  // ==========================================
+  // CONTABILIDAD - FINANZAS
+  // ==========================================
 
- 
+  @Get('contabilidad/finanzas/kpis')
+  async getKpisFinanzas(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getKpisFinanzas(rango);
+  }
+
+  @Get('contabilidad/finanzas/balance-dias')
+  async getBalanceDias(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getBalanceDias(rango);
+  }
+
+  @Get('contabilidad/finanzas/evolucion')
+  async getEvolucion(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getEvolucion(rango);
+  }
+
+  @Get('contabilidad/finanzas/top-dias')
+  async getTopDias(
+    @Query() rango: RangoFechaDto,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ) {
+    return this.expensesService.getTopDias(rango, limit);
+  }
+
+  @Get('contabilidad/finanzas/distribucion')
+  async getDistribucion(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getDistribucion(rango);
+  }
+
+  // ==========================================
+  // CONTABILIDAD - MESAS
+  // ==========================================
+
+  @Get('contabilidad/mesas/ingresos')
+  async getIngresosPorMesa(
+    @Query() rango: RangoFechaDto,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ) {
+    return this.expensesService.getIngresosPorMesa(rango, limit);
+  }
+
+  @Get('contabilidad/mesas/horas-punta')
+  async getHorasPuntaPorMesa(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getHorasPuntaPorMesa(rango);
+  }
+
+  // ==========================================
+  // CONTABILIDAD - PRODUCTOS
+  // ==========================================
+
+  @Get('contabilidad/productos/top')
+  async getTopProductos(
+    @Query() rango: RangoFechaDto,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ) {
+    return this.expensesService.getTopProductos(rango, limit);
+  }
+
+  @Get('contabilidad/productos/categoria')
+  async getIngresosPorCategoria(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getIngresosPorCategoria(rango);
+  }
+
+  // ==========================================
+  // CONTABILIDAD - CLIENTES
+  // ==========================================
+
+  @Get('contabilidad/clientes/kpis')
+  async getKpisClientes(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getKpisClientes(rango);
+  }
+
+  @Get('contabilidad/clientes/nuevos-recurrentes')
+  async getNuevosRecurrentes(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getNuevosRecurrentes(rango);
+  }
+
+  @Get('contabilidad/clientes/actividad')
+  async getActividadClientes(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getActividadClientes(rango);
+  }
+
+  @Get('contabilidad/clientes/top-gasto')
+  async getTopClientesGasto(
+    @Query() rango: RangoFechaDto,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ) {
+    return this.expensesService.getTopClientesGasto(rango, limit);
+  }
+
+  @Get('contabilidad/clientes/top-pedidos')
+  async getTopClientesPedidos(
+    @Query() rango: RangoFechaDto,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ) {
+    return this.expensesService.getTopClientesPedidos(rango, limit);
+  }
+
+  @Get('contabilidad/clientes/frecuencia')
+  async getFrecuenciaClientes(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getFrecuenciaClientes(rango);
+  }
+
+  // ==========================================
+  // CONTABILIDAD - DELIVERY
+  // ==========================================
+
+  @Get('contabilidad/delivery/kpis')
+  async getKpisDelivery(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getKpisDelivery(rango);
+  }
+
+  @Get('contabilidad/delivery/pedidos-dia')
+  async getPedidosDeliveryPorDia(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getPedidosDeliveryPorDia(rango);
+  }
+
+  @Get('contabilidad/delivery/tiempo-despacho')
+  async getTiempoDespacho(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getTiempoDespacho(rango);
+  }
+
+  @Get('contabilidad/delivery/estados')
+  async getEstadosDelivery(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getEstadosDelivery(rango);
+  }
+
+  @Get('contabilidad/delivery/recaudacion')
+  async getRecaudacionDelivery(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getRecaudacionDelivery(rango);
+  }
+
+  @Get('contabilidad/delivery/clientes')
+  async getClientesDelivery(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getClientesDelivery(rango);
+  }
+
+  @Get('contabilidad/delivery/top-barrios')
+  async getTopBarrios(
+    @Query() rango: RangoFechaDto,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+  ) {
+    return this.expensesService.getTopBarrios(rango, limit);
+  }
+
+  // ==========================================
+  // CONTABILIDAD - GASTOS
+  // ==========================================
+
+  @Get('contabilidad/gastos/kpis')
+  async getKpisGastos(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getKpisGastos(rango);
+  }
+
+  @Get('contabilidad/gastos/por-categoria')
+  async getGastosPorCategoria(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getGastosPorCategoria(rango);
+  }
+
+  @Get('contabilidad/gastos/por-medio-pago')
+  async getGastosPorMedioPago(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getGastosPorMedioPago(rango);
+  }
+
+  @Get('contabilidad/gastos/evolucion')
+  async getEvolucionGastos(@Query() rango: RangoFechaDto) {
+    return this.expensesService.getEvolucionGastos(rango);
+  }
+
+
 }
+
 
