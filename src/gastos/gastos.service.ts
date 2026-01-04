@@ -13,6 +13,9 @@ import { Category } from 'src/categories/entities/category.entity';
 import { Eta } from 'src/eta/entities/eta.entity';
 import { RangoFechaDto } from './dto/rango-fecha.dto';
 
+// Alias para la entidad de categoria_gasto
+type CategoriaGasto = any;
+
 
 export enum Frecuencia {
   DIARIO = 'diario',
@@ -679,7 +682,7 @@ async getBalanceDiario(fecha: string): Promise<{
 
     const rows = await entityManager.query(
       `
-      SELECT 
+      SELECT
         c.nombre as categoria,
         SUM(po.subtotal) as ingresos
       FROM orders o
@@ -1188,7 +1191,7 @@ async getBalanceDiario(fecha: string): Promise<{
 
     const rows = await entityManager.query(
       `
-      SELECT 
+      SELECT
         cg.nombre as categoria,
         SUM(e.amount) as monto
       FROM expenses e

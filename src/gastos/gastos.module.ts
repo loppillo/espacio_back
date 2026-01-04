@@ -7,9 +7,27 @@ import { Customer } from 'src/customer/entities/customer.entity';
 import { CategoriaGasto } from 'src/categoria-gasto/entities/categoria-gasto.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Order } from 'src/orders/entities/order.entity';
+import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
+import { Product } from 'src/products/entities/product.entity';
+import { Mesa } from 'src/mesas/entities/mesa.entity';
+import { Category } from 'src/categories/entities/category.entity';
+import { Eta } from 'src/eta/entities/eta.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Gasto,Customer,CategoriaGasto,Order]),ScheduleModule.forRoot(),],
+  imports: [
+    TypeOrmModule.forFeature([
+      Gasto,
+      Customer,
+      CategoriaGasto,
+      Order,
+      ProductsOrders,
+      Product,
+      Mesa,
+      Category,
+      Eta
+    ]),
+    ScheduleModule.forRoot()
+  ],
   controllers: [GastosController],
   providers: [GastosService],
 })
