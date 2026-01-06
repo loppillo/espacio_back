@@ -1150,7 +1150,7 @@ async getBalanceDiario(fecha: string): Promise<{
         cg.nombre as categoria,
         SUM(e.amount) as monto
       FROM expenses e
-      INNER JOIN categoria_gasto cg ON e.categoriaId = cg.id
+      INNER JOIN categorias_gasto cg ON e.categoriaId = cg.id
       WHERE e.createdAt BETWEEN ? AND ?
         AND e.type = 'egreso'
       GROUP BY cg.id, cg.nombre
@@ -1195,7 +1195,7 @@ async getBalanceDiario(fecha: string): Promise<{
         cg.nombre as categoria,
         SUM(e.amount) as monto
       FROM expenses e
-      INNER JOIN categoria_gasto cg ON e.categoriaId = cg.id
+      INNER JOIN categorias_gasto cg ON e.categoriaId = cg.id
       WHERE e.createdAt BETWEEN ? AND ?
         AND e.type = 'egreso'
       GROUP BY cg.id, cg.nombre
