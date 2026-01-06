@@ -517,31 +517,48 @@ async getBalanceDiario(fecha: string): Promise<{
   }
 
   async getEvolucion(rango: RangoFechaDto) {
-    const { start, end } = this.getRangoFechas(rango);
-    const entityManager = this.dataSource.manager;
+  const { start, end } = this.getRangoFechas(rango);
+  const entityManager = this.dataSource.manager;
 
-    const rows = await entityManager.query(
-      `
+  const rows = await entityManager.query(
+    `
+    SELECT 
+      DATE(o.createdAt) as fecha,
+      
+      -- 1. Suma de ingresos (Pagados)
+      SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) - 
+      
+      -- 2. Resta de egresos (Usamos MAX porque el valor viene repetido por el JOIN, no queremos sumarlo N veces)
+      COALESCE(MAX(e.total_egresos), 0) as balance,
+      
+      -- 3. Por cobrar
+      SUM(CASE WHEN o.status != 'Pagado' THEN o.total ELSE 0 END) as porCobrar
+      
+    FROM orders o
+    
+    -- UNIR CON GASTOS PRE-CALCULADOS
+    LEFT JOIN (
       SELECT 
-        DATE(o.createdAt) as fecha,
-        SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) - 
-        COALESCE((SELECT SUM(e.amount) FROM expenses e WHERE DATE(e.createdAt) = DATE(o.createdAt) AND e.type = 'egreso'), 0) as balance,
-        SUM(CASE WHEN o.status != 'Pagado' THEN o.total ELSE 0 END) as porCobrar
-      FROM orders o
-      WHERE o.createdAt BETWEEN ? AND ?
-      GROUP BY DATE(o.createdAt)
-      ORDER BY fecha ASC
-      `,
-      [start, end]
-    );
+        DATE(createdAt) as fecha_gasto, 
+        SUM(amount) as total_egresos 
+      FROM expenses 
+      WHERE type = 'egreso'
+      GROUP BY DATE(createdAt)
+    ) e ON e.fecha_gasto = DATE(o.createdAt)
 
-    return {
-      labels: rows.map(r => this.formatDay(r.fecha)),
-      balance: rows.map(r => Number(r.balance || 0)),
-      porCobrar: rows.map(r => Number(r.porCobrar || 0))
-    };
-  }
+    WHERE o.createdAt BETWEEN ? AND ?
+    GROUP BY DATE(o.createdAt)
+    ORDER BY fecha ASC
+    `,
+    [start, end]
+  );
 
+  return {
+    labels: rows.map(r => this.formatDay(r.fecha)),
+    balance: rows.map(r => Number(r.balance || 0)),
+    porCobrar: rows.map(r => Number(r.porCobrar || 0))
+  };
+}
   async getTopDias(rango: RangoFechaDto, limit = 5) {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
