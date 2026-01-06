@@ -36,7 +36,7 @@ export class Gasto {
 
   @ManyToOne(() => CategoriaGasto, (categoria) => categoria.gastos, { nullable: true })
   @JoinColumn({ name: 'categoriaId' })
-  categoria_gasto?: CategoriaGasto;
+  categorias_gasto?: CategoriaGasto;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

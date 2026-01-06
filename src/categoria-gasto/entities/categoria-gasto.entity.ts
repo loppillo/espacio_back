@@ -10,7 +10,7 @@ export class CategoriaGasto {
   @Column({ type: 'varchar', length: 100 })
   nombre: string;
 
-  @OneToMany(() => Gasto, (gasto) => gasto.categoria_gasto)
+  @OneToMany(() => Gasto, (gasto) => gasto.categorias_gasto)
   gastos: Gasto[];
 }
 
