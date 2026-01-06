@@ -9,48 +9,48 @@ import { RangoFechaDto } from './dto/rango-fecha.dto';
 
 @Controller('gastos')
 export class GastosController {
- constructor(private readonly expensesService: GastosService) {}
+  constructor(private readonly expensesService: GastosService) { }
 
-@Get('estadisticas')
-async estadisticas(
-  @Query('periodo') periodo: 'dia' | 'mes' | 'anio',
-  @Query('valor') valor: string
-) {
-  return this.expensesService.estadisticas({ periodo, valor });
-}
-
-@Get('mensual')
-async getMensual(
-  @Query('anio') anio: string,
-  @Query('mes') mes: string,
-) {
-  const year = Number(anio);
-  const month = Number(mes);
-
-  if (isNaN(year) || isNaN(month)) {
-    throw new BadRequestException('Año o mes inválido');
+  @Get('estadisticas')
+  async estadisticas(
+    @Query('periodo') periodo: 'dia' | 'mes' | 'anio',
+    @Query('valor') valor: string
+  ) {
+    return this.expensesService.estadisticas({ periodo, valor });
   }
 
-  return this.expensesService.getBalanceMensual(year, month);
-}
+  @Get('mensual')
+  async getMensual(
+    @Query('anio') anio: string,
+    @Query('mes') mes: string,
+  ) {
+    const year = Number(anio);
+    const month = Number(mes);
 
+    if (isNaN(year) || isNaN(month)) {
+      throw new BadRequestException('Año o mes inválido');
+    }
 
-@Get('anual')
-async getAnual(
-  @Query('anio') anio: string,
-) {
-  const year = Number(anio);
-
-  if (isNaN(year)) {
-    throw new BadRequestException('Año inválido');
+    return this.expensesService.getBalanceMensual(year, month);
   }
 
-  return this.expensesService.getBalanceAnual(year);
-}
+
+  @Get('anual')
+  async getAnual(
+    @Query('anio') anio: string,
+  ) {
+    const year = Number(anio);
+
+    if (isNaN(year)) {
+      throw new BadRequestException('Año inválido');
+    }
+
+    return this.expensesService.getBalanceAnual(year);
+  }
 
 
 
-   @Get('balances')
+  @Get('balances')
   async getBalance(
     @Query('start') startDate?: string,
     @Query('end') endDate?: string
@@ -59,7 +59,7 @@ async getAnual(
   }
 
 
-    @Get('balancesA')
+  @Get('balancesA')
   async getBalancePorAnio(@Query('anio') anio?: number) {
     return this.expensesService.getBalancePorAnio(anio);
   }
@@ -115,9 +115,10 @@ async getAnual(
   @Get('contabilidad/finanzas/top-dias')
   async getTopDias(
     @Query() rango: RangoFechaDto,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+    @Query('limit') limit?: unknown
   ) {
-    return this.expensesService.getTopDias(rango, limit);
+    const limitNum = limit ? Number(limit) : 5;
+    return this.expensesService.getTopDias(rango, isNaN(limitNum) ? 5 : limitNum);
   }
 
   @Get('contabilidad/finanzas/distribucion')
@@ -132,9 +133,10 @@ async getAnual(
   @Get('contabilidad/mesas/ingresos')
   async getIngresosPorMesa(
     @Query() rango: RangoFechaDto,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+    @Query('limit') limit?: unknown
   ) {
-    return this.expensesService.getIngresosPorMesa(rango, limit);
+    const limitNum = limit ? Number(limit) : 10;
+    return this.expensesService.getIngresosPorMesa(rango, isNaN(limitNum) ? 10 : limitNum);
   }
 
   @Get('contabilidad/mesas/horas-punta')
@@ -149,9 +151,10 @@ async getAnual(
   @Get('contabilidad/productos/top')
   async getTopProductos(
     @Query() rango: RangoFechaDto,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+    @Query('limit') limit?: unknown
   ) {
-    return this.expensesService.getTopProductos(rango, limit);
+    const limitNum = limit ? Number(limit) : 10;
+    return this.expensesService.getTopProductos(rango, isNaN(limitNum) ? 10 : limitNum);
   }
 
   @Get('contabilidad/productos/categoria')
@@ -181,17 +184,19 @@ async getAnual(
   @Get('contabilidad/clientes/top-gasto')
   async getTopClientesGasto(
     @Query() rango: RangoFechaDto,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+    @Query('limit') limit?: unknown
   ) {
-    return this.expensesService.getTopClientesGasto(rango, limit);
+    const limitNum = limit ? Number(limit) : 10;
+    return this.expensesService.getTopClientesGasto(rango, isNaN(limitNum) ? 10 : limitNum);
   }
 
   @Get('contabilidad/clientes/top-pedidos')
   async getTopClientesPedidos(
     @Query() rango: RangoFechaDto,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+    @Query('limit') limit?: unknown
   ) {
-    return this.expensesService.getTopClientesPedidos(rango, limit);
+    const limitNum = limit ? Number(limit) : 10;
+    return this.expensesService.getTopClientesPedidos(rango, isNaN(limitNum) ? 10 : limitNum);
   }
 
   @Get('contabilidad/clientes/frecuencia')
@@ -236,9 +241,10 @@ async getAnual(
   @Get('contabilidad/delivery/top-barrios')
   async getTopBarrios(
     @Query() rango: RangoFechaDto,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
+    @Query('limit') limit?: unknown
   ) {
-    return this.expensesService.getTopBarrios(rango, limit);
+    const limitNum = limit ? Number(limit) : 10;
+    return this.expensesService.getTopBarrios(rango, isNaN(limitNum) ? 10 : limitNum);
   }
 
   // ==========================================
