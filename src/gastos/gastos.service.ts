@@ -50,8 +50,24 @@ export class GastosService {
     private dataSource: DataSource
   ) { }
 
- findAll(): Promise<Gasto[]> {
-    return this.expenseRepository.find();
+  findAll(user: any): Promise<Gasto[]> {
+    if (!user || user.role === 'admin') {
+      return this.expenseRepository.find({
+        relations: ['proveedor', 'users']
+      });
+    } else if (user.role === 'garzon') {
+      return this.expenseRepository.find({
+        where: {
+          users: {
+            id: user.id
+          }
+        },
+        relations: ['proveedor', 'users']
+      });
+    }
+    return this.expenseRepository.find({
+      relations: ['proveedor', 'users']
+    });
   }
 
   async getBalancePorFecha(ingresosWhere?: any, egresosWhere?: any) {

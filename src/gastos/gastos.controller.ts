@@ -73,10 +73,11 @@ export class GastosController {
   }
 
 
- 
+
+  @UseGuards(JwtAuthGuard)
   @Get()
-  getAll(): Promise<Gasto[]> {
-    return this.expensesService.findAll();
+  getAll(@Req() req): Promise<Gasto[]> {
+    return this.expensesService.findAll(req.user);
   }
 
   @Get(':id')
