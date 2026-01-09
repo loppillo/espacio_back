@@ -12,6 +12,8 @@ import { Product } from 'src/products/entities/product.entity';
 import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { Category } from 'src/categories/entities/category.entity';
 import { Eta } from 'src/eta/entities/eta.entity';
+import { ProveedoresModule } from 'src/proveedores/proveedores.module';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -26,9 +28,11 @@ import { Eta } from 'src/eta/entities/eta.entity';
       Category,
       Eta
     ]),
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    ProveedoresModule,
+    UsersModule
   ],
   controllers: [GastosController],
   providers: [GastosService],
 })
-export class GastosModule {}
+export class GastosModule { }

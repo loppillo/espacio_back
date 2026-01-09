@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, BadRequestException, UseGuards, Req } from '@nestjs/common';
 import { GastosService } from './gastos.service';
 import { CreateGastoDto } from './dto/create-gasto.dto';
 import { UpdateGastoDto } from './dto/update-gasto.dto';
@@ -73,9 +73,10 @@ export class GastosController {
   }
 
 
+  @UseGuards(JwtAuthGuard)
   @Get()
-  getAll(): Promise<Gasto[]> {
-    return this.expensesService.findAll();
+  getAll(@Req() req): Promise<Gasto[]> {
+    return this.expensesService.findAll(req.user);
   }
 
   @Get(':id')

@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateGastoDto } from './dto/create-gasto.dto';
+import { ProveedoresService } from 'src/proveedores/proveedores.service';
 import { UpdateGastoDto } from './dto/update-gasto.dto';
 import { Gasto } from './entities/gasto.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +13,7 @@ import { Mesa } from 'src/mesas/entities/mesa.entity';
 import { Category } from 'src/categories/entities/category.entity';
 import { Eta } from 'src/eta/entities/eta.entity';
 import { RangoFechaDto } from './dto/rango-fecha.dto';
+import { UsersService } from 'src/users/users.service';
 
 // Alias para la entidad de categoria_gasto
 type CategoriaGasto = any;
@@ -43,10 +45,26 @@ export class GastosService {
     private readonly categoryRepository: Repository<Category>,
     @InjectRepository(Eta)
     private readonly etaRepository: Repository<Eta>,
+    private readonly proveedoresService: ProveedoresService,
+    private readonly usersService: UsersService,
     private dataSource: DataSource
-  ) {}
+  ) { }
 
-  findAll(): Promise<Gasto[]> {
+  findAll(user: any): Promise<Gasto[]> {
+    if (user.role === 'admin') {
+      return this.expenseRepository.find({
+        relations: ['proveedor', 'users']
+      });
+    } else if (user.role === 'garzon') {
+      return this.expenseRepository.find({
+        where: {
+          users: {
+            id: user.id
+          }
+        },
+        relations: ['proveedor', 'users']
+      });
+    }
     return this.expenseRepository.find();
   }
 
@@ -121,8 +139,27 @@ export class GastosService {
     return this.expenseRepository.findOneBy({ id });
   }
 
-  create(expenseData: Partial<Gasto>): Promise<Gasto> {
-    const expense = this.expenseRepository.create(expenseData);
+  async create(expenseData: any): Promise<Gasto> {
+
+    // Si viene proveedorId, buscamos la entidad
+    let proveedor = null;
+    if (expenseData.proveedorId) {
+      proveedor = await this.proveedoresService.findOne(expenseData.proveedorId);
+    }
+
+    let users = [];
+    if (expenseData.userId) {
+      const user = await this.usersService.findOne(expenseData.userId);
+      if (user) {
+        users.push(user);
+      }
+    }
+
+    const expense = this.expenseRepository.create({
+      ...expenseData,
+      proveedor: proveedor,
+      users: users
+    }) as unknown as Gasto;
     return this.expenseRepository.save(expense);
   }
 
@@ -130,10 +167,10 @@ export class GastosService {
     await this.expenseRepository.delete(id);
   }
 
-async getBalanceMensual(anio: number, mes: number) {
-  // 1) Egresos diarios desde expenses
-  const egresoRows = await this.expenseRepository.query(
-    `
+  async getBalanceMensual(anio: number, mes: number) {
+    // 1) Egresos diarios desde expenses
+    const egresoRows = await this.expenseRepository.query(
+      `
     SELECT 
       DAY(createdAt) AS dia,
       SUM(amount) AS egresos
@@ -141,12 +178,12 @@ async getBalanceMensual(anio: number, mes: number) {
     WHERE YEAR(createdAt) = ? AND MONTH(createdAt) = ?
     GROUP BY DAY(createdAt)
     `,
-    [anio, mes]
-  );
+      [anio, mes]
+    );
 
-  // 2) Ingresos y propinas diarios desde orders
-  const orderRows = await this.orderRepository.query(
-    `
+    // 2) Ingresos y propinas diarios desde orders
+    const orderRows = await this.orderRepository.query(
+      `
     SELECT
       DAY(createdAt) AS dia,
       SUM(total) AS ingresos,
@@ -156,41 +193,41 @@ async getBalanceMensual(anio: number, mes: number) {
       AND status != 'cancelado'
     GROUP BY DAY(createdAt)
     `,
-    [anio, mes]
-  );
+      [anio, mes]
+    );
 
-  // Inicializamos arrays de 31 días
-  const dias = Array.from({ length: 31 }, () => 0);
-  const ingresos = Array.from({ length: 31 }, () => 0);
-  const egresos = Array.from({ length: 31 }, () => 0);
-  const propinas = Array.from({ length: 31 }, () => 0);
-  const balance = Array.from({ length: 31 }, () => 0);
+    // Inicializamos arrays de 31 días
+    const dias = Array.from({ length: 31 }, () => 0);
+    const ingresos = Array.from({ length: 31 }, () => 0);
+    const egresos = Array.from({ length: 31 }, () => 0);
+    const propinas = Array.from({ length: 31 }, () => 0);
+    const balance = Array.from({ length: 31 }, () => 0);
 
-  egresoRows.forEach((r: any) => {
-    const idx = r.dia - 1;
-    egresos[idx] = Number(r.egresos || 0);
-  });
+    egresoRows.forEach((r: any) => {
+      const idx = r.dia - 1;
+      egresos[idx] = Number(r.egresos || 0);
+    });
 
-  orderRows.forEach((r: any) => {
-    const idx = r.dia - 1;
-    ingresos[idx] = Number(r.ingresos || 0);
-    propinas[idx] = Number(r.propinas || 0);
-  });
+    orderRows.forEach((r: any) => {
+      const idx = r.dia - 1;
+      ingresos[idx] = Number(r.ingresos || 0);
+      propinas[idx] = Number(r.propinas || 0);
+    });
 
-  // Calculamos balance diario
-  for (let i = 0; i < 31; i++) {
-    balance[i] = ingresos[i] - egresos[i]; // SIN propinas
+    // Calculamos balance diario
+    for (let i = 0; i < 31; i++) {
+      balance[i] = ingresos[i] - egresos[i]; // SIN propinas
+    }
+
+    return { ingresos, egresos, propinas, balance };
   }
 
-  return { ingresos, egresos, propinas, balance };
-}
 
 
-
-async getBalanceAnual(anio: number) {
-  // 1) Egresos por mes desde expenses
-  const expRows = await this.expenseRepository.query(
-    `
+  async getBalanceAnual(anio: number) {
+    // 1) Egresos por mes desde expenses
+    const expRows = await this.expenseRepository.query(
+      `
     SELECT 
       MONTH(createdAt) AS mes,
       SUM(CASE WHEN type = 'egreso' THEN amount ELSE 0 END) AS egresos
@@ -199,12 +236,12 @@ async getBalanceAnual(anio: number) {
     GROUP BY MONTH(createdAt)
     ORDER BY mes
     `,
-    [anio],
-  );
+      [anio],
+    );
 
-  // 2) Ingresos + propinas por mes desde orders
-  const orderRows = await this.orderRepository.query(
-    `
+    // 2) Ingresos + propinas por mes desde orders
+    const orderRows = await this.orderRepository.query(
+      `
     SELECT
       MONTH(createdAt) AS mes,
       SUM(total) AS ingresos,
@@ -215,51 +252,51 @@ async getBalanceAnual(anio: number) {
     GROUP BY MONTH(createdAt)
     ORDER BY mes
     `,
-    [anio],
-  );
+      [anio],
+    );
 
-  // fusionar meses
-  const byMonth: Record<number, any> = {};
+    // fusionar meses
+    const byMonth: Record<number, any> = {};
 
-  // primero egresos
-  expRows.forEach(r => {
-    byMonth[r.mes] = { egresos: Number(r.egresos || 0), ingresos: 0, propinas: 0 };
-  });
+    // primero egresos
+    expRows.forEach(r => {
+      byMonth[r.mes] = { egresos: Number(r.egresos || 0), ingresos: 0, propinas: 0 };
+    });
 
-  // luego ingresos y propinas
-  orderRows.forEach(r => {
-    if (!byMonth[r.mes]) {
-      byMonth[r.mes] = { egresos: 0, ingresos: 0, propinas: 0 };
-    }
+    // luego ingresos y propinas
+    orderRows.forEach(r => {
+      if (!byMonth[r.mes]) {
+        byMonth[r.mes] = { egresos: 0, ingresos: 0, propinas: 0 };
+      }
 
-    byMonth[r.mes].ingresos = Number(r.ingresos || 0);
-    byMonth[r.mes].propinas = Number(r.propinas || 0);
-  });
+      byMonth[r.mes].ingresos = Number(r.ingresos || 0);
+      byMonth[r.mes].propinas = Number(r.propinas || 0);
+    });
 
-  // convertir en array ordenado
-  return Object.entries(byMonth).map(([mes, d]) => ({
-    mes: Number(mes),
-    ingresos: d.ingresos,
-    egresos: d.egresos,
-    propinas: d.propinas,
-    balance: d.ingresos - d.egresos,
-  }));
-}
+    // convertir en array ordenado
+    return Object.entries(byMonth).map(([mes, d]) => ({
+      mes: Number(mes),
+      ingresos: d.ingresos,
+      egresos: d.egresos,
+      propinas: d.propinas,
+      balance: d.ingresos - d.egresos,
+    }));
+  }
 
 
 
-async getBalancePorAnio(anio?: number) {
-  const entityManager = this.dataSource.manager;
+  async getBalancePorAnio(anio?: number) {
+    const entityManager = this.dataSource.manager;
 
-  const filtroOrders = anio
-    ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'Pagado')`
-    : `WHERE (o.status = 'vendido' OR o.status = 'Pagado')`;
+    const filtroOrders = anio
+      ? `WHERE YEAR(o.createdAt) = ${anio} AND (o.status = 'vendido' OR o.status = 'Pagado')`
+      : `WHERE (o.status = 'vendido' OR o.status = 'Pagado')`;
 
-  const filtroExpenses = anio
-    ? `WHERE YEAR(e.createdAt) = ${anio} AND e.type = 'egreso'`
-    : `WHERE e.type = 'egreso'`;
+    const filtroExpenses = anio
+      ? `WHERE YEAR(e.createdAt) = ${anio} AND e.type = 'egreso'`
+      : `WHERE e.type = 'egreso'`;
 
-  const query = `
+    const query = `
     SELECT anio,
            SUM(ingresos) AS ingresos,
            SUM(propinas) AS propinas,
@@ -292,99 +329,99 @@ async getBalancePorAnio(anio?: number) {
     ORDER BY anio ASC
   `;
 
-  return await entityManager.query(query);
-}
+    return await entityManager.query(query);
+  }
 
 
-// balance.service.ts
-async getBalanceDiario(fecha: string): Promise<{
-  fecha: string,
-  totalIngresos: number,
-  totalEgresos: number,
-  productosVendidos: { producto: string, cantidad: number, total: number, propina: number }[]
-}[]> {
-  const entityManager = this.dataSource.manager;
-
-  // Obtener ingresos solo con status 'vendido'
-  const ingresos = await entityManager
-    .createQueryBuilder()
-    .select("DATE(o.createdAt)", "fecha")
-    .addSelect("SUM(o.total)", "totalIngresos")
-    .addSelect("SUM(o.propina)", "totalPropina")
-    .addSelect("p.name AS producto")
-    .addSelect("SUM(o.cantidad) AS cantidad")
-    .from("orders", "o")
-    .innerJoin("o.products", "p")
-    .where("DATE(o.createdAt) = :fecha", { fecha })
-    .andWhere("o.status = :status", { status: 'Pagado' }) // 🔥 Filtrar por status
-    .groupBy("fecha, p.name")
-    .getRawMany();
-
-  // Obtener egresos
-  const egresos = await entityManager
-    .createQueryBuilder()
-    .select("DATE(e.createdAt)", "fecha")
-    .addSelect("SUM(e.amount)", "totalEgresos")
-    .from("expenses", "e")
-    .where("DATE(e.createdAt) = :fecha", { fecha })
-    .groupBy("fecha")
-    .getRawOne();
-
-  // Agrupar productos del mismo día
-  const agrupados = new Map<string, {
+  // balance.service.ts
+  async getBalanceDiario(fecha: string): Promise<{
     fecha: string,
     totalIngresos: number,
     totalEgresos: number,
     productosVendidos: { producto: string, cantidad: number, total: number, propina: number }[]
-  }>();
+  }[]> {
+    const entityManager = this.dataSource.manager;
 
-  ingresos.forEach(i => {
-    const key = i.fecha;
-    const ingresoTotal = parseFloat(i.totalIngresos) + parseFloat(i.totalPropina);
+    // Obtener ingresos solo con status 'vendido'
+    const ingresos = await entityManager
+      .createQueryBuilder()
+      .select("DATE(o.createdAt)", "fecha")
+      .addSelect("SUM(o.total)", "totalIngresos")
+      .addSelect("SUM(o.propina)", "totalPropina")
+      .addSelect("p.name AS producto")
+      .addSelect("SUM(o.cantidad) AS cantidad")
+      .from("orders", "o")
+      .innerJoin("o.products", "p")
+      .where("DATE(o.createdAt) = :fecha", { fecha })
+      .andWhere("o.status = :status", { status: 'Pagado' }) // 🔥 Filtrar por status
+      .groupBy("fecha, p.name")
+      .getRawMany();
 
-    if (!agrupados.has(key)) {
-      agrupados.set(key, {
-        fecha: key,
-        totalIngresos: ingresoTotal,
-        totalEgresos: egresos ? parseFloat(egresos.totalEgresos) : 0,
-        productosVendidos: []
+    // Obtener egresos
+    const egresos = await entityManager
+      .createQueryBuilder()
+      .select("DATE(e.createdAt)", "fecha")
+      .addSelect("SUM(e.amount)", "totalEgresos")
+      .from("expenses", "e")
+      .where("DATE(e.createdAt) = :fecha", { fecha })
+      .groupBy("fecha")
+      .getRawOne();
+
+    // Agrupar productos del mismo día
+    const agrupados = new Map<string, {
+      fecha: string,
+      totalIngresos: number,
+      totalEgresos: number,
+      productosVendidos: { producto: string, cantidad: number, total: number, propina: number }[]
+    }>();
+
+    ingresos.forEach(i => {
+      const key = i.fecha;
+      const ingresoTotal = parseFloat(i.totalIngresos) + parseFloat(i.totalPropina);
+
+      if (!agrupados.has(key)) {
+        agrupados.set(key, {
+          fecha: key,
+          totalIngresos: ingresoTotal,
+          totalEgresos: egresos ? parseFloat(egresos.totalEgresos) : 0,
+          productosVendidos: []
+        });
+      }
+
+      agrupados.get(key)?.productosVendidos.push({
+        producto: i.producto,
+        cantidad: parseInt(i.cantidad, 10),
+        total: parseFloat(i.totalIngresos),
+        propina: parseFloat(i.totalPropina)
       });
-    }
-
-    agrupados.get(key)?.productosVendidos.push({
-      producto: i.producto,
-      cantidad: parseInt(i.cantidad, 10),
-      total: parseFloat(i.totalIngresos),
-      propina: parseFloat(i.totalPropina)
     });
-  });
 
-  return Array.from(agrupados.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
-}
+    return Array.from(agrupados.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
 
 
-/* @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async generarGastosRecurrentes() {
-    const hoy = new Date();
-    const diaSemana = hoy.getDay();
-    const diaMes = hoy.getDate();
-
-    const gastos = await this.expenseRepository.find();
-
-    for (const g of gastos) {
-      // Solo si no ha pasado la fecha de fin
-      if (!g.endDate || hoy <= new Date(g.endDate)) {
-        if (g.frequency === Frecuencia.DIARIO) {
-          await this.crearGasto(g);
-        } else if (g.frequency === Frecuencia.SEMANAL && g.dayOfWeek === diaSemana) {
-          await this.crearGasto(g);
-        } else if (g.frequency === Frecuencia.MENSUAL && g.dayOfMonth === diaMes) {
-          await this.crearGasto(g);
+  /* @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    async generarGastosRecurrentes() {
+      const hoy = new Date();
+      const diaSemana = hoy.getDay();
+      const diaMes = hoy.getDate();
+  
+      const gastos = await this.expenseRepository.find();
+  
+      for (const g of gastos) {
+        // Solo si no ha pasado la fecha de fin
+        if (!g.endDate || hoy <= new Date(g.endDate)) {
+          if (g.frequency === Frecuencia.DIARIO) {
+            await this.crearGasto(g);
+          } else if (g.frequency === Frecuencia.SEMANAL && g.dayOfWeek === diaSemana) {
+            await this.crearGasto(g);
+          } else if (g.frequency === Frecuencia.MENSUAL && g.dayOfMonth === diaMes) {
+            await this.crearGasto(g);
+          }
         }
       }
     }
-  }
-*/
+  */
   private async crearGasto(g: Gasto) {
     await this.expenseRepository.save({
       ...g,
@@ -517,11 +554,11 @@ async getBalanceDiario(fecha: string): Promise<{
   }
 
   async getEvolucion(rango: RangoFechaDto) {
-  const { start, end } = this.getRangoFechas(rango);
-  const entityManager = this.dataSource.manager;
+    const { start, end } = this.getRangoFechas(rango);
+    const entityManager = this.dataSource.manager;
 
-  const rows = await entityManager.query(
-    `
+    const rows = await entityManager.query(
+      `
     SELECT 
       DATE(o.createdAt) as fecha,
       
@@ -550,15 +587,15 @@ async getBalanceDiario(fecha: string): Promise<{
     GROUP BY DATE(o.createdAt)
     ORDER BY fecha ASC
     `,
-    [start, end]
-  );
+      [start, end]
+    );
 
-  return {
-    labels: rows.map(r => this.formatDay(r.fecha)),
-    balance: rows.map(r => Number(r.balance || 0)),
-    porCobrar: rows.map(r => Number(r.porCobrar || 0))
-  };
-}
+    return {
+      labels: rows.map(r => this.formatDay(r.fecha)),
+      balance: rows.map(r => Number(r.balance || 0)),
+      porCobrar: rows.map(r => Number(r.porCobrar || 0))
+    };
+  }
   async getTopDias(rango: RangoFechaDto, limit = 5) {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
@@ -1320,83 +1357,83 @@ async getBalanceDiario(fecha: string): Promise<{
   }
 
   async estadisticas({ periodo, valor }: { periodo; valor }) {
-  // rango según periodo
-  let start: Date;
-  let end: Date;
+    // rango según periodo
+    let start: Date;
+    let end: Date;
 
-  if (periodo === 'dia') {
-    start = new Date(`${valor}T00:00:00`);
-    end = new Date(`${valor}T23:59:59`);
+    if (periodo === 'dia') {
+      start = new Date(`${valor}T00:00:00`);
+      end = new Date(`${valor}T23:59:59`);
+    }
+
+    if (periodo === 'mes') {
+      const [y, m] = valor.split('-');
+      start = new Date(Number(y), Number(m) - 1, 1, 0, 0, 0);
+      end = new Date(Number(y), Number(m), 0, 23, 59, 59);
+    }
+
+    if (periodo === 'anio') {
+      const y = Number(valor);
+      start = new Date(y, 0, 1, 0, 0, 0);
+      end = new Date(y, 11, 31, 23, 59, 59);
+    }
+
+    // ---- QUERIES ----
+
+    // GASTOS (egresos)
+    const gastosRows = await this.expenseRepository
+      .createQueryBuilder('g')
+      .where('g.createdAt BETWEEN :start AND :end', { start, end })
+      .andWhere('g.type = :t', { t: 'egreso' })
+      .getMany();
+
+    // ORDERS (ingresos)
+    const orderRows = await this.orderRepository
+      .createQueryBuilder('o')
+      .where('o.createdAt BETWEEN :start AND :end', { start, end })
+      .getMany();
+
+    // ---- AGRUPAR POR LLAVE SEGÚN PERIODO ----
+    const groupKey = (d: Date) => {
+      if (periodo === 'dia') return d.toISOString().substring(11, 16);
+      if (periodo === 'mes') return d.toISOString().substring(8, 10);
+      return d.toISOString().substring(5, 7);
+    };
+
+    const gastos: Record<string, number> = {};
+    const ingresos: Record<string, number> = {};
+    const propinas: Record<string, number> = {};
+
+    gastosRows.forEach((g) => {
+      const k = groupKey(g.createdAt);
+      gastos[k] = (gastos[k] || 0) + g.amount;
+    });
+
+    orderRows.forEach((o) => {
+      const k = groupKey(o.createdAt);
+      ingresos[k] = (ingresos[k] || 0) + o.total;
+      propinas[k] = (propinas[k] || 0) + (o.propina || 0);
+    });
+
+    // ---- GENERAR LISTA DE LABELS ORDENADAS ----
+    const labels = Array.from(
+      new Set([...Object.keys(gastos), ...Object.keys(ingresos), ...Object.keys(propinas)])
+    ).sort();
+
+    // ---- ARMAR ARRAYS PARA GRAFICOS ----
+    const arrIngresos = labels.map((l) => ingresos[l] || 0);
+    const arrEgresos = labels.map((l) => gastos[l] || 0);
+    const arrPropinas = labels.map((l) => propinas[l] || 0);
+    const arrBalance = labels.map((_, idx) => arrIngresos[idx] - arrEgresos[idx]);
+
+    return {
+      labels,
+      ingresos: arrIngresos,
+      egresos: arrEgresos,
+      propinas: arrPropinas,
+      balance: arrBalance,
+    };
   }
-
-  if (periodo === 'mes') {
-    const [y, m] = valor.split('-');
-    start = new Date(Number(y), Number(m) - 1, 1, 0, 0, 0);
-    end = new Date(Number(y), Number(m), 0, 23, 59, 59);
-  }
-
-  if (periodo === 'anio') {
-    const y = Number(valor);
-    start = new Date(y, 0, 1, 0, 0, 0);
-    end = new Date(y, 11, 31, 23, 59, 59);
-  }
-
-  // ---- QUERIES ----
-
-  // GASTOS (egresos)
-  const gastosRows = await this.expenseRepository
-    .createQueryBuilder('g')
-    .where('g.createdAt BETWEEN :start AND :end', { start, end })
-    .andWhere('g.type = :t', { t: 'egreso' })
-    .getMany();
-
-  // ORDERS (ingresos)
-  const orderRows = await this.orderRepository
-    .createQueryBuilder('o')
-    .where('o.createdAt BETWEEN :start AND :end', { start, end })
-    .getMany();
-
-  // ---- AGRUPAR POR LLAVE SEGÚN PERIODO ----
-  const groupKey = (d: Date) => {
-    if (periodo === 'dia') return d.toISOString().substring(11, 16);
-    if (periodo === 'mes') return d.toISOString().substring(8, 10);
-    return d.toISOString().substring(5, 7);
-  };
-
-  const gastos: Record<string, number> = {};
-  const ingresos: Record<string, number> = {};
-  const propinas: Record<string, number> = {};
-
-  gastosRows.forEach((g) => {
-    const k = groupKey(g.createdAt);
-    gastos[k] = (gastos[k] || 0) + g.amount;
-  });
-
-  orderRows.forEach((o) => {
-    const k = groupKey(o.createdAt);
-    ingresos[k] = (ingresos[k] || 0) + o.total;
-    propinas[k] = (propinas[k] || 0) + (o.propina || 0);
-  });
-
-  // ---- GENERAR LISTA DE LABELS ORDENADAS ----
-  const labels = Array.from(
-    new Set([...Object.keys(gastos), ...Object.keys(ingresos), ...Object.keys(propinas)])
-  ).sort();
-
-  // ---- ARMAR ARRAYS PARA GRAFICOS ----
-  const arrIngresos = labels.map((l) => ingresos[l] || 0);
-  const arrEgresos = labels.map((l) => gastos[l] || 0);
-  const arrPropinas = labels.map((l) => propinas[l] || 0);
-  const arrBalance = labels.map((_, idx) => arrIngresos[idx] - arrEgresos[idx]);
-
-  return {
-    labels,
-    ingresos: arrIngresos,
-    egresos: arrEgresos,
-    propinas: arrPropinas,
-    balance: arrBalance,
-  };
-}
 
 
 

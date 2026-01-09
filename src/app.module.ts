@@ -27,6 +27,7 @@ import { MailModule } from './mail/mail.module';
 import { CostoEnvioModule } from './costo_envio/costo_envio.module';
 import { TicketBarModule } from './ticket-bar/ticket-bar.module';
 import { EtaModule } from './eta/eta.module';
+import { ProveedoresModule } from './proveedores/proveedores.module';
 
 
 @Module({
@@ -49,7 +50,7 @@ import { EtaModule } from './eta/eta.module';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule, CostoEnvioModule, TicketBarModule, EtaModule],
+    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule, CostoEnvioModule, TicketBarModule, EtaModule, ProveedoresModule],
   controllers: [AppController],
   providers: [AppService, OrdersGateway],
 })

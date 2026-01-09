@@ -1,13 +1,17 @@
 import { CategoriaGasto } from 'src/categoria-gasto/entities/categoria-gasto.entity';
 import { Customer } from 'src/customer/entities/customer.entity';
-import { 
-  Entity, 
-  Column, 
-  PrimaryGeneratedColumn, 
-  CreateDateColumn, 
-  ManyToOne, 
-  JoinColumn 
+import { Proveedor } from '../../proveedores/entities/proveedor.entity';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  ManyToMany,
+  JoinTable
 } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 
 
 @Entity('expenses')
@@ -38,10 +42,29 @@ export class Gasto {
   @JoinColumn({ name: 'categoriaId' })
   categorias_gasto?: CategoriaGasto;
 
+  @ManyToOne(() => Proveedor, (proveedor) => proveedor.gastos, { nullable: true })
+  @JoinColumn({ name: 'proveedorId' })
+  proveedor?: Proveedor;
+
+  @ManyToMany(() => User)
+  @JoinTable({
+    name: 'expenses_users',
+    joinColumn: {
+      name: 'id_expenses',
+      referencedColumnName: 'id'
+    },
+    inverseJoinColumn: {
+      name: 'id_user',
+      referencedColumnName: 'id'
+    }
+  })
+  users?: User[];
+
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
-   @Column({ type: 'enum', enum: ['ninguno', 'diario', 'semanal', 'mensual'], default: 'ninguno' })
+  @Column({ type: 'enum', enum: ['ninguno', 'diario', 'semanal', 'mensual'], default: 'ninguno' })
   frequency: 'ninguno' | 'diario' | 'semanal' | 'mensual';
 
   @Column({ type: 'date', nullable: true })
@@ -50,10 +73,10 @@ export class Gasto {
   @Column({ type: 'date', nullable: true })
   endDate?: Date;
 
-   @Column({ type: 'int', nullable: true })
+  @Column({ type: 'int', nullable: true })
   dayOfWeek?: number;
 
-    @Column({ nullable: true })
+  @Column({ nullable: true })
   dayOfMonth?: number; // 1..31, solo para mensua
 
 }
