@@ -73,10 +73,10 @@ export class GastosController {
   }
 
 
-
+ 
   @Get()
-  getAll(@Req() req): Promise<Gasto[]> {
-    return this.expensesService.findAll(req.user);
+  getAll(): Promise<Gasto[]> {
+    return this.expensesService.findAll();
   }
 
   @Get(':id')
