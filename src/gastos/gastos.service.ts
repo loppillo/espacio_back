@@ -50,25 +50,31 @@ export class GastosService {
     private dataSource: DataSource
   ) { }
 
-  findAll(user: any): Promise<Gasto[]> {
-    if (!user || user.role === 'admin') {
+ async findAll(user: any): Promise<Gasto[]> {
+    // 1. Seguridad primero: Si no hay usuario, no devolvemos nada
+    if (!user) return []; 
+
+    // 2. Si es ADMIN, ve todo
+    if (user.role === 'admin') {
       return this.expenseRepository.find({
         relations: ['proveedor', 'users']
       });
-    } else if (user.role === 'garzon') {
+    } 
+    
+    // 3. Si es GARZÓN, ve solo lo suyo
+    if (user.role === 'garzon') {
       return this.expenseRepository.find({
         where: {
-          users: {
-            id: user.id
-          }
+          users: { id: user.id } // Asegúrate que la relación en la Entity se llame 'users'
         },
         relations: ['proveedor', 'users']
       });
     }
-    return this.expenseRepository.find({
-      relations: ['proveedor', 'users']
-    });
-  }
+
+    // 4. IMPORTANTE: Para cualquier otro caso (roles nuevos, errores, etc.),
+    // devuelve un array vacío por seguridad.
+    return [];
+}
 
   async getBalancePorFecha(ingresosWhere?: any, egresosWhere?: any) {
     const entityManager = this.dataSource.manager;
