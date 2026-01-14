@@ -462,29 +462,36 @@ async findAll(user: any): Promise<Gasto[]> {
 // Asegúrate de recibir 'user' como segundo argumento
 async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto> {
     
-    // 1. DESESTRUCTURAR: Separamos los IDs del resto de datos simples
+    // 1. DESESTRUCTURAR
     const { proveedorId, categoriaId, ...datosGasto } = createGastoDto;
 
-    // 2. CREAR: Mapeamos manualmente los IDs a la estructura que TypeORM entiende ({ id: X })
+    // --- NUEVO PASO: NORMALIZAR USUARIO ---
+    // Creamos un objeto que SIEMPRE tenga la propiedad 'id' (numérica).
+    // Esto arregla que en el JSON de respuesta no salga el ID.
+    const usuarioParaGuardar = {
+      id: Number(user.userId || user.id), // Aceptamos userId o id por seguridad
+      username: user.username,
+      role: user.role
+    };
+
+    // 2. CREAR GASTO
     const nuevoGasto = this.expenseRepository.create({
       ...datosGasto, 
       
-      // Transformación clave para corregir el error:
+      // Relaciones Proveedor/Categoría
       proveedor: { id: proveedorId } as any, 
       categorias_gasto: { id: categoriaId } as any, 
       
-      // Vinculamos al usuario para los permisos
-      users: [user] 
+      // Relación Usuario: Usamos el objeto corregido
+      users: [usuarioParaGuardar] 
     });
 
     const gastoGuardado = await this.expenseRepository.save(nuevoGasto);
 
-    // 3. Lógica de la tabla intermedia (Usamos los objetos que acabamos de crear/asignar)
-    const proveedor = gastoGuardado.proveedor; 
-    const categoria = gastoGuardado.categorias_gasto; 
-
-    // Verificación de seguridad
-    if (proveedorId && categoriaId) { // Usamos los IDs del DTO para asegurar que existen
+    // 3. LÓGICA TABLA INTERMEDIA (Proveedores - Categorías)
+    // Nota: Usamos los IDs que vinieron del DTO directamente, es más seguro y rápido
+    if (proveedorId && categoriaId) { 
+      
       const existeRelacion = await this.relacionRepo.findOne({
         where: {
           proveedor: { id: proveedorId },
@@ -493,19 +500,17 @@ async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto
       });
 
       if (!existeRelacion) {
-        // Aquí necesitamos castear a 'any' o al tipo entidad si TypeScript se queja
-        // porque create espera la entidad completa, pero para guardar relación basta el ID.
         const nuevaRelacion = this.relacionRepo.create({
           proveedor: { id: proveedorId } as any,
           categoria: { id: categoriaId } as any
         });
         await this.relacionRepo.save(nuevaRelacion);
+        console.log(`Auto-asociación creada: Prov ${proveedorId} vende Categoría ${categoriaId}`);
       }
     }
 
     return gastoGuardado;
 }
-
   // gasto.service.ts
 
   // ==========================================
