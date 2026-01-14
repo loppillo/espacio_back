@@ -54,22 +54,34 @@ export class GastosService {
   ) { }
 
 async findAll(user: any): Promise<Gasto[]> {
-    if (!user) return [];
+    // 1. Debugging: Mira qué está llegando en la consola
+    console.log('Usuario recibido en findAll:', user);
 
-    // Definimos las relaciones que SIEMPRE queremos ver en la tabla
+    if (!user || !user.id) return [];
+
+    // 2. CONVERSIÓN EXPLÍCITA: Aseguramos que sea un número
+    const userId = Number(user.id);
+
+    // 3. VALIDACIÓN: Si la conversión falló (es NaN), detenemos todo para no romper la BD
+    if (isNaN(userId)) {
+      console.error('ERROR CRÍTICO: El ID del usuario no es un número válido:', user.id);
+      return [];
+    }
+
     const relaciones = ['proveedor', 'users', 'categorias_gasto']; 
 
     if (user.role === 'admin') {
       return this.expenseRepository.find({
         relations: relaciones,
-        order: { createdAt: 'DESC' } // Ordenar: Lo más nuevo arriba
+        order: { createdAt: 'DESC' }
       });
     } 
 
     if (user.role === 'garzon') {
       return this.expenseRepository.find({
         where: {
-          users: { id: user.id } 
+          // Usamos la variable userId que ya validamos que es un número
+          users: { id: userId } 
         },
         relations: relaciones,
         order: { createdAt: 'DESC' }
