@@ -6,6 +6,7 @@ import { Gasto } from './entities/gasto.entity';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/roles/roles.guard';
 import { RangoFechaDto } from './dto/rango-fecha.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('gastos')
 export class GastosController {
@@ -74,9 +75,9 @@ export class GastosController {
 
 
 
-  @UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'))
   @Get()
-  getAll(@Req() req): Promise<Gasto[]> {
+  getAll(@Req() req) {
     return this.expensesService.findAll(req.user);
   }
 

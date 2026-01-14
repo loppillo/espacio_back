@@ -53,29 +53,29 @@ export class GastosService {
     private dataSource: DataSource
   ) { }
 
- async findAll(user: any): Promise<Gasto[]> {
-    // 1. Seguridad primero: Si no hay usuario, no devolvemos nada
-    if (!user) return []; 
+async findAll(user: any): Promise<Gasto[]> {
+    if (!user) return [];
 
-    // 2. Si es ADMIN, ve todo
+    // Definimos las relaciones que SIEMPRE queremos ver en la tabla
+    const relaciones = ['proveedor', 'users', 'categorias_gasto']; 
+
     if (user.role === 'admin') {
       return this.expenseRepository.find({
-        relations: ['proveedor', 'users']
+        relations: relaciones,
+        order: { createdAt: 'DESC' } // Ordenar: Lo más nuevo arriba
       });
     } 
-    
-    // 3. Si es GARZÓN, ve solo lo suyo
+
     if (user.role === 'garzon') {
       return this.expenseRepository.find({
         where: {
-          users: { id: user.id } // Asegúrate que la relación en la Entity se llame 'users'
+          users: { id: user.id } 
         },
-        relations: ['proveedor', 'users']
+        relations: relaciones,
+        order: { createdAt: 'DESC' }
       });
     }
 
-    // 4. IMPORTANTE: Para cualquier otro caso (roles nuevos, errores, etc.),
-    // devuelve un array vacío por seguridad.
     return [];
 }
 
