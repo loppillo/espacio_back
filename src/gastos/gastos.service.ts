@@ -59,13 +59,13 @@ async findAll(user: any): Promise<Gasto[]> {
 
     // CORRECCIÓN 1: Tu log dice que la propiedad es 'userId', no 'id'
     // Usamos esta validación para evitar que falle si falta
-    if (!user || !user.userId) {
+    if (!user || !user.id) {
         console.warn('Usuario sin ID válido intentando acceder');
         return [];
     }
 
     // CORRECCIÓN 2: Usamos user.userId
-    const userId = Number(user.userId);
+    const userId = Number(user.id);
 
     if (isNaN(userId)) {
       console.error('ERROR CRÍTICO: El ID no es un número:', user.userId);
