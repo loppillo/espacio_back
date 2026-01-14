@@ -442,40 +442,52 @@ async findAll(user: any): Promise<Gasto[]> {
   }
 
   // Método para crear un gasto desde un endpoint
-async crearGastoManual(data: Partial<Gasto>): Promise<Gasto> {
-    // A. Guardamos el gasto normalmente (como ya lo hacías)
-    const nuevoGasto = this.expenseRepository.create(data);
+// Asegúrate de recibir 'user' como segundo argumento
+async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto> {
+    
+    // 1. DESESTRUCTURAR: Separamos los IDs del resto de datos simples
+    const { proveedorId, categoriaId, ...datosGasto } = createGastoDto;
+
+    // 2. CREAR: Mapeamos manualmente los IDs a la estructura que TypeORM entiende ({ id: X })
+    const nuevoGasto = this.expenseRepository.create({
+      ...datosGasto, 
+      
+      // Transformación clave para corregir el error:
+      proveedor: { id: proveedorId } as any, 
+      categorias_gasto: { id: categoriaId } as any, 
+      
+      // Vinculamos al usuario para los permisos
+      users: [user] 
+    });
+
     const gastoGuardado = await this.expenseRepository.save(nuevoGasto);
 
-    // B. Lógica de "Auto-asociación" en la tabla intermedia
-    // Extraemos proveedor y categoría del objeto guardado (o de la data entrante)
-    const proveedor = gastoGuardado.proveedor;
-    const categoria = gastoGuardado.categorias_gasto; // Ojo: en tu entidad se llama 'categorias_gasto'
+    // 3. Lógica de la tabla intermedia (Usamos los objetos que acabamos de crear/asignar)
+    const proveedor = gastoGuardado.proveedor; 
+    const categoria = gastoGuardado.categorias_gasto; 
 
-    // Solo intentamos crear la relación si ambos datos existen en el gasto
-    if (proveedor && categoria) {
-      
-      // B.1. Verificamos si YA existe esa combinación en la base de datos
+    // Verificación de seguridad
+    if (proveedorId && categoriaId) { // Usamos los IDs del DTO para asegurar que existen
       const existeRelacion = await this.relacionRepo.findOne({
         where: {
-          proveedor: { id: proveedor.id }, // Asume que proveedor es un objeto con ID
-          categoria: { id: categoria.id }
+          proveedor: { id: proveedorId },
+          categoria: { id: categoriaId }
         }
       });
 
-      // B.2. Si NO existe, la guardamos
       if (!existeRelacion) {
+        // Aquí necesitamos castear a 'any' o al tipo entidad si TypeScript se queja
+        // porque create espera la entidad completa, pero para guardar relación basta el ID.
         const nuevaRelacion = this.relacionRepo.create({
-          proveedor: proveedor,
-          categoria: categoria
+          proveedor: { id: proveedorId } as any,
+          categoria: { id: categoriaId } as any
         });
         await this.relacionRepo.save(nuevaRelacion);
-        // Opcional: console.log(`Relación guardada: Prov ${proveedor.id} - Cat ${categoria.id}`);
       }
     }
 
     return gastoGuardado;
-  }
+}
 
   // gasto.service.ts
 

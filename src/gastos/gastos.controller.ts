@@ -86,10 +86,12 @@ export class GastosController {
     return this.expensesService.findOne(id);
   }
 
-  @Post()
-  async crearGasto(@Body() body: Partial<Gasto>): Promise<Gasto> {
-    return await this.expensesService.crearGastoManual(body);
-  }
+@Post()
+@UseGuards(AuthGuard('jwt')) // Importante para tener req.user
+create(@Body() createGastoDto: CreateGastoDto, @Req() req) {
+  // Pasamos el DTO (datos) y el USER (quién lo hace)
+  return this.expensesService.crearGastoManual(createGastoDto, req.user);
+}
 
   @Delete(':id')
   remove(@Param('id') id: number): Promise<void> {
