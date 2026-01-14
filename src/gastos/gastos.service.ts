@@ -14,6 +14,7 @@ import { Category } from 'src/categories/entities/category.entity';
 import { Eta } from 'src/eta/entities/eta.entity';
 import { RangoFechaDto } from './dto/rango-fecha.dto';
 import { UsersService } from 'src/users/users.service';
+import { ProveedorCategoriaGasto } from './entities/proveedor-categoria-gasto.entity';
 
 // Alias para la entidad de categoria_gasto
 type CategoriaGasto = any;
@@ -45,6 +46,8 @@ export class GastosService {
     private readonly categoryRepository: Repository<Category>,
     @InjectRepository(Eta)
     private readonly etaRepository: Repository<Eta>,
+    @InjectRepository(ProveedorCategoriaGasto)
+    private relacionRepo: Repository<ProveedorCategoriaGasto>,
     private readonly proveedoresService: ProveedoresService,
     private readonly usersService: UsersService,
     private dataSource: DataSource
@@ -439,9 +442,39 @@ export class GastosService {
   }
 
   // Método para crear un gasto desde un endpoint
-  async crearGastoManual(data: Partial<Gasto>): Promise<Gasto> {
-    const gasto = this.expenseRepository.create(data);
-    return await this.expenseRepository.save(gasto);
+async crearGastoManual(data: Partial<Gasto>): Promise<Gasto> {
+    // A. Guardamos el gasto normalmente (como ya lo hacías)
+    const nuevoGasto = this.expenseRepository.create(data);
+    const gastoGuardado = await this.expenseRepository.save(nuevoGasto);
+
+    // B. Lógica de "Auto-asociación" en la tabla intermedia
+    // Extraemos proveedor y categoría del objeto guardado (o de la data entrante)
+    const proveedor = gastoGuardado.proveedor;
+    const categoria = gastoGuardado.categorias_gasto; // Ojo: en tu entidad se llama 'categorias_gasto'
+
+    // Solo intentamos crear la relación si ambos datos existen en el gasto
+    if (proveedor && categoria) {
+      
+      // B.1. Verificamos si YA existe esa combinación en la base de datos
+      const existeRelacion = await this.relacionRepo.findOne({
+        where: {
+          proveedor: { id: proveedor.id }, // Asume que proveedor es un objeto con ID
+          categoria: { id: categoria.id }
+        }
+      });
+
+      // B.2. Si NO existe, la guardamos
+      if (!existeRelacion) {
+        const nuevaRelacion = this.relacionRepo.create({
+          proveedor: proveedor,
+          categoria: categoria
+        });
+        await this.relacionRepo.save(nuevaRelacion);
+        // Opcional: console.log(`Relación guardada: Prov ${proveedor.id} - Cat ${categoria.id}`);
+      }
+    }
+
+    return gastoGuardado;
   }
 
   // gasto.service.ts
