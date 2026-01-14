@@ -54,22 +54,27 @@ export class GastosService {
   ) { }
 
 async findAll(user: any): Promise<Gasto[]> {
-    // 1. Debugging: Mira qué está llegando en la consola
-    console.log('Usuario recibido en findAll:', user);
+    // 1. Debugging
+    console.log('Usuario recibido:', user);
 
-    if (!user || !user.id) return [];
+    // CORRECCIÓN 1: Tu log dice que la propiedad es 'userId', no 'id'
+    // Usamos esta validación para evitar que falle si falta
+    if (!user || !user.userId) {
+        console.warn('Usuario sin ID válido intentando acceder');
+        return [];
+    }
 
-    // 2. CONVERSIÓN EXPLÍCITA: Aseguramos que sea un número
-    const userId = Number(user.id);
+    // CORRECCIÓN 2: Usamos user.userId
+    const userId = Number(user.userId);
 
-    // 3. VALIDACIÓN: Si la conversión falló (es NaN), detenemos todo para no romper la BD
     if (isNaN(userId)) {
-      console.error('ERROR CRÍTICO: El ID del usuario no es un número válido:', user.id);
+      console.error('ERROR CRÍTICO: El ID no es un número:', user.userId);
       return [];
     }
 
     const relaciones = ['proveedor', 'users', 'categorias_gasto']; 
 
+    // CASO ADMIN
     if (user.role === 'admin') {
       return this.expenseRepository.find({
         relations: relaciones,
@@ -77,11 +82,11 @@ async findAll(user: any): Promise<Gasto[]> {
       });
     } 
 
+    // CASO GARZÓN
     if (user.role === 'garzon') {
       return this.expenseRepository.find({
         where: {
-          // Usamos la variable userId que ya validamos que es un número
-          users: { id: userId } 
+          users: { id: userId } // Aquí usamos la variable numérica que convertimos arriba
         },
         relations: relaciones,
         order: { createdAt: 'DESC' }
