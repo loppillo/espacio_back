@@ -276,6 +276,24 @@ create(@Body() createGastoDto: CreateGastoDto, @Req() req) {
     return this.expensesService.getEvolucionGastos(rango);
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number, 
+    @Body() updateGastoDto: UpdateGastoDto,
+    @Req() req: any
+  ) {
+    return this.expensesService.update(id, updateGastoDto, req.user);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete('soft/:id')
+  removeSoft(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any
+  ) {
+    return this.expensesService.removeSoft(id, req.user);
+  }
 
 }
 

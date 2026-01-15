@@ -9,7 +9,8 @@ import {
   ManyToOne,
   JoinColumn,
   ManyToMany,
-  JoinTable
+  JoinTable,
+  DeleteDateColumn
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
@@ -79,4 +80,6 @@ export class Gasto {
   @Column({ nullable: true })
   dayOfMonth?: number; // 1..31, solo para mensua
 
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

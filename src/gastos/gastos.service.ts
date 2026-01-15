@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateGastoDto } from './dto/create-gasto.dto';
 import { ProveedoresService } from 'src/proveedores/proveedores.service';
 import { UpdateGastoDto } from './dto/update-gasto.dto';
@@ -1511,7 +1511,68 @@ async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto
   }
 
 
+  private async buscarYValidar(id: number, user: any): Promise<Gasto> {
+    const gasto = await this.expenseRepository.findOne({
+      where: { id },
+      relations: ['users'] // Necesitamos saber de quién es
+    });
 
+    if (!gasto) throw new NotFoundException(`Gasto #${id} no encontrado`);
+
+    // SI ES ADMIN: Pase libre
+    if (user.role === 'admin') return gasto;
+
+    // SI ES GARZÓN: Verificamos que el gasto sea suyo
+    // Buscamos si el ID del usuario está en la lista de dueños del gasto
+    const esDuenio = gasto.users.some(u => u.id === Number(user.id));
+    
+    if (!esDuenio) {
+      throw new ForbiddenException('No tienes permiso para modificar este gasto');
+    }
+
+    return gasto;
+  }
+
+  // =========================================================
+  // 1. EDITAR (UPDATE)
+  // =========================================================
+  async update(id: number, updateGastoDto: UpdateGastoDto, user: any) {
+    // 1. Validamos que el gasto exista y el usuario tenga permiso
+    const gasto = await this.buscarYValidar(id, user);
+
+    // 2. Preparamos los datos para actualizar
+    // Separamos IDs para convertirlos a objetos si vienen en el DTO
+    const { proveedorId, categoriaId, ...datosSimples } = updateGastoDto;
+    
+    // Hacemos un merge inteligente
+    const datosActualizados: any = { ...datosSimples };
+
+    if (proveedorId) datosActualizados.proveedor = { id: proveedorId };
+    if (categoriaId) datosActualizados.categorias_gasto = { id: categoriaId };
+
+    // 3. Actualizamos
+    // Usamos 'preload' o 'merge'. Preload busca por ID y reemplaza campos.
+    const gastoPreload = await this.expenseRepository.preload({
+      id: id,
+      ...datosActualizados
+    });
+
+    return await this.expenseRepository.save(gastoPreload);
+  }
+
+  // =========================================================
+  // 2. ELIMINAR (SOFT DELETE)
+  // =========================================================
+  async removeSoft(id: number, user: any) {
+    // 1. Validamos permisos antes de borrar
+    await this.buscarYValidar(id, user);
+
+    // 2. Soft Delete
+    // Esto pondrá la fecha en 'deletedAt' y el gasto desaparecerá de los 'find' normales
+    await this.expenseRepository.softDelete(id);
+
+    return { message: `Gasto #${id} eliminado correctamente` };
+  }
 
 
 
