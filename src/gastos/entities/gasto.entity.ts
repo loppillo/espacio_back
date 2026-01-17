@@ -23,6 +23,7 @@ export class Gasto {
   @Column('int')
   amount: number;
 
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string;
 
@@ -79,6 +80,9 @@ export class Gasto {
 
   @Column({ nullable: true })
   dayOfMonth?: number; // 1..31, solo para mensua
+
+  @Column({ type: 'enum', enum: ['activo', 'cancelado', 'anulado'], default: 'activo' })
+  estado: 'activo' | 'cancelado' | 'anulado';
 
   @DeleteDateColumn({ nullable: true })
   deletedAt: Date;

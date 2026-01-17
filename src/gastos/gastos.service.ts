@@ -53,15 +53,15 @@ export class GastosService {
     private dataSource: DataSource
   ) { }
 
-async findAll(user: any): Promise<Gasto[]> {
+  async findAll(user: any): Promise<Gasto[]> {
     // 1. Debugging
     console.log('Usuario recibido:', user);
 
     // CORRECCIÓN 1: Tu log dice que la propiedad es 'userId', no 'id'
     // Usamos esta validación para evitar que falle si falta
     if (!user || !user.id) {
-        console.warn('Usuario sin ID válido intentando acceder');
-        return [];
+      console.warn('Usuario sin ID válido intentando acceder');
+      return [];
     }
 
     // CORRECCIÓN 2: Usamos user.userId
@@ -72,7 +72,7 @@ async findAll(user: any): Promise<Gasto[]> {
       return [];
     }
 
-    const relaciones = ['proveedor', 'users', 'categorias_gasto']; 
+    const relaciones = ['proveedor', 'users', 'categorias_gasto'];
 
     // CASO ADMIN
     if (user.role === 'admin') {
@@ -80,7 +80,7 @@ async findAll(user: any): Promise<Gasto[]> {
         relations: relaciones,
         order: { createdAt: 'DESC' }
       });
-    } 
+    }
 
     // CASO GARZÓN
     if (user.role === 'garzon') {
@@ -94,7 +94,7 @@ async findAll(user: any): Promise<Gasto[]> {
     }
 
     return [];
-}
+  }
 
   async getBalancePorFecha(ingresosWhere?: any, egresosWhere?: any) {
     const entityManager = this.dataSource.manager;
@@ -459,9 +459,9 @@ async findAll(user: any): Promise<Gasto[]> {
   }
 
   // Método para crear un gasto desde un endpoint
-// Asegúrate de recibir 'user' como segundo argumento
-async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto> {
-    
+  // Asegúrate de recibir 'user' como segundo argumento
+  async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto> {
+
     // 1. DESESTRUCTURAR
     const { proveedorId, categoriaId, ...datosGasto } = createGastoDto;
 
@@ -476,22 +476,22 @@ async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto
 
     // 2. CREAR GASTO
     const nuevoGasto = this.expenseRepository.create({
-      ...datosGasto, 
-      
+      ...datosGasto,
+
       // Relaciones Proveedor/Categoría
-      proveedor: { id: proveedorId } as any, 
-      categorias_gasto: { id: categoriaId } as any, 
-      
+      proveedor: { id: proveedorId } as any,
+      categorias_gasto: { id: categoriaId } as any,
+
       // Relación Usuario: Usamos el objeto corregido
-      users: [usuarioParaGuardar] 
+      users: [usuarioParaGuardar]
     });
 
     const gastoGuardado = await this.expenseRepository.save(nuevoGasto);
 
     // 3. LÓGICA TABLA INTERMEDIA (Proveedores - Categorías)
     // Nota: Usamos los IDs que vinieron del DTO directamente, es más seguro y rápido
-    if (proveedorId && categoriaId) { 
-      
+    if (proveedorId && categoriaId) {
+
       const existeRelacion = await this.relacionRepo.findOne({
         where: {
           proveedor: { id: proveedorId },
@@ -510,7 +510,7 @@ async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto
     }
 
     return gastoGuardado;
-}
+  }
   // gasto.service.ts
 
   // ==========================================
@@ -1525,7 +1525,7 @@ async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto
     // SI ES GARZÓN: Verificamos que el gasto sea suyo
     // Buscamos si el ID del usuario está en la lista de dueños del gasto
     const esDuenio = gasto.users.some(u => u.id === Number(user.id));
-    
+
     if (!esDuenio) {
       throw new ForbiddenException('No tienes permiso para modificar este gasto');
     }
@@ -1543,7 +1543,7 @@ async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto
     // 2. Preparamos los datos para actualizar
     // Separamos IDs para convertirlos a objetos si vienen en el DTO
     const { proveedorId, categoriaId, ...datosSimples } = updateGastoDto;
-    
+
     // Hacemos un merge inteligente
     const datosActualizados: any = { ...datosSimples };
 
@@ -1567,11 +1567,11 @@ async crearGastoManual(createGastoDto: CreateGastoDto, user: any): Promise<Gasto
     // 1. Validamos permisos antes de borrar
     await this.buscarYValidar(id, user);
 
-    // 2. Soft Delete
-    // Esto pondrá la fecha en 'deletedAt' y el gasto desaparecerá de los 'find' normales
-    await this.expenseRepository.softDelete(id);
+    // 2. Anulamos en lugar de borrar
+    // await this.expenseRepository.softDelete(id);
+    await this.expenseRepository.update(id, { estado: 'anulado' });
 
-    return { message: `Gasto #${id} eliminado correctamente` };
+    return { message: `Gasto #${id} anulado correctamente` };
   }
 
 

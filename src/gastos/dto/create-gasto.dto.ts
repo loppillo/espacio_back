@@ -2,7 +2,7 @@ import { IsNotEmpty, IsNumber, IsString, IsOptional, IsEnum, Min, IsDate } from 
 import { Type } from 'class-transformer';
 
 export class CreateGastoDto {
-  
+
   @IsNumber()
   amount: number;
 
@@ -22,18 +22,18 @@ export class CreateGastoDto {
   paymentMethod: 'efectivo' | 'tarjeta' | 'transferencia' | 'cheque';
 
   // --- RELACIONES (Aquí es donde solucionamos el error) ---
-  
+
   // Recibimos el ID numérico desde Angular, no el objeto entero
   @IsNumber()
-  proveedorId: number; 
+  proveedorId: number;
 
   @IsNumber()
   categoriaId: number;
 
   // --- FECHAS ---
-  
+
   // Type transforma el string '2023-01-01' que envía Angular en un objeto Date real
-  @Type(() => Date) 
+  @Type(() => Date)
   @IsDate()
   @IsOptional()
   startDate?: Date;
@@ -46,4 +46,8 @@ export class CreateGastoDto {
   @IsEnum(['ninguno', 'diario', 'semanal', 'mensual'])
   @IsOptional()
   frequency?: 'ninguno' | 'diario' | 'semanal' | 'mensual';
+
+  @IsEnum(['activo', 'cancelado', 'anulado'])
+  @IsOptional()
+  estado?: 'activo' | 'cancelado' | 'anulado';
 }
