@@ -36,12 +36,7 @@ export class CreateGastoDto {
   @Type(() => Date) 
   @IsDate()
   @IsOptional()
-  startDate?: Date;
-
-  @Type(() => Date)
-  @IsDate()
-  @IsOptional()
-  endDate?: Date;
+  createdAt?: Date;
 
   @IsEnum(['ninguno', 'diario', 'semanal', 'mensual'])
   @IsOptional()
