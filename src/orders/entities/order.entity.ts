@@ -30,6 +30,9 @@ export class Order {
   status: string;
 
   @Column('int')
+  neto: number;
+
+  @Column('int')
   total: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
