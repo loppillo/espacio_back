@@ -20,6 +20,10 @@ export class UpdateOrderDto {
   @IsInt()
   total?: number;
 
+  @IsOptional()
+  @IsInt()
+  neto?: number;
+
   // ✅ Esta es la estrella: propina editable
   @IsOptional()
   @IsString()

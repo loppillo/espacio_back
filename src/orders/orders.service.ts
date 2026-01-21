@@ -92,6 +92,7 @@ export class OrdersService {
     await this.orderRepository.save({
       id: order.id,
       propina: order.propina,
+      neto: order.neto,
       total: order.total,
       tableNumber: order.tableNumber,
       orderType: order.orderType,

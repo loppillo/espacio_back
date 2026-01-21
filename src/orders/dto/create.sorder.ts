@@ -34,10 +34,6 @@ export class CreateSOrderDto {
 
 
   @IsOptional()
-  @IsNumber()
-  neto?: number;
-
-  @IsOptional()
   @IsString()
   status?: string;
 
