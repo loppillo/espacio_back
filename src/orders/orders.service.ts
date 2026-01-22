@@ -92,7 +92,6 @@ export class OrdersService {
     await this.orderRepository.save({
       id: order.id,
       propina: order.propina,
-      neto: order.neto,
       total: order.total,
       tableNumber: order.tableNumber,
       orderType: order.orderType,
@@ -110,7 +109,7 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
-    const { products, propina = 0, mesaId, orderType = 'local' } = createOrderDto;
+    const { products, propina = 0, neto = 0, mesaId, orderType = 'local' } = createOrderDto;
 
     // ✅ Validar mesa
     const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
@@ -121,6 +120,9 @@ export class OrdersService {
 
     // ✅ Sanitizar propina
     const safePropina = Number(propina) || 0;
+
+    // ✅ Sanitizar neto
+    const safeNeto = Number(neto) || 0;
 
     // ✅ Numero de venta antes de crear el pedido
     const numeroVenta = await this.generarNumeroVenta();
@@ -166,6 +168,7 @@ export class OrdersService {
       status: 'pendiente',
       paymentMethod: '',
       propina: safePropina,
+      neto: safeNeto,
       total: safeTotal,
       numeroVenta,
       mesa,
@@ -209,11 +212,11 @@ export class OrdersService {
 
  async creates(createOrderDto: CreateSOrderDto) {
     const { products = [], orderType = 'delivery' } = createOrderDto;
-
+    const { neto = 0 } = createOrderDto;
     if (orderType !== 'delivery') {
       throw new BadRequestException('Este método solo permite pedidos de delivery.');
     }
-
+    const safeNeto = Number(neto) || 0;
     // -----------------------------
     // A) Resolver cliente
     // -----------------------------
@@ -259,6 +262,7 @@ export class OrdersService {
       detalle_venta: createOrderDto.detalle_venta,
       status: 'pendiente',
       orderType,
+      neto: safeNeto,
       paymentMethod: createOrderDto.paymentMethod || 'pendiente',
       numeroVenta: nextNumeroVenta,
       total: 0,

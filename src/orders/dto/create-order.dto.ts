@@ -41,7 +41,11 @@ export class CreateOrderDto {
   @Transform(({ value }) => parseInt(value, 10) || 0)
   propina?: number;
 
-
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Transform(({ value }) => parseInt(value, 10) || 0)
+  neto?: number;
 
   @IsOptional()
   @IsString()
