@@ -29,7 +29,7 @@ export class Order {
   @Column()
   status: string;
 
-  @Column('int')
+  @Column('int', { default: 0 })
   neto: number;
 
   @Column('int')
