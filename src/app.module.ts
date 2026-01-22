@@ -41,7 +41,7 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
       host: 'localhost',
       port: 3306,
       username: 'usuario_node',
-      password: 'siQA8Ew(wbaGEs',
+      password: '-2#qFYnxyqyazxQN',
       database: 'prd_espacio-bl',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
