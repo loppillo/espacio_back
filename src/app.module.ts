@@ -28,6 +28,10 @@ import { CostoEnvioModule } from './costo_envio/costo_envio.module';
 import { TicketBarModule } from './ticket-bar/ticket-bar.module';
 import { EtaModule } from './eta/eta.module';
 import { ProveedoresModule } from './proveedores/proveedores.module';
+import { IngresoModule } from './ingresos/ingresos.module';
+import { CategoriaIngresoModule } from './categoria_ingresos/categoria_ingresos.module';
+import { ClienteIngresoModule } from './clientes_ingresos/clientes_ingresos.module';
+import { DocumentoIngresoModule } from './documentos_ingreso/documentos_ingreso.module';
 
 
 @Module({
@@ -50,7 +54,7 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule, CostoEnvioModule, TicketBarModule, EtaModule, ProveedoresModule],
+    UsersModule, CategoriesModule, GastosModule, ProductsModule, OrdersModule, CustomerModule, MesasModule, GastosModule, CategoriaGastoModule, AuthModule, ProductsOrdersModule, HorariosModule, ThemeModule, MailModule, CostoEnvioModule, TicketBarModule, EtaModule, ProveedoresModule, IngresoModule, CategoriaIngresoModule, ClienteIngresoModule, DocumentoIngresoModule],
   controllers: [AppController],
   providers: [AppService, OrdersGateway],
 })
