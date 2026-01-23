@@ -113,7 +113,7 @@ export class OrdersService {
 
     // ✅ Validar mesa
     const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
-    if (!mesa) throw new BadRequestException('La mesa no existe');
+    if (!mesa) throw new BadRequestException('La mesa no exist');
 
     // ✅ Sanitizar numero de mesa (extraer solo dígitos si es necesario)
     const tableNumber = parseInt(String(mesa.numero_mesa).replace(/\D/g, ''), 10) || 0;
