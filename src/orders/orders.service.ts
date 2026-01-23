@@ -168,7 +168,7 @@ export class OrdersService {
       status: 'pendiente',
       paymentMethod: '',
       propina: safePropina,
-      neto: safeNeto,
+      neto: total,
       total: safeTotal,
       numeroVenta,
       mesa,
@@ -210,7 +210,7 @@ export class OrdersService {
   }
 
 
- async creates(createOrderDto: CreateSOrderDto) {
+  async creates(createOrderDto: CreateSOrderDto) {
     const { products = [], orderType = 'delivery' } = createOrderDto;
     const { neto = 0 } = createOrderDto;
     if (orderType !== 'delivery') {
@@ -333,6 +333,7 @@ export class OrdersService {
     // G) Actualizar total con costo de envío
     // -----------------------------
     const safeTotal = isNaN(Number(total)) ? 0 : Number(total);
+    order.neto = safeTotal;
     order.total = safeTotal + costoEnvio;
 
     await this.orderRepository.save(order);
@@ -361,14 +362,14 @@ export class OrdersService {
         // Llamamos a tu servicio calculateEta
         // Nota: order.id y customer.id son opcionales en tu servicio, pero útiles para logs
         const etaResult = await this.etaService.calculateEta(
-          customer.customerAddress, 
-          order.id, 
+          customer.customerAddress,
+          order.id,
           customer.id
         );
 
         // Si el servicio devuelve tiempo_min, lo formateamos
         if (etaResult && etaResult.tiempo_min) {
-            tiempoEstimadoFinal = `${etaResult.tiempo_min} minutos`;
+          tiempoEstimadoFinal = `${etaResult.tiempo_min} minutos`;
         }
       } catch (error) {
         // Si falla el cálculo de ruta, solo logueamos y mantenemos el valor por defecto '50 minutos'
@@ -400,10 +401,10 @@ export class OrdersService {
           }),
           orderType: 'Envío a domicilio',
           customerAddress: customer.customerAddress || 'No especificada',
-          
+
           // AQUÍ USAMOS LA VARIABLE CALCULADA
-          tiempoEstimado: tiempoEstimadoFinal, 
-          
+          tiempoEstimado: tiempoEstimadoFinal,
+
           products: productsForEmail,
           subtotal: total,
           costoEnvio: costoEnvio,
