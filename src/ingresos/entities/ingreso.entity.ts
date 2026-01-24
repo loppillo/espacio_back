@@ -14,6 +14,10 @@ export class Ingreso {
     @Column({ type: 'date' })
     fecha: Date;
 
+
+    @Column({ type: 'int' })
+    monto: number;
+    
     @Column({ name: 'metodo_pago', length: 255 })
     metodo_pago: string;
 

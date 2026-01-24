@@ -1,4 +1,4 @@
-import { IsArray, IsDateString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateIngresoDto {
     @IsString()
@@ -12,6 +12,10 @@ export class CreateIngresoDto {
     @IsString()
     @IsNotEmpty()
     metodo_pago: string;
+
+    @IsNumber()
+    @IsNotEmpty()
+    monto: number;
 
     @IsArray()
     @IsOptional()
