@@ -53,14 +53,14 @@ export class IngresoService {
 
     async findAll() {
         return await this.ingresoRepository.find({
-            relations: ['categorias', 'clientes', 'documentos'],
+            relations: ['categoria_ingresos', 'clientes_ingresos', 'documentos_ingreso'],
         });
     }
 
     async findOne(id: number) {
         const ingreso = await this.ingresoRepository.findOne({
             where: { id },
-            relations: ['categorias', 'clientes', 'documentos'],
+            relations: ['categoria_ingresos', 'clientes_ingresos', 'documentos_ingreso'],
         });
         if (!ingreso) throw new NotFoundException(`Ingreso with ID ${id} not found`);
         return ingreso;
