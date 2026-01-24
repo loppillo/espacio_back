@@ -27,7 +27,6 @@ export class CreateIngresoDto {
     @IsOptional()
     clientesIds?: number[];
 
-    @IsNumber()
     @IsOptional()
     documentoId?: number;
 }
