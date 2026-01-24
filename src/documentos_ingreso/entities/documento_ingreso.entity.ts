@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Ingreso } from 'src/ingresos/entities/ingreso.entity';
 
 @Entity('documentos_ingreso')
@@ -15,7 +15,4 @@ export class DocumentoIngreso {
     @Column({ name: 'ingreso_id', type: 'int', nullable: true })
     ingresoId: number;
 
-    @ManyToOne(() => Ingreso, (ingreso) => ingreso.documentos, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'ingreso_id' })
-    ingreso: Ingreso;
 }

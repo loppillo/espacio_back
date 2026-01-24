@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { CategoriaIngreso } from '../../categoria_ingresos/entities/categoria_ingreso.entity';
 import { ClienteIngreso } from '../../clientes_ingresos/entities/cliente_ingreso.entity';
 import { DocumentoIngreso } from '../../documentos_ingreso/entities/documento_ingreso.entity';
@@ -17,7 +17,7 @@ export class Ingreso {
 
     @Column({ type: 'int' })
     monto: number;
-    
+
     @Column({ name: 'metodo_pago', length: 255 })
     metodo_pago: string;
 
@@ -37,6 +37,6 @@ export class Ingreso {
     })
     clientes: ClienteIngreso[];
 
-    @OneToMany(() => DocumentoIngreso, (documento) => documento.ingreso)
-    documentos: DocumentoIngreso[];
+    @OneToOne(() => DocumentoIngreso)
+    documentoId: DocumentoIngreso;
 }

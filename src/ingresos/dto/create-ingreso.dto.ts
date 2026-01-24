@@ -1,4 +1,6 @@
-import { IsArray, IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { CreateDocumentoIngresoDto } from 'src/documentos_ingreso/dto/create-documento_ingreso.dto';
 
 export class CreateIngresoDto {
     @IsString()
@@ -24,4 +26,8 @@ export class CreateIngresoDto {
     @IsArray()
     @IsOptional()
     clientesIds?: number[];
+
+    @IsNumber()
+    @IsOptional()
+    documentoId?: number;
 }

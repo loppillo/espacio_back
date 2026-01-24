@@ -6,6 +6,7 @@ import { UpdateIngresoDto } from './dto/update-ingreso.dto';
 import { Ingreso } from './entities/ingreso.entity';
 import { CategoriaIngreso } from 'src/categoria_ingresos/entities/categoria_ingreso.entity';
 import { ClienteIngreso } from 'src/clientes_ingresos/entities/cliente_ingreso.entity';
+import { DocumentoIngreso } from 'src/documentos_ingreso/entities/documento_ingreso.entity';
 
 @Injectable()
 export class IngresoService {
@@ -16,10 +17,12 @@ export class IngresoService {
         private readonly categoriaRepository: Repository<CategoriaIngreso>,
         @InjectRepository(ClienteIngreso)
         private readonly clienteRepository: Repository<ClienteIngreso>,
+        @InjectRepository(DocumentoIngreso)
+        private readonly documentoRepository: Repository<DocumentoIngreso>,
     ) { }
 
     async create(createIngresoDto: CreateIngresoDto) {
-        const { categoriasIds, clientesIds, ...data } = createIngresoDto;
+        const { categoriasIds, clientesIds, documentoId, ...data } = createIngresoDto;
 
         const ingreso = this.ingresoRepository.create(data);
 
@@ -29,6 +32,13 @@ export class IngresoService {
 
         if (clientesIds && clientesIds.length > 0) {
             ingreso.clientes = await this.clienteRepository.findBy({ id: In(clientesIds) });
+        }
+
+        if (createIngresoDto.documentoId) {
+            const documento = await this.documentoRepository.findOneBy({ id: createIngresoDto.documentoId });
+            if (documento) {
+                ingreso.documentoId = documento;
+            }
         }
 
         return await this.ingresoRepository.save(ingreso);
@@ -51,7 +61,7 @@ export class IngresoService {
 
     async update(id: number, updateIngresoDto: UpdateIngresoDto) {
         const ingreso = await this.findOne(id);
-        const { categoriasIds, clientesIds, ...data } = updateIngresoDto;
+        const { categoriasIds, clientesIds, documentoId, ...data } = updateIngresoDto;
 
         this.ingresoRepository.merge(ingreso, data);
 
@@ -61,6 +71,13 @@ export class IngresoService {
 
         if (clientesIds) {
             ingreso.clientes = await this.clienteRepository.findBy({ id: In(clientesIds) });
+        }
+
+        if (documentoId) {
+            const documento = await this.documentoRepository.findOneBy({ id: documentoId });
+            if (documento) {
+                ingreso.documentoId = documento;
+            }
         }
 
         return await this.ingresoRepository.save(ingreso);
