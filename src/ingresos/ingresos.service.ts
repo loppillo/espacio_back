@@ -21,28 +21,35 @@ export class IngresoService {
         private readonly documentoRepository: Repository<DocumentoIngreso>,
     ) { }
 
-    async create(createIngresoDto: CreateIngresoDto) {
-        const { categoriasIds, clientesIds, documentoId, ...data } = createIngresoDto;
+ async create(createIngresoDto: CreateIngresoDto) {
+    const { categoriasIds, clientesIds, documentoId, ...data } = createIngresoDto;
 
-        const ingreso = this.ingresoRepository.create(data);
+    // 1. Instanciar el ingreso base
+    const ingreso = this.ingresoRepository.create(data);
 
-        if (categoriasIds && categoriasIds.length > 0) {
-            ingreso.categorias = await this.categoriaRepository.findBy({ id: In(categoriasIds) });
+    // 2. Cargar relaciones (Promise.all para hacerlo en paralelo y ganar velocidad)
+    const [categorias, clientes] = await Promise.all([
+        categoriasIds?.length ? this.categoriaRepository.findBy({ id: In(categoriasIds) }) : [],
+        clientesIds?.length ? this.clienteRepository.findBy({ id: In(clientesIds) }) : []
+    ]);
+
+    ingreso.categorias = categorias;
+    ingreso.clientes = clientes;
+
+    // 3. Lógica del Documento (OneToOne)
+    if (documentoId) {
+        const documento = await this.documentoRepository.findOneBy({ id: documentoId });
+        if (!documento) {
+             // Opcional: Lanzar error si el ID enviado no existe
+             // throw new NotFoundException('Documento no encontrado');
+        } else {
+            // Asumiendo que renombraste la propiedad en la entidad a 'documento'
+            ingreso.documento = documento; 
         }
-
-        if (clientesIds && clientesIds.length > 0) {
-            ingreso.clientes = await this.clienteRepository.findBy({ id: In(clientesIds) });
-        }
-
-        if (createIngresoDto.documentoId) {
-            const documento = await this.documentoRepository.findOneBy({ id: createIngresoDto.documentoId });
-            if (documento) {
-                ingreso.documentoId = documento;
-            }
-        }
-
-        return await this.ingresoRepository.save(ingreso);
     }
+
+    return await this.ingresoRepository.save(ingreso);
+}
 
     async findAll() {
         return await this.ingresoRepository.find({
@@ -76,7 +83,7 @@ export class IngresoService {
         if (documentoId) {
             const documento = await this.documentoRepository.findOneBy({ id: documentoId });
             if (documento) {
-                ingreso.documentoId = documento;
+                ingreso.documento = documento;
             }
         }
 
