@@ -1397,10 +1397,16 @@ export class GastosService {
     let end: Date;
 
     if (rango.start && rango.end) {
-      start = new Date(rango.start);
+      // Fix: If format is YYYY-MM-DD, parsing as new Date() assumes UTC. 
+      // We want local time. Appending 'T00:00:00' forces local time parsing.
+      const startStr = rango.start.includes('T') ? rango.start : `${rango.start}T00:00:00`;
+      const endStr = rango.end.includes('T') ? rango.end : `${rango.end}T00:00:00`;
+
+      start = new Date(startStr);
       // Ajustar fecha inicial al inicio del día
       start.setHours(0, 0, 0, 0);
-      end = new Date(rango.end);
+
+      end = new Date(endStr);
       // Ajustar la fecha final al final del día
       end.setHours(23, 59, 59, 999);
     } else {
