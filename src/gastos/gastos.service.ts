@@ -526,7 +526,7 @@ export class GastosService {
       .createQueryBuilder()
       .select("SUM(o.neto)", "total")
       .from("orders", "o")
-      .where("o.createdAt BETWEEN :start AND :end", { start, end })
+      .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("o.status = :status", { status: 'Pagado' })
       .getRawOne();
 
@@ -535,7 +535,7 @@ export class GastosService {
       .createQueryBuilder()
       .select("SUM(e.amount)", "total")
       .from("expenses", "e")
-      .where("e.createdAt BETWEEN :start AND :end", { start, end })
+      .where("DATE(e.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("e.type = :type", { type: 'egreso' })
       .getRawOne();
 
@@ -544,7 +544,7 @@ export class GastosService {
       .createQueryBuilder()
       .select("SUM(o.propina)", "total")
       .from("orders", "o")
-      .where("o.createdAt BETWEEN :start AND :end", { start, end })
+      .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("o.status = :status", { status: 'Pagado' })
       .getRawOne();
 
@@ -558,7 +558,7 @@ export class GastosService {
       .createQueryBuilder()
       .select("SUM(o.total)", "total")
       .from("orders", "o")
-      .where("o.createdAt BETWEEN :start AND :end", { start, end })
+      .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("o.status != :status", { status: 'Pagado' })
       .getRawOne();
 
