@@ -1398,6 +1398,8 @@ export class GastosService {
 
     if (rango.start && rango.end) {
       start = new Date(rango.start);
+      // Ajustar fecha inicial al inicio del día
+      start.setHours(0, 0, 0, 0);
       end = new Date(rango.end);
       // Ajustar la fecha final al final del día
       end.setHours(23, 59, 59, 999);
