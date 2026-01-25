@@ -9,4 +9,7 @@ export class RangoFechaDto {
   @IsDateString()
   @IsOptional()
   end?: string;
+
+  @IsOptional()
+  limit?: number;
 }
