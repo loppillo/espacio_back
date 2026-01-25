@@ -524,7 +524,7 @@ export class GastosService {
     // Ingresos (orders)
     const ingresosResult = await entityManager
       .createQueryBuilder()
-      .select("SUM(o.neto)", "neto")
+      .select("SUM(o.neto)", "total")
       .from("orders", "o")
       .where("o.createdAt BETWEEN :start AND :end", { start, end })
       .andWhere("o.status = :status", { status: 'Pagado' })
