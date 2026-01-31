@@ -16,7 +16,7 @@ async function bootstrap() {
   app.setGlobalPrefix("api/v1");
 
   app.enableCors({
-    origin: ['https://espacioboulevardlinares.cl', 'http://localhost:4200'],
+    origin: ['https://espacioboulevardlinares.cl', 'http://localhost:4200','http://localhost:3000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Authorization,Content-Type',
   });
