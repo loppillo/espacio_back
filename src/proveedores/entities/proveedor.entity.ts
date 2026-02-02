@@ -21,7 +21,7 @@ export class Proveedor {
     @Column({ nullable: false })
     telefono: string;
 
-    @Column()
+    @Column({ nullable: true })
     email: string;
 
     @OneToMany(() => Gasto, (gasto) => gasto.proveedor)
