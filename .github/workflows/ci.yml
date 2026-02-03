@@ -25,7 +25,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       # 1. Descarga el código del repositorio
@@ -36,7 +36,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.21.0'   # o '18.x' si prefieres rango
+          node-version: '22.22.0'   # o '18.x' si prefieres rango
           cache: 'npm'
 
       # 3. Instala dependencias de forma limpia (npm ci)
