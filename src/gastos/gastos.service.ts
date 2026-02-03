@@ -559,7 +559,7 @@ export class GastosService {
       .select("SUM(o.total)", "total")
       .from("orders", "o")
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
-      .andWhere("o.status = :status", { status: 'Pendiente' })
+      .andWhere("o.status = :status", { status: 'pendiente' })
       .getRawOne();
 
     return {
