@@ -89,6 +89,8 @@ export class OrdersController {
       id: orden.id,
       fecha: orden.createdAt,
       status: orden.status,
+      neto: orden.neto,
+      propina:orden.propina,
       total: orden.total
     }));
 
