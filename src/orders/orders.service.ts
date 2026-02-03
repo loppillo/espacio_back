@@ -771,6 +771,8 @@ export class OrdersService {
       .select([
         'order.id AS id',
         'order.total AS total',
+        'order.neto AS neto',
+        'order.propina AS propina',
         'order.orderType AS tipo',
         'order.paymentMethod AS metodo',
         'mesa.numero_mesa AS mesa',
