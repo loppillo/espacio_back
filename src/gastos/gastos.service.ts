@@ -565,10 +565,13 @@ export class GastosService {
      const costo_delivery = await entityManager
       .createQueryBuilder()
       .select("SUM(o.costo_delivery)", "costo_delivery")
+      .addSelect("COUNT(*)", "count")
       .from("orders", "o")
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("o.status = :status", { status: 'Pagado' })
       .getRawOne();
+
+    console.log('Resultado costo_delivery:', costo_delivery);
 
 
     return {
