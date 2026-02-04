@@ -564,7 +564,7 @@ export class GastosService {
 
      const costo_delivery = await entityManager
       .createQueryBuilder()
-      .select("SUM(o.costo_delivery)", "total")
+      .select("SUM(o.costo_delivery)", "costo_delivery")
       .from("orders", "o")
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("o.status = :status", { status: 'Pagado' })
@@ -577,7 +577,7 @@ export class GastosService {
       propinas,
       balance,
       porCobrar: Number(porCobrarResult?.total || 0),
-      costo_delivery
+    costo_delivery: Number(costo_delivery?.costo_delivery || 0) 
     };
   }
 
