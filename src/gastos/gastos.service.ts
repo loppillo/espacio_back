@@ -569,7 +569,7 @@ export class GastosService {
       .addSelect("COUNT(*)", "count")
       .from("orders", "o")
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
-      .andWhere("o.status = :status", { status: 'Pagado' })
+      .andWhere("o.status = :status", { status: 'pendiente' })
       .andWhere("o.orderType = :type", { type: 'delivery' })
       .getRawOne();
 
