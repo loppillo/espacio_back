@@ -120,6 +120,11 @@ export class OrdersController {
     return this.ordersService.aceptarVenta(+id);
   }
 
+  @Patch(':id/pendiente')
+  async pendienteVenta(@Param('id') id: number) {
+    return this.ordersService.pendienteVenta(+id);
+  }
+
   // Cancelar venta (opcional) - status => 'Cancelado' o 'Anulado'
   @Patch(':id/cancelar')
   async cancelarVenta(@Param('id') id: number) {

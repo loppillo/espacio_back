@@ -644,6 +644,39 @@ export class OrdersService {
   }
 
 
+  async pendienteVenta(orderId: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa']
+    });
+
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+
+    // Si aceptar = pagar, entonces lo marcas como pagado
+    order.status = 'pendiente';
+    order.paymentMethod = order.paymentMethod ?? 'efectivo'; // o lo que uses
+    await this.orderRepository.save(order);
+
+    const mesa = order.mesa;
+    if (mesa) {
+      mesa.status = 'Libre';
+      await this.mesaRepository.save(mesa);
+      this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
+    }
+
+    return order;
+  }
+
+
+
+
+
+
+
+
+
+
+
   async cancelarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },
