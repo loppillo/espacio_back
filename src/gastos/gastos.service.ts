@@ -562,12 +562,22 @@ export class GastosService {
       .andWhere("o.status = :status", { status: 'pendiente' })
       .getRawOne();
 
+     const costo_delivery = await entityManager
+      .createQueryBuilder()
+      .select("SUM(o.costo_delivery)", "total")
+      .from("orders", "o")
+      .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
+      .andWhere("o.status = :status", { status: 'Pagado' })
+      .getRawOne();
+
+
     return {
       ingresos,
       egresos,
       propinas,
       balance,
-      porCobrar: Number(porCobrarResult?.total || 0)
+      porCobrar: Number(porCobrarResult?.total || 0),
+      costo_delivery
     };
   }
 
