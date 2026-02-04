@@ -519,6 +519,7 @@ export class GastosService {
 
   async getKpisFinanzas(rango: RangoFechaDto) {
     const { start, end } = this.getRangoFechas(rango);
+    console.log('Fechas de consulta - start:', start, 'end:', end);
     const entityManager = this.dataSource.manager;
 
     // Ingresos (orders)
@@ -569,9 +570,12 @@ export class GastosService {
       .from("orders", "o")
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("o.status = :status", { status: 'Pagado' })
+      .andWhere("o.orderType = :type", { type: 'delivery' })
       .getRawOne();
-      const costoDelivery =  Number(costo_delivery?.costo_delivery || 0);
-    console.log('Resultado costo_delivery:', costoDelivery);
+
+    console.log('Resultado costo_delivery completo:', costo_delivery);
+    const costoDelivery = Number(costo_delivery?.costo_delivery || 0);
+    console.log('Valor numérico:', costoDelivery);
 
 
     return {
