@@ -27,7 +27,7 @@ export class Order {
   propina: number;
 
   @Column({type:'int',nullable:true})
-  costo_delivery:number;
+  costo_delivery: number;
 
   @Column()
   status: string;

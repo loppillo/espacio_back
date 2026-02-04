@@ -552,7 +552,7 @@ export class GastosService {
     const egresos = Number(egresosResult?.total || 0);
     const propinas = Number(propinasResult?.total || 0);
     const balance = ingresos - egresos;
-
+   
     // Por cobrar (orders con status pendiente)
     const porCobrarResult = await entityManager
       .createQueryBuilder()
@@ -570,8 +570,8 @@ export class GastosService {
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
       .andWhere("o.status = :status", { status: 'Pagado' })
       .getRawOne();
-
-    console.log('Resultado costo_delivery:', costo_delivery);
+      const costoDelivery =  Number(costo_delivery?.costo_delivery || 0);
+    console.log('Resultado costo_delivery:', costoDelivery);
 
 
     return {
@@ -580,7 +580,7 @@ export class GastosService {
       propinas,
       balance,
       porCobrar: Number(porCobrarResult?.total || 0),
-    costo_delivery: Number(costo_delivery?.costo_delivery || 0) 
+      costoDelivery
     };
   }
 
