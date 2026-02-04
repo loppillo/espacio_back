@@ -262,6 +262,7 @@ export class OrdersService {
       detalle_venta: createOrderDto.detalle_venta,
       status: 'pendiente',
       orderType,
+      costo_delivery:createOrderDto.costo_delivery,
       neto: safeNeto,
       paymentMethod: createOrderDto.paymentMethod || 'pendiente',
       numeroVenta: nextNumeroVenta,

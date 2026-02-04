@@ -26,6 +26,9 @@ export class Order {
   @Column('int', { default: 0 })
   propina: number;
 
+  @Column({type:'int',nullable:true})
+  costo_delivery:number;
+
   @Column()
   status: string;
 

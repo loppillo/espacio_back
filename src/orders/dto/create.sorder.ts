@@ -32,6 +32,9 @@ export class CreateSOrderDto {
   @IsNumber()
   total?: number;
 
+  @IsOptional()
+  @IsInt()
+  costo_delivery?:number;
 
   @IsOptional()
   @IsNumber()
