@@ -8,4 +8,7 @@ export class CostoEnvio {
     @Column()
     precio_envio: number;
 
+    @Column()
+    descripcion:string;
+
 }

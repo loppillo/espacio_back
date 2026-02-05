@@ -370,7 +370,9 @@ export class ProductsService {
   async remove(id: number) {
     const result = await this.proRepository.delete(id);
     // Invalidar caché de productos
-    this.cacheService.invalidatePattern('products:search:.*');
+    //this.cacheService.invalidatePattern('products:search:.*');
     return result;
   }
+
+
 }
