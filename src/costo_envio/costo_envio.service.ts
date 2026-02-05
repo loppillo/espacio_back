@@ -15,9 +15,14 @@ export class CostoEnvioService {
 
 
   async create(createCostoEnvioDto: CreateCostoEnvioDto) {
-    // Si se marca como por defecto, desmarcar todos los demás
+    // Si se marca como por defecto, desmarcar el actual por defecto
     if (createCostoEnvioDto.porDefecto) {
-      await this.costoEnvioRepository.update({}, { porDefecto: false });
+      const actualPorDefecto = await this.costoEnvioRepository.findOne({
+        where: { porDefecto: true }
+      });
+      if (actualPorDefecto) {
+        await this.costoEnvioRepository.update(actualPorDefecto.id, { porDefecto: false });
+      }
     }
 
     const costoEnvio = this.costoEnvioRepository.create(createCostoEnvioDto);
@@ -44,9 +49,14 @@ export class CostoEnvioService {
   }
 
   async update(id: number, updateCostoEnvioDto: UpdateCostoEnvioDto) {
-    // Si se marca como por defecto, desmarcar todos los demás
+    // Si se marca como por defecto, desmarcar el actual por defecto
     if (updateCostoEnvioDto.porDefecto) {
-      await this.costoEnvioRepository.update({}, { porDefecto: false });
+      const actualPorDefecto = await this.costoEnvioRepository.findOne({
+        where: { porDefecto: true }
+      });
+      if (actualPorDefecto && actualPorDefecto.id !== id) {
+        await this.costoEnvioRepository.update(actualPorDefecto.id, { porDefecto: false });
+      }
     }
 
     await this.costoEnvioRepository.update(id, updateCostoEnvioDto);
