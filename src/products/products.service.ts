@@ -4,7 +4,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from 'src/categories/entities/category.entity';
-import { In, Like, Repository } from 'typeorm';
+import { In, Like, Repository, DataSource } from 'typeorm';
 import { PaginationDto } from './dto/PaginationDto.dto';
 import { ProductDto } from './dto/productDTO.dto';
 import { CacheService } from '../common/cache.service';
@@ -18,6 +18,7 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly proRepository: Repository<Product>,
     private readonly cacheService: CacheService,
+    private readonly dataSource: DataSource,
   ) { }
 
 
@@ -368,9 +369,17 @@ export class ProductsService {
   }
 
   async remove(id: number) {
+    // Eliminar tickets relacionados primero
+    await this.dataSource
+      .getRepository('TicketBar')
+      .delete({ idProduct: id });
+
+    // Luego eliminar el producto
     const result = await this.proRepository.delete(id);
+
     // Invalidar caché de productos
-    //this.cacheService.invalidatePattern('products:search:.*');
+    this.cacheService.invalidatePattern('products:search:.*');
+
     return result;
   }
 

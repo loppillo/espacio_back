@@ -8,6 +8,7 @@ import {
   ManyToMany,
   OneToMany,
   JoinTable,
+  DeleteDateColumn,
 } from 'typeorm';
 
 @Entity('products')
@@ -44,4 +45,7 @@ export class Product {
 
   @OneToMany(() => ProductsOrders, (orderProduct) => orderProduct.product, { cascade: true })
   orderProducts: ProductsOrders[];
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt?: Date;
 }
