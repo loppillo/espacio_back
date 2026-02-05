@@ -11,4 +11,7 @@ export class CostoEnvio {
     @Column()
     descripcion:string;
 
+    @Column({ default: false })
+    porDefecto: boolean;
+
 }

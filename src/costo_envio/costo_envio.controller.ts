@@ -13,6 +13,11 @@ export class CostoEnvioController {
     return this.costoEnvioService.findAll();
   }
 
+  @Get('default')
+  findDefault() {
+    return this.costoEnvioService.findDefault();
+  }
+
   @Post()
   create(@Body() createCostoEnvioDto: CreateCostoEnvioDto) {
     return this.costoEnvioService.create(createCostoEnvioDto);

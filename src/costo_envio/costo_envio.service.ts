@@ -15,13 +15,27 @@ export class CostoEnvioService {
 
 
   async create(createCostoEnvioDto: CreateCostoEnvioDto) {
+    // Si se marca como por defecto, desmarcar todos los demás
+    if (createCostoEnvioDto.porDefecto) {
+      await this.costoEnvioRepository.update({}, { porDefecto: false });
+    }
+
     const costoEnvio = this.costoEnvioRepository.create(createCostoEnvioDto);
     return await this.costoEnvioRepository.save(costoEnvio);
   }
 
   async findAll() {
     return await this.costoEnvioRepository.find({
-      order: { id: 'DESC' },
+      order: {
+        porDefecto: 'DESC', // El registro por defecto aparece primero
+        id: 'ASC'
+      },
+    });
+  }
+
+  async findDefault() {
+    return await this.costoEnvioRepository.findOne({
+      where: { porDefecto: true }
     });
   }
 
@@ -30,6 +44,11 @@ export class CostoEnvioService {
   }
 
   async update(id: number, updateCostoEnvioDto: UpdateCostoEnvioDto) {
+    // Si se marca como por defecto, desmarcar todos los demás
+    if (updateCostoEnvioDto.porDefecto) {
+      await this.costoEnvioRepository.update({}, { porDefecto: false });
+    }
+
     await this.costoEnvioRepository.update(id, updateCostoEnvioDto);
     return await this.costoEnvioRepository.findOne({ where: { id } });
   }
