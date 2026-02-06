@@ -964,14 +964,15 @@ export class GastosService {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
 
-    // Obtener total de clientes únicos
+    // Obtener total de clientes únicos por email
     const totalResult = await entityManager.query(
       `
-      SELECT COUNT(DISTINCT o.customerId) as total
+      SELECT COUNT(DISTINCT c.customerEmail) as total
       FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-        AND o.customerId IS NOT NULL
+        AND c.customerEmail IS NOT NULL
       `,
       [start, end]
     );
@@ -979,14 +980,15 @@ export class GastosService {
     const rows = await entityManager.query(
       `
       SELECT
-        c.id as clienteId,
+        c.customerEmail as email,
         c.customerName as cliente,
         SUM(o.total) as gasto
       FROM orders o
       INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-      GROUP BY c.id, c.customerName
+        AND c.customerEmail IS NOT NULL
+      GROUP BY c.customerEmail, c.customerName
       ORDER BY gasto DESC
       LIMIT ?
       `,
@@ -996,7 +998,7 @@ export class GastosService {
     return {
       totalClientes: Number(totalResult[0]?.total || 0),
       clientes: rows.map(r => ({
-        clienteId: Number(r.clienteId),
+        email: r.email,
         cliente: r.cliente || 'Anónimo',
         gasto: Number(r.gasto || 0)
       }))
@@ -1007,14 +1009,15 @@ export class GastosService {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
 
-    // Obtener total de clientes únicos
+    // Obtener total de clientes únicos por email
     const totalResult = await entityManager.query(
       `
-      SELECT COUNT(DISTINCT o.customerId) as total
+      SELECT COUNT(DISTINCT c.customerEmail) as total
       FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-        AND o.customerId IS NOT NULL
+        AND c.customerEmail IS NOT NULL
       `,
       [start, end]
     );
@@ -1022,14 +1025,15 @@ export class GastosService {
     const rows = await entityManager.query(
       `
       SELECT
-        c.id as clienteId,
+        c.customerEmail as email,
         c.customerName as cliente,
         COUNT(o.id) as pedidos
       FROM orders o
       INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-      GROUP BY c.id, c.customerName
+        AND c.customerEmail IS NOT NULL
+      GROUP BY c.customerEmail, c.customerName
       ORDER BY pedidos DESC
       LIMIT ?
       `,
@@ -1039,7 +1043,7 @@ export class GastosService {
     return {
       totalClientes: Number(totalResult[0]?.total || 0),
       clientes: rows.map(r => ({
-        clienteId: Number(r.clienteId),
+        email: r.email,
         cliente: r.cliente || 'Anónimo',
         pedidos: Number(r.pedidos || 0)
       }))
