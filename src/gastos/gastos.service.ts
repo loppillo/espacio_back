@@ -594,11 +594,12 @@ export class GastosService {
 
     const rows = await entityManager.query(
       `
-      SELECT 
+      SELECT
         DATE(o.createdAt) as fecha,
         SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) as ingresos,
         0 as egresos,
-        SUM(CASE WHEN o.status = 'Pagado' THEN o.propina ELSE 0 END) as propinas
+        SUM(CASE WHEN o.status = 'Pagado' THEN o.propina ELSE 0 END) as propinas,
+        SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
       FROM orders o
       WHERE o.createdAt BETWEEN ? AND ?
       GROUP BY DATE(o.createdAt)
@@ -632,6 +633,7 @@ export class GastosService {
         ingresos: Number(r.ingresos || 0),
         egresos: Number(egresosMap.get(r.fecha) || 0),
         propinas: Number(r.propinas || 0),
+        costoDelivery: Number(r.costoDelivery || 0),
         balance
       };
     });
@@ -641,6 +643,7 @@ export class GastosService {
       ingresos: result.map(r => r.ingresos),
       egresos: result.map(r => r.egresos),
       propinas: result.map(r => r.propinas),
+      costoDelivery: result.map(r => r.costoDelivery),
       balance: result.map(r => r.balance)
     };
   }
@@ -651,26 +654,29 @@ export class GastosService {
 
     const rows = await entityManager.query(
       `
-    SELECT 
+    SELECT
       DATE(o.createdAt) as fecha,
-      
+
       -- 1. Suma de ingresos (Pagados)
-      SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) - 
-      
+      SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) -
+
       -- 2. Resta de egresos (Usamos MAX porque el valor viene repetido por el JOIN, no queremos sumarlo N veces)
       COALESCE(MAX(e.total_egresos), 0) as balance,
-      
+
       -- 3. Por cobrar
-      SUM(CASE WHEN o.status != 'Pagado' THEN o.total ELSE 0 END) as porCobrar
-      
+      SUM(CASE WHEN o.status != 'Pagado' THEN o.total ELSE 0 END) as porCobrar,
+
+      -- 4. Costo de delivery
+      SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
+
     FROM orders o
-    
+
     -- UNIR CON GASTOS PRE-CALCULADOS
     LEFT JOIN (
-      SELECT 
-        DATE(createdAt) as fecha_gasto, 
-        SUM(amount) as total_egresos 
-      FROM expenses 
+      SELECT
+        DATE(createdAt) as fecha_gasto,
+        SUM(amount) as total_egresos
+      FROM expenses
       WHERE type = 'egreso'
       GROUP BY DATE(createdAt)
     ) e ON e.fecha_gasto = DATE(o.createdAt)
@@ -685,7 +691,8 @@ export class GastosService {
     return {
       labels: rows.map(r => this.formatDay(r.fecha)),
       balance: rows.map(r => Number(r.balance || 0)),
-      porCobrar: rows.map(r => Number(r.porCobrar || 0))
+      porCobrar: rows.map(r => Number(r.porCobrar || 0)),
+      costoDelivery: rows.map(r => Number(r.costoDelivery || 0))
     };
   }
   async getTopDias(rango: RangoFechaDto, limit = 5) {
@@ -694,9 +701,10 @@ export class GastosService {
 
     const rows = await entityManager.query(
       `
-      SELECT 
+      SELECT
         DATE(o.createdAt) as fecha,
-        SUM(o.total) as recaudacion
+        SUM(o.total) as recaudacion,
+        SUM(COALESCE(o.costo_delivery, 0)) as costoDelivery
       FROM orders o
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
@@ -709,7 +717,8 @@ export class GastosService {
 
     return rows.map(r => ({
       dia: this.formatDay(r.fecha),
-      recaudacion: Number(r.recaudacion || 0)
+      recaudacion: Number(r.recaudacion || 0),
+      costoDelivery: Number(r.costoDelivery || 0)
     }));
   }
 
@@ -719,9 +728,10 @@ export class GastosService {
 
     const result = await entityManager.query(
       `
-      SELECT 
+      SELECT
         SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) as ingresos,
-        SUM(CASE WHEN o.status = 'Pagado' THEN o.propina ELSE 0 END) as propinas
+        SUM(CASE WHEN o.status = 'Pagado' THEN o.propina ELSE 0 END) as propinas,
+        SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
       FROM orders o
       WHERE o.createdAt BETWEEN ? AND ?
       `,
@@ -730,7 +740,8 @@ export class GastosService {
 
     return {
       ingresos: Number(result[0]?.ingresos || 0),
-      propinas: Number(result[0]?.propinas || 0)
+      propinas: Number(result[0]?.propinas || 0),
+      costoDelivery: Number(result[0]?.costoDelivery || 0)
     };
   }
 
