@@ -785,9 +785,16 @@ export class OrdersService {
     let fin: Date;
 
     if (!desde && !hasta) {
-      const hoy = new Date();
-      inicio = new Date(hoy.setHours(0, 0, 0, 0));
-      fin = new Date(hoy.setHours(23, 59, 59, 999));
+      // Variable para indicar el día de hoy
+      const diaDeHoy = new Date();
+
+      // Inicio del día de hoy (00:00:00.000)
+      inicio = new Date(diaDeHoy);
+      inicio.setHours(0, 0, 0, 0);
+
+      // Fin del día de hoy (23:59:59.999)
+      fin = new Date(diaDeHoy);
+      fin.setHours(23, 59, 59, 999);
     } else {
       inicio = new Date(desde);
       fin = new Date(hasta);
