@@ -803,7 +803,7 @@ export class OrdersService {
     const query = this.orderRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.mesa', 'mesa')
-      .where('order.status = :status', { status: 'Pagado' })
+      .where('order.status IN (:...statuses)', { statuses: ['Pagado', 'Pendiente', 'Cancelado'] })
       .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
 
     if (mesaId) query.andWhere('order.mesaId = :mesaId', { mesaId });
@@ -814,6 +814,7 @@ export class OrdersService {
         'order.total AS total',
         'order.neto AS neto',
         'order.propina AS propina',
+        'order.status AS estado',
         'order.orderType AS tipo',
         'order.paymentMethod AS metodo',
         'mesa.numero_mesa AS mesa',
