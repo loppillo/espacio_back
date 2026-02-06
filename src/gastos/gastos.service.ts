@@ -667,7 +667,10 @@ export class GastosService {
       SUM(CASE WHEN o.status != 'Pagado' THEN o.total ELSE 0 END) as porCobrar,
 
       -- 4. Costo de delivery
-      SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
+      SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery,
+
+      -- 5. Propinas
+      SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.propina, 0) ELSE 0 END) as propinas
 
     FROM orders o
 
@@ -692,7 +695,8 @@ export class GastosService {
       labels: rows.map(r => this.formatDay(r.fecha)),
       balance: rows.map(r => Number(r.balance || 0)),
       porCobrar: rows.map(r => Number(r.porCobrar || 0)),
-      costoDelivery: rows.map(r => Number(r.costoDelivery || 0))
+      costoDelivery: rows.map(r => Number(r.costoDelivery || 0)),
+      propinas: rows.map(r => Number(r.propinas || 0))
     };
   }
   async getTopDias(rango: RangoFechaDto, limit = 5) {
