@@ -701,6 +701,31 @@ export class OrdersService {
     return order;
   }
 
+  // Actualizar estado de una orden
+  async actualizarEstado(orderId: number, nuevoEstado: string): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa']
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Orden con ID ${orderId} no encontrada`);
+    }
+
+    // Actualizar el estado
+    order.status = nuevoEstado;
+    await this.orderRepository.save(order);
+
+    // Si el estado es 'Pagado', liberar la mesa
+    if (nuevoEstado === 'Pagado' && order.mesa) {
+      order.mesa.status = 'Disponible';
+      await this.mesaRepository.save(order.mesa);
+      this.ordersGateway.notifyMesaUpdated(order.mesa.id, order.mesa.status);
+    }
+
+    return order;
+  }
+
   async getVentasDiarias(desde?: string, hasta?: string, orderType?: string) {
     let inicio: Date;
     let fin: Date;

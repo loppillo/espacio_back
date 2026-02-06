@@ -131,6 +131,21 @@ export class OrdersController {
     return this.ordersService.cancelarVenta(+id);
   }
 
+  // Actualizar estado de una orden
+  @Patch(':id/estado')
+  async actualizarEstado(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { estado: string }
+  ) {
+    const estadosPermitidos = ['Pagado', 'Pendiente'];
+
+    if (!estadosPermitidos.includes(body.estado)) {
+      throw new BadRequestException('El estado debe ser "Pagado" o "Pendiente"');
+    }
+
+    return this.ordersService.actualizarEstado(id, body.estado);
+  }
+
   @Get('ventas/diarias')
   async getVentasDiarias(
     @Query('desde') desde?: string,
