@@ -805,33 +805,39 @@ export class OrdersService {
     };
   }
 
-  async getVentasDiariasxMesa(desde?: string, hasta?: string, mesaId?: number) {
+ async getVentasDiariasxMesa(desde?: string, hasta?: string, mesaId?: number) {
     let inicio: Date;
     let fin: Date;
 
-    if (!desde && !hasta) {
-      // Variable para indicar el día de hoy
-      const diaDeHoy = new Date();
+    // 1. Definimos claramente la lista de estados permitidos
+    const estadosPermitidos = ['Pagado', 'Pendiente', 'Cancelado'];
 
-      // Inicio del día de hoy (00:00:00.000)
+    if (!desde && !hasta) {
+      const diaDeHoy = new Date();
       inicio = new Date(diaDeHoy);
       inicio.setHours(0, 0, 0, 0);
 
-      // Fin del día de hoy (23:59:59.999)
       fin = new Date(diaDeHoy);
       fin.setHours(23, 59, 59, 999);
     } else {
+      // Corrección importante: Asegurar que las fechas string se conviertan bien
       inicio = new Date(desde);
+      inicio.setHours(0, 0, 0, 0); // Asegura inicio del día
+
       fin = new Date(hasta);
+      fin.setHours(23, 59, 59, 999); // Asegura que tome TODO el día final
     }
 
     const query = this.orderRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.mesa', 'mesa')
-      .where('order.status IN (:...statuses)', { statuses: ['Pagado', 'Pendiente', 'Cancelado'] })
+      // 2. Aquí aplicamos la lista de estados definida arriba
+      .where('order.status IN (:...statuses)', { statuses: estadosPermitidos })
       .andWhere('order.createdAt BETWEEN :inicio AND :fin', { inicio, fin });
 
-    if (mesaId) query.andWhere('order.mesaId = :mesaId', { mesaId });
+    if (mesaId) {
+      query.andWhere('order.mesaId = :mesaId', { mesaId });
+    }
 
     const ventas = await query
       .select([
@@ -849,8 +855,7 @@ export class OrdersService {
       .getRawMany();
 
     return ventas;
-  }
-
+}
   // 🔹 Cancelar ventas
   async cancelarVentas(fecha?: string, mesaId?: number) {
     const query = this.orderRepository.createQueryBuilder('order')
