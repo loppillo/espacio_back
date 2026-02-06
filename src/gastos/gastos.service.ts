@@ -1052,6 +1052,36 @@ export class GastosService {
     };
   }
 
+  async getTicketPromedioClientes(rango: RangoFechaDto, limit = 10) {
+    const { start, end } = this.getRangoFechas(rango);
+    const entityManager = this.dataSource.manager;
+
+    const rows = await entityManager.query(
+      `
+      SELECT
+        c.customerName as cliente,
+        COUNT(o.id) as pedidos,
+        SUM(o.total) as gastoTotal,
+        AVG(o.total) as ticketPromedio
+      FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
+      WHERE o.createdAt BETWEEN ? AND ?
+        AND o.status = 'Pagado'
+      GROUP BY o.customerId, c.customerName
+      ORDER BY ticketPromedio DESC
+      LIMIT ?
+      `,
+      [start, end, limit]
+    );
+
+    return rows.map(r => ({
+      cliente: r.cliente || 'Anónimo',
+      pedidos: Number(r.pedidos || 0),
+      gastoTotal: Number(r.gastoTotal || 0),
+      ticketPromedio: Number(r.ticketPromedio || 0)
+    }));
+  }
+
   // ==========================================
   // CONTABILIDAD - DELIVERY
   // ==========================================

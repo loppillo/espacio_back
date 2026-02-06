@@ -209,6 +209,15 @@ create(@Body() createGastoDto: CreateGastoDto, @Req() req) {
     return this.expensesService.getFrecuenciaClientes(rango);
   }
 
+  @Get('contabilidad/clientes/ticket-promedio')
+  async getTicketPromedioClientes(
+    @Query() rango: RangoFechaDto,
+    @Query('limit') limit?: unknown
+  ) {
+    const parsedLimit = limit ? Number(limit) : 10;
+    return this.expensesService.getTicketPromedioClientes(rango, parsedLimit);
+  }
+
   // ==========================================
   // CONTABILIDAD - DELIVERY
   // ==========================================
