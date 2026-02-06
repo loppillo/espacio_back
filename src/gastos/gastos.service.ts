@@ -964,52 +964,86 @@ export class GastosService {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
 
+    // Obtener total de clientes únicos
+    const totalResult = await entityManager.query(
+      `
+      SELECT COUNT(DISTINCT o.customerId) as total
+      FROM orders o
+      WHERE o.createdAt BETWEEN ? AND ?
+        AND o.status = 'Pagado'
+        AND o.customerId IS NOT NULL
+      `,
+      [start, end]
+    );
+
     const rows = await entityManager.query(
       `
-      SELECT 
+      SELECT
+        c.id as clienteId,
         c.customerName as cliente,
         SUM(o.total) as gasto
       FROM orders o
       INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-      GROUP BY o.customerId, c.customerName
+      GROUP BY c.id, c.customerName
       ORDER BY gasto DESC
       LIMIT ?
       `,
       [start, end, limit]
     );
 
-    return rows.map(r => ({
-      cliente: r.cliente || 'Anónimo',
-      gasto: Number(r.gasto || 0)
-    }));
+    return {
+      totalClientes: Number(totalResult[0]?.total || 0),
+      clientes: rows.map(r => ({
+        clienteId: Number(r.clienteId),
+        cliente: r.cliente || 'Anónimo',
+        gasto: Number(r.gasto || 0)
+      }))
+    };
   }
 
   async getTopClientesPedidos(rango: RangoFechaDto, limit = 10) {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
 
+    // Obtener total de clientes únicos
+    const totalResult = await entityManager.query(
+      `
+      SELECT COUNT(DISTINCT o.customerId) as total
+      FROM orders o
+      WHERE o.createdAt BETWEEN ? AND ?
+        AND o.status = 'Pagado'
+        AND o.customerId IS NOT NULL
+      `,
+      [start, end]
+    );
+
     const rows = await entityManager.query(
       `
-      SELECT 
+      SELECT
+        c.id as clienteId,
         c.customerName as cliente,
         COUNT(o.id) as pedidos
       FROM orders o
       INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-      GROUP BY o.customerId, c.customerName
+      GROUP BY c.id, c.customerName
       ORDER BY pedidos DESC
       LIMIT ?
       `,
       [start, end, limit]
     );
 
-    return rows.map(r => ({
-      cliente: r.cliente || 'Anónimo',
-      pedidos: Number(r.pedidos || 0)
-    }));
+    return {
+      totalClientes: Number(totalResult[0]?.total || 0),
+      clientes: rows.map(r => ({
+        clienteId: Number(r.clienteId),
+        cliente: r.cliente || 'Anónimo',
+        pedidos: Number(r.pedidos || 0)
+      }))
+    };
   }
 
   async getFrecuenciaClientes(rango: RangoFechaDto) {
