@@ -873,51 +873,63 @@ export class GastosService {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
 
-    // Total clientes únicos en el rango
-    const totalResult = await entityManager
-      .createQueryBuilder()
-      .select("COUNT(DISTINCT o.customerId)", "total")
-      .from("orders", "o")
-      .where("o.createdAt BETWEEN :start AND :end", { start, end })
-      .andWhere("o.status = :status", { status: 'Pagado' })
-      .getRawOne();
-
-    // Clientes nuevos (primer pedido en el rango)
-    const nuevosResult = await entityManager.query(
+    // Total clientes únicos en el rango (por email)
+    const totalResult = await entityManager.query(
       `
-      SELECT COUNT(DISTINCT o.customerId) as nuevos
+      SELECT COUNT(DISTINCT c.customerEmail) as total
       FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-        AND o.customerId NOT IN (
-          SELECT DISTINCT o2.customerId
+        AND c.customerEmail IS NOT NULL
+      `,
+      [start, end]
+    );
+
+    // Clientes nuevos (primer pedido en el rango, agrupados por email)
+    const nuevosResult = await entityManager.query(
+      `
+      SELECT COUNT(DISTINCT c.customerEmail) as nuevos
+      FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
+      WHERE o.createdAt BETWEEN ? AND ?
+        AND o.status = 'Pagado'
+        AND c.customerEmail IS NOT NULL
+        AND c.customerEmail NOT IN (
+          SELECT DISTINCT c2.customerEmail
           FROM orders o2
+          INNER JOIN customer c2 ON o2.customerId = c2.id
           WHERE o2.createdAt < ?
             AND o2.status = 'Pagado'
+            AND c2.customerEmail IS NOT NULL
         )
       `,
       [start, end, start]
     );
 
-    // Clientes recurrentes
+    // Clientes recurrentes (ya tenían pedidos antes del rango, agrupados por email)
     const recurrentesResult = await entityManager.query(
       `
-      SELECT COUNT(DISTINCT o.customerId) as recurrentes
+      SELECT COUNT(DISTINCT c.customerEmail) as recurrentes
       FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.status = 'Pagado'
-        AND o.customerId IN (
-          SELECT DISTINCT o2.customerId
+        AND c.customerEmail IS NOT NULL
+        AND c.customerEmail IN (
+          SELECT DISTINCT c2.customerEmail
           FROM orders o2
+          INNER JOIN customer c2 ON o2.customerId = c2.id
           WHERE o2.createdAt < ?
             AND o2.status = 'Pagado'
+            AND c2.customerEmail IS NOT NULL
         )
       `,
       [start, end, start]
     );
 
     return {
-      total: Number(totalResult?.total || 0),
+      total: Number(totalResult[0]?.total || 0),
       nuevos: Number(nuevosResult[0]?.nuevos || 0),
       recurrentes: Number(recurrentesResult[0]?.recurrentes || 0)
     };
