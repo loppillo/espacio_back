@@ -1286,7 +1286,7 @@ export class GastosService {
     );
 
     return {
-      pagado: rows.find(r => r.status === 'Pagado')?.total || 0,
+      pagado: rows.find(r => r.status === 'pagado')?.total || 0,
       pendiente: rows.find(r => r.status === 'pendiente')?.total || 0,
       cancelado: rows.find(r => r.status === 'cancelado')?.total || 0
     };
@@ -1304,7 +1304,7 @@ export class GastosService {
       FROM orders o
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.orderType = 'delivery'
-        AND o.status = 'Pagado'
+        AND o.status = 'pagado'
       GROUP BY DATE(o.createdAt)
       ORDER BY fecha ASC
       `,
