@@ -1321,23 +1321,70 @@ export class GastosService {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
 
-    const result = await entityManager.query(
+    // Total clientes únicos de delivery (por email)
+    const totalResult = await entityManager.query(
       `
-      SELECT 
-        COUNT(DISTINCT o.customerId) as total
+      SELECT COUNT(DISTINCT c.customerEmail) as total
       FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
       WHERE o.createdAt BETWEEN ? AND ?
         AND o.orderType = 'delivery'
         AND o.status = 'Pagado'
+        AND c.customerEmail IS NOT NULL
       `,
       [start, end]
     );
 
-    const total = Number(result[0]?.total || 0);
+    // Clientes nuevos de delivery (primer pedido en el rango)
+    const nuevosResult = await entityManager.query(
+      `
+      SELECT COUNT(DISTINCT c.customerEmail) as nuevos
+      FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
+      WHERE o.createdAt BETWEEN ? AND ?
+        AND o.orderType = 'delivery'
+        AND o.status = 'Pagado'
+        AND c.customerEmail IS NOT NULL
+        AND c.customerEmail NOT IN (
+          SELECT DISTINCT c2.customerEmail
+          FROM orders o2
+          INNER JOIN customer c2 ON o2.customerId = c2.id
+          WHERE o2.createdAt < ?
+            AND o2.orderType = 'delivery'
+            AND o2.status = 'Pagado'
+            AND c2.customerEmail IS NOT NULL
+        )
+      `,
+      [start, end, start]
+    );
+
+    // Clientes recurrentes de delivery
+    const recurrentesResult = await entityManager.query(
+      `
+      SELECT COUNT(DISTINCT c.customerEmail) as recurrentes
+      FROM orders o
+      INNER JOIN customer c ON o.customerId = c.id
+      WHERE o.createdAt BETWEEN ? AND ?
+        AND o.orderType = 'delivery'
+        AND o.status = 'Pagado'
+        AND c.customerEmail IS NOT NULL
+        AND c.customerEmail IN (
+          SELECT DISTINCT c2.customerEmail
+          FROM orders o2
+          INNER JOIN customer c2 ON o2.customerId = c2.id
+          WHERE o2.createdAt < ?
+            AND o2.orderType = 'delivery'
+            AND o2.status = 'Pagado'
+            AND c2.customerEmail IS NOT NULL
+        )
+      `,
+      [start, end, start]
+    );
 
     return {
-      nuevos: Math.floor(total * 0.3),
-      recurrentes: Math.floor(total * 0.7)
+      total: Number(totalResult[0]?.total || 0),
+      nuevos: Number(nuevosResult[0]?.nuevos || 0),
+      recurrentes: Number(recurrentesResult[0]?.recurrentes || 0)
     };
   }
 
