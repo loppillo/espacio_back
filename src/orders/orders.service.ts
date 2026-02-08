@@ -547,19 +547,20 @@ export class OrdersService {
       .where('order.mesaId = :mesaId', { mesaId })
       .orderBy('order.createdAt', 'DESC');
 
-    // Si se proporciona fecha, filtrar por ese día específico
-    if (fecha) {
-      const inicio = new Date(fecha);
-      inicio.setHours(0, 0, 0, 0);
+    // Si no se proporciona fecha, usar el día de hoy por defecto
+    const fechaFiltro = fecha || new Date().toISOString().split('T')[0];
 
-      const fin = new Date(fecha);
-      fin.setHours(23, 59, 59, 999);
+    // Filtrar por el día específico (hoy o la fecha proporcionada)
+    const inicio = new Date(fechaFiltro);
+    inicio.setHours(0, 0, 0, 0);
 
-      queryBuilder = queryBuilder.andWhere(
-        'order.createdAt BETWEEN :inicio AND :fin',
-        { inicio, fin }
-      );
-    }
+    const fin = new Date(fechaFiltro);
+    fin.setHours(23, 59, 59, 999);
+
+    queryBuilder = queryBuilder.andWhere(
+      'order.createdAt BETWEEN :inicio AND :fin',
+      { inicio, fin }
+    );
 
     const pedidos = await queryBuilder.getMany();
 
