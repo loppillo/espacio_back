@@ -15,6 +15,7 @@ import { Eta } from 'src/eta/entities/eta.entity';
 import { ProveedoresModule } from 'src/proveedores/proveedores.module';
 import { UsersModule } from 'src/users/users.module';
 import { ProveedorCategoriaGasto } from './entities/proveedor-categoria-gasto.entity';
+import { TicketBar } from 'src/ticket-bar/entities/ticket-bar.entity';
 
 @Module({
   imports: [
@@ -28,7 +29,8 @@ import { ProveedorCategoriaGasto } from './entities/proveedor-categoria-gasto.en
       Mesa,
       Category,
       Eta,
-      ProveedorCategoriaGasto
+      ProveedorCategoriaGasto,
+      TicketBar
     ]),
     ScheduleModule.forRoot(),
     ProveedoresModule,
