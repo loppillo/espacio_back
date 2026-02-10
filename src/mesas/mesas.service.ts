@@ -6,6 +6,7 @@ import { UpdateMesaDto } from './dto/update-mesa.dto';
 import { Mesa } from './entities/mesa.entity';
 import { Order } from 'src/orders/entities/order.entity';
 import { OrdersGateway } from 'src/orders/orders.gateway';
+import { ProductsOrders } from 'src/products-orders/entities/products-order.entity';
 
 @Injectable()
 export class MesaService {
@@ -15,6 +16,9 @@ export class MesaService {
 
     @InjectRepository(Order)
     private readonly ordersRepository: Repository<Order>,
+
+    @InjectRepository(ProductsOrders)
+    private readonly productsOrdersRepository: Repository<ProductsOrders>,
 
     private readonly ordersGateway: OrdersGateway
   ) { }
@@ -332,18 +336,28 @@ export class MesaService {
 
   async updateDetalleVenta(
     orderId: number,
-    updateData: { propina?: number; status?: string; detalle_venta?: string; paymentMethod?: string },
+    updateData: {
+      propina?: number;
+      status?: string;
+      detalle_venta?: string;
+      paymentMethod?: string;
+      productos?: Array<{
+        productId: number;
+        cantidad: number;
+        precioUnitario: number;
+      }>;
+    },
   ): Promise<Order> {
     const order = await this.ordersRepository.findOne({
       where: { id: orderId },
-      relations: ['mesa', 'orderProducts'],
+      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
     });
 
     if (!order) {
       throw new NotFoundException(`Orden con id ${orderId} no encontrada`);
     }
 
-    // Actualizar los campos proporcionados
+    // Actualizar los campos básicos
     if (updateData.propina !== undefined) {
       order.propina = updateData.propina;
     }
@@ -357,23 +371,56 @@ export class MesaService {
       order.paymentMethod = updateData.paymentMethod;
     }
 
-    // Recalcular el total si se actualizó la propina
-    if (updateData.propina !== undefined) {
-      const subtotalProductos = order.orderProducts.reduce(
+    // Actualizar productos si se proporcionan
+    if (updateData.productos && updateData.productos.length > 0) {
+      // Eliminar todos los productos actuales de la orden
+      await this.productsOrdersRepository.delete({ orderId: order.id });
+
+      // Insertar los nuevos productos con sus precios actualizados
+      const productosNuevos = updateData.productos.map((prod) => {
+        const subtotal = prod.cantidad * prod.precioUnitario;
+        return this.productsOrdersRepository.create({
+          orderId: order.id,
+          productId: prod.productId,
+          cantidad: prod.cantidad,
+          precioUnitario: prod.precioUnitario,
+          subtotal: subtotal,
+        });
+      });
+
+      await this.productsOrdersRepository.save(productosNuevos);
+
+      // Recalcular el total de productos
+      const subtotalProductos = productosNuevos.reduce(
         (sum, op) => sum + op.subtotal,
         0,
       );
-      order.total = subtotalProductos + order.propina;
+      order.neto = subtotalProductos;
+      order.total = subtotalProductos + (order.propina || 0);
+    } else {
+      // Si no se actualizan productos, solo recalcular total si cambió la propina
+      if (updateData.propina !== undefined) {
+        const subtotalProductos = order.orderProducts.reduce(
+          (sum, op) => sum + op.subtotal,
+          0,
+        );
+        order.neto = subtotalProductos;
+        order.total = subtotalProductos + order.propina;
+      }
     }
 
-    const updatedOrder = await this.ordersRepository.save(order);
+    await this.ordersRepository.save(order);
 
     // Notificar cambios por WebSocket si es necesario
     if (order.mesa) {
       this.ordersGateway.notifyMesaUpdated(order.mesa.id, order.mesa.status);
     }
 
-    return updatedOrder;
+    // Recargar la orden con las relaciones actualizadas
+    return await this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa', 'orderProducts', 'orderProducts.product'],
+    });
   }
 
 }
