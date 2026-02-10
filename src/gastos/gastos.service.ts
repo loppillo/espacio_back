@@ -15,7 +15,6 @@ import { Eta } from 'src/eta/entities/eta.entity';
 import { RangoFechaDto } from './dto/rango-fecha.dto';
 import { UsersService } from 'src/users/users.service';
 import { ProveedorCategoriaGasto } from './entities/proveedor-categoria-gasto.entity';
-import { TicketBar } from 'src/ticket-bar/entities/ticket-bar.entity';
 
 // Alias para la entidad de categoria_gasto
 type CategoriaGasto = any;
@@ -49,8 +48,6 @@ export class GastosService {
     private readonly etaRepository: Repository<Eta>,
     @InjectRepository(ProveedorCategoriaGasto)
     private relacionRepo: Repository<ProveedorCategoriaGasto>,
-    @InjectRepository(TicketBar)
-    private readonly ticketBarRepository: Repository<TicketBar>,
     private readonly proveedoresService: ProveedoresService,
     private readonly usersService: UsersService,
     private dataSource: DataSource
@@ -520,7 +517,7 @@ export class GastosService {
   // CONTABILIDAD - FINANZAS
   // ==========================================
 
-  async getKpisFinanzas(rango: RangoFechaDto) {
+async getKpisFinanzas(rango: RangoFechaDto) {
     const { start, end } = this.getRangoFechas(rango);
     console.log('Fechas de consulta - start:', start, 'end:', end);
     const entityManager = this.dataSource.manager;
@@ -531,7 +528,7 @@ export class GastosService {
       .select("SUM(o.neto)", "total")
       .from("orders", "o")
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
-      .andWhere("o.status = :status", { status: 'Pagado' })
+      .andWhere("o.status = :status", { status: 'pagado' })
       .getRawOne();
 
     // Egresos (expenses)
@@ -549,7 +546,7 @@ export class GastosService {
       .select("SUM(o.propina)", "total")
       .from("orders", "o")
       .where("DATE(o.createdAt) BETWEEN DATE(:start) AND DATE(:end)", { start, end })
-      .andWhere("o.status = :status", { status: 'Pagado' })
+      .andWhere("o.status = :status", { status: 'pagado' })
       .getRawOne();
 
     // Ticket Bar - Total
@@ -612,6 +609,7 @@ export class GastosService {
     };
   }
 
+
   async getBalanceDias(rango: RangoFechaDto) {
     const { start, end } = this.getRangoFechas(rango);
     const entityManager = this.dataSource.manager;
@@ -620,10 +618,10 @@ export class GastosService {
       `
       SELECT
         DATE(o.createdAt) as fecha,
-        SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) as ingresos,
+        SUM(CASE WHEN o.status = 'pagado' THEN o.total ELSE 0 END) as ingresos,
         0 as egresos,
-        SUM(CASE WHEN o.status = 'Pagado' THEN o.propina ELSE 0 END) as propinas,
-        SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
+        SUM(CASE WHEN o.status = 'pagado' THEN o.propina ELSE 0 END) as propinas,
+        SUM(CASE WHEN o.status = 'pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
       FROM orders o
       WHERE o.createdAt BETWEEN ? AND ?
       GROUP BY DATE(o.createdAt)
@@ -635,7 +633,7 @@ export class GastosService {
     // Obtener egresos por fecha
     const egresosRows = await entityManager.query(
       `
-      SELECT
+      SELECT 
         DATE(e.createdAt) as fecha,
         SUM(e.amount) as egresos
       FROM expenses e
@@ -647,39 +645,16 @@ export class GastosService {
       [start, end]
     );
 
-    // Obtener ticket-bar por fecha
-    const ticketBarRows = await entityManager.query(
-      `
-      SELECT
-        DATE(tb.createdAt) as fecha,
-        SUM(tb.totalTicket) as totalTicket,
-        SUM(tb.propinaBar) as propinaBar
-      FROM ticketBar tb
-      WHERE tb.createdAt BETWEEN ? AND ?
-        AND tb.estadoTicket = 1
-      GROUP BY DATE(tb.createdAt)
-      ORDER BY fecha ASC
-      `,
-      [start, end]
-    );
-
     // Fusionar datos
-    const egresosMap = new Map(egresosRows.map((r: any) => [r.fecha, Number(r.egresos || 0)]));
-    const ticketBarMap = new Map(ticketBarRows.map((r: any) => [r.fecha, {
-      totalTicket: Number(r.totalTicket || 0),
-      propinaBar: Number(r.propinaBar || 0)
-    }]));
+    const egresosMap = new Map(egresosRows.map(r => [r.fecha, Number(r.egresos || 0)]));
 
-    const result = rows.map((r: any) => {
-      const ticketBarData: any = ticketBarMap.get(r.fecha) || { totalTicket: 0, propinaBar: 0 };
-      const ingresos = Number(r.ingresos || 0) + ticketBarData.totalTicket;
-      const propinas = Number(r.propinas || 0) + ticketBarData.propinaBar;
-      const balance = ingresos - Number(egresosMap.get(r.fecha) || 0);
+    const result = rows.map(r => {
+      const balance = Number(r.ingresos || 0) - Number(egresosMap.get(r.fecha) || 0);
       return {
         fecha: r.fecha,
-        ingresos,
+        ingresos: Number(r.ingresos || 0),
         egresos: Number(egresosMap.get(r.fecha) || 0),
-        propinas,
+        propinas: Number(r.propinas || 0),
         costoDelivery: Number(r.costoDelivery || 0),
         balance
       };
@@ -705,19 +680,19 @@ export class GastosService {
       DATE(o.createdAt) as fecha,
 
       -- 1. Suma de ingresos (Pagados)
-      SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) as ingresos,
+      SUM(CASE WHEN o.status = 'pagado' THEN o.total ELSE 0 END) -
 
-      -- 2. Egresos
-      COALESCE(MAX(e.total_egresos), 0) as egresos,
+      -- 2. Resta de egresos (Usamos MAX porque el valor viene repetido por el JOIN, no queremos sumarlo N veces)
+      COALESCE(MAX(e.total_egresos), 0) as balance,
 
       -- 3. Por cobrar
-      SUM(CASE WHEN o.status != 'Pagado' THEN o.total ELSE 0 END) as porCobrar,
+      SUM(CASE WHEN o.status != 'pagado' THEN o.total ELSE 0 END) as porCobrar,
 
       -- 4. Costo de delivery
-      SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery,
+      SUM(CASE WHEN o.status = 'pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery,
 
       -- 5. Propinas
-      SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.propina, 0) ELSE 0 END) as propinas
+      SUM(CASE WHEN o.status = 'pagado' THEN COALESCE(o.propina, 0) ELSE 0 END) as propinas
 
     FROM orders o
 
@@ -738,50 +713,12 @@ export class GastosService {
       [start, end]
     );
 
-    // Obtener ticket-bar por fecha
-    const ticketBarRows = await entityManager.query(
-      `
-      SELECT
-        DATE(tb.createdAt) as fecha,
-        SUM(tb.totalTicket) as totalTicket,
-        SUM(tb.propinaBar) as propinaBar
-      FROM ticketBar tb
-      WHERE tb.createdAt BETWEEN ? AND ?
-        AND tb.estadoTicket = 1
-      GROUP BY DATE(tb.createdAt)
-      ORDER BY fecha ASC
-      `,
-      [start, end]
-    );
-
-    // Fusionar datos de ticket-bar
-    const ticketBarMap = new Map(ticketBarRows.map((r: any) => [r.fecha, {
-      totalTicket: Number(r.totalTicket || 0),
-      propinaBar: Number(r.propinaBar || 0)
-    }]));
-
-    const result = rows.map((r: any) => {
-      const ticketBarData: any = ticketBarMap.get(r.fecha) || { totalTicket: 0, propinaBar: 0 };
-      const ingresos = Number(r.ingresos || 0) + ticketBarData.totalTicket;
-      const propinas = Number(r.propinas || 0) + ticketBarData.propinaBar;
-      const balance = ingresos - Number(r.egresos || 0);
-
-      return {
-        fecha: r.fecha,
-        ingresos,
-        propinas,
-        balance,
-        porCobrar: Number(r.porCobrar || 0),
-        costoDelivery: Number(r.costoDelivery || 0)
-      };
-    });
-
     return {
-      labels: result.map((r: any) => this.formatDay(r.fecha)),
-      balance: result.map((r: any) => r.balance),
-      porCobrar: result.map((r: any) => r.porCobrar),
-      costoDelivery: result.map((r: any) => r.costoDelivery),
-      propinas: result.map((r: any) => r.propinas)
+      labels: rows.map(r => this.formatDay(r.fecha)),
+      balance: rows.map(r => Number(r.balance || 0)),
+      porCobrar: rows.map(r => Number(r.porCobrar || 0)),
+      costoDelivery: rows.map(r => Number(r.costoDelivery || 0)),
+      propinas: rows.map(r => Number(r.propinas || 0))
     };
   }
   async getTopDias(rango: RangoFechaDto, limit = 5) {
@@ -796,7 +733,7 @@ export class GastosService {
         SUM(COALESCE(o.costo_delivery, 0)) as costoDelivery
       FROM orders o
       WHERE o.createdAt BETWEEN ? AND ?
-        AND o.status = 'Pagado'
+        AND o.status = 'pagado'
       GROUP BY DATE(o.createdAt)
       ORDER BY recaudacion DESC
       LIMIT ?
@@ -804,31 +741,11 @@ export class GastosService {
       [start, end, limit]
     );
 
-    // Obtener ticket-bar por fecha
-    const ticketBarRows = await entityManager.query(
-      `
-      SELECT
-        DATE(tb.createdAt) as fecha,
-        SUM(tb.totalTicket) as totalTicket
-      FROM ticketBar tb
-      WHERE tb.createdAt BETWEEN ? AND ?
-        AND tb.estadoTicket = 1
-      GROUP BY DATE(tb.createdAt)
-      `,
-      [start, end]
-    );
-
-    // Fusionar datos de ticket-bar
-    const ticketBarMap = new Map(ticketBarRows.map((r: any) => [r.fecha, Number(r.totalTicket || 0)]));
-
-    return rows.map((r: any) => {
-      const ticketBarTotal: any = ticketBarMap.get(r.fecha) || 0;
-      return {
-        dia: this.formatDay(r.fecha),
-        recaudacion: Number(r.recaudacion || 0) + Number(ticketBarTotal),
-        costoDelivery: Number(r.costoDelivery || 0)
-      };
-    }).sort((a: any, b: any) => b.recaudacion - a.recaudacion).slice(0, limit);
+    return rows.map(r => ({
+      dia: this.formatDay(r.fecha),
+      recaudacion: Number(r.recaudacion || 0),
+      costoDelivery: Number(r.costoDelivery || 0)
+    }));
   }
 
   async getDistribucion(rango: RangoFechaDto) {
@@ -838,37 +755,22 @@ export class GastosService {
     const result = await entityManager.query(
       `
       SELECT
-        SUM(CASE WHEN o.status = 'Pagado' THEN o.total ELSE 0 END) as ingresos,
-        SUM(CASE WHEN o.status = 'Pagado' THEN o.propina ELSE 0 END) as propinas,
-        SUM(CASE WHEN o.status = 'Pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
+        SUM(CASE WHEN o.status = 'pagado' THEN o.total ELSE 0 END) as ingresos,
+        SUM(CASE WHEN o.status = 'pagado' THEN o.propina ELSE 0 END) as propinas,
+        SUM(CASE WHEN o.status = 'pagado' THEN COALESCE(o.costo_delivery, 0) ELSE 0 END) as costoDelivery
       FROM orders o
       WHERE o.createdAt BETWEEN ? AND ?
       `,
       [start, end]
     );
 
-    // Obtener ticket-bar totales
-    const ticketBarResult = await entityManager.query(
-      `
-      SELECT
-        SUM(tb.totalTicket) as totalTicket,
-        SUM(tb.propinaBar) as propinaBar
-      FROM ticketBar tb
-      WHERE tb.createdAt BETWEEN ? AND ?
-        AND tb.estadoTicket = 1
-      `,
-      [start, end]
-    );
-
-    const ticketBarTotal = Number(ticketBarResult[0]?.totalTicket || 0);
-    const propinaBarTotal = Number(ticketBarResult[0]?.propinaBar || 0);
-
     return {
-      ingresos: Number(result[0]?.ingresos || 0) + ticketBarTotal,
-      propinas: Number(result[0]?.propinas || 0) + propinaBarTotal,
+      ingresos: Number(result[0]?.ingresos || 0),
+      propinas: Number(result[0]?.propinas || 0),
       costoDelivery: Number(result[0]?.costoDelivery || 0)
     };
   }
+
 
   // ==========================================
   // CONTABILIDAD - MESAS

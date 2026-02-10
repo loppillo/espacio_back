@@ -330,4 +330,50 @@ export class MesaService {
     return mesa;
   }
 
+  async updateDetalleVenta(
+    orderId: number,
+    updateData: { propina?: number; status?: string; detalle_venta?: string; paymentMethod?: string },
+  ): Promise<Order> {
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: ['mesa', 'orderProducts'],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Orden con id ${orderId} no encontrada`);
+    }
+
+    // Actualizar los campos proporcionados
+    if (updateData.propina !== undefined) {
+      order.propina = updateData.propina;
+    }
+    if (updateData.status !== undefined) {
+      order.status = updateData.status;
+    }
+    if (updateData.detalle_venta !== undefined) {
+      order.detalle_venta = updateData.detalle_venta;
+    }
+    if (updateData.paymentMethod !== undefined) {
+      order.paymentMethod = updateData.paymentMethod;
+    }
+
+    // Recalcular el total si se actualizó la propina
+    if (updateData.propina !== undefined) {
+      const subtotalProductos = order.orderProducts.reduce(
+        (sum, op) => sum + op.subtotal,
+        0,
+      );
+      order.total = subtotalProductos + order.propina;
+    }
+
+    const updatedOrder = await this.ordersRepository.save(order);
+
+    // Notificar cambios por WebSocket si es necesario
+    if (order.mesa) {
+      this.ordersGateway.notifyMesaUpdated(order.mesa.id, order.mesa.status);
+    }
+
+    return updatedOrder;
+  }
+
 }

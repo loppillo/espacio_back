@@ -123,6 +123,14 @@ async getDetalleMesas(
   return this.mesaService.getMesaDetail(mesaId, fecha);
 }
 
+@Patch('ventas/:orderId')
+async updateDetalleVenta(
+  @Param('orderId', ParseIntPipe) orderId: number,
+  @Body() updateData: { propina?: number; status?: string; detalle_venta?: string; paymentMethod?: string },
+) {
+  return this.mesaService.updateDetalleVenta(orderId, updateData);
+}
+
 
 
 
