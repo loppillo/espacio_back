@@ -599,28 +599,72 @@ export class OrdersService {
   }
 
 
-  async obtenerPendientes(): Promise<Order[]> {
-    const orders = await this.orderRepository
-      .createQueryBuilder('order')
-      .leftJoinAndSelect('order.mesa', 'mesa')
-      .leftJoinAndSelect('order.customer', 'customer')
-      .leftJoinAndSelect('order.orderProducts', 'orderProducts')
-      .leftJoinAndSelect('orderProducts.product', 'product')
-      .where('order.status = :status', { status: 'pendiente' })
-      .orderBy('order.createdAt', 'ASC')
-      .getMany();
+async obtenerPendientes() {
+  const orders = await this.orderRepository
+    .createQueryBuilder('order')
+    .leftJoinAndSelect('order.mesa', 'mesa')
+    .leftJoinAndSelect('order.customer', 'customer')
+    .leftJoinAndSelect('order.orderProducts', 'orderProducts')
+    .leftJoinAndSelect('orderProducts.product', 'product')
+    .where('order.status = :status', { status: 'pendiente' })
+    .orderBy('order.createdAt', 'ASC')
+    .getMany();
 
-    // Mostrar los primeros 4 pedidos si existen
-    orders.forEach((order, index) => {
-      console.log(`🔥 Pedido ${index + 1}: ID=${order.id}, Mesa=${order.mesa?.numero_mesa}, Total=${order.total}, Status=${order.status}`);
-      order.orderProducts.forEach(op => {
-        console.log(`   - ${op.cantidad} x ${op.product.name} = ${op.subtotal}`);
+  // Agrupar por mesa, igual que getMesaDetail
+  const mesasMap = new Map<number, any>();
+
+  for (const order of orders) {
+    const mesaId = order.mesaId ?? 0; // 0 para delivery/sin mesa
+    
+    if (!mesasMap.has(mesaId)) {
+      mesasMap.set(mesaId, {
+        mesaId,
+        mesa: order.mesa,
+        customer: order.customer,
+        orderType: order.orderType,
+        orders: [],
+        detalle: new Map<number, any>(),
+        totalMesa: 0,
+        propina: 0,
       });
-    });
+    }
 
-    return orders;
+    const mesa = mesasMap.get(mesaId);
+    mesa.orders.push(order);
+    mesa.totalMesa += Number(order.total) || 0;
+    mesa.propina += Number(order.propina) || 0;
+
+    // Agrupar productos por productId
+    for (const op of order.orderProducts) {
+      const prodId = op.productId;
+      if (mesa.detalle.has(prodId)) {
+        const existing = mesa.detalle.get(prodId);
+        existing.cantidad += Number(op.cantidad);
+        existing.subtotal += Number(op.subtotal);
+      } else {
+        mesa.detalle.set(prodId, {
+          producto: op.product.name,
+          precioUnitario: Number(op.product.price),
+          cantidad: Number(op.cantidad),
+          subtotal: Number(op.subtotal),
+        });
+      }
+    }
   }
 
+  // Convertir Maps a arrays para el response
+  return Array.from(mesasMap.values()).map((mesa) => ({
+    mesaId: mesa.mesaId,
+    mesa: mesa.mesa,
+    customer: mesa.customer,
+    orderType: mesa.orderType,
+    orderIds: mesa.orders.map((o) => o.id),
+    detalle: Array.from(mesa.detalle.values()),
+    totalMesa: mesa.totalMesa,
+    propina: mesa.propina,
+    totalConPropina: mesa.totalMesa + mesa.propina,
+  }));
+}
 
   async aceptarVenta(orderId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({

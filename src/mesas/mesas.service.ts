@@ -279,7 +279,7 @@ export class MesaService {
       .addSelect('product.price', 'precioUnitario')
       .addSelect('(SUM(op.cantidad) * product.price)', 'subtotal')
       .where('order.mesaId = :mesaId', { mesaId })
-      .andWhere('order.status = :status', { status: 'pagado' }); // ✅ solo pagadas
+      .andWhere('order.status = :status', { status: 'pendiente' }); // ✅ solo pagadas
 
     if (fechaFiltro) {
       query.andWhere('DATE(order.createdAt) = :fecha', { fecha: fechaFiltro });
@@ -295,7 +295,7 @@ export class MesaService {
       .select('SUM(order.total)', 'total')
       .addSelect('SUM(order.propina)', 'totalPropina')
       .where('order.mesaId = :mesaId', { mesaId })
-      .andWhere('order.status = :status', { status: 'pagado' });
+      .andWhere('order.status = :status', { status: 'pendiente' });
 
     if (fechaFiltro) {
       totalQuery.andWhere('DATE(order.createdAt) = :fecha', { fecha: fechaFiltro });
