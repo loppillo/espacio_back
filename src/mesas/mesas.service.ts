@@ -269,25 +269,36 @@ export class MesaService {
       }
     }
 
-    // Traer detalle de productos vendidos
-    const query = this.ordersRepository
+    // Traer detalle de productos vendidos con el mismo enfoque que obtenerPendientes
+    const queryBuilder = this.ordersRepository
       .createQueryBuilder('order')
       .leftJoin('order.orderProducts', 'op')
       .leftJoin('op.product', 'product')
-      .select('product.name', 'producto')
+      .select('product.id', 'productId')
+      .addSelect('product.name', 'producto')
+      .addSelect('op.precioUnitario', 'precioUnitario')
       .addSelect('SUM(op.cantidad)', 'cantidad')
-      .addSelect('product.price', 'precioUnitario')
-      .addSelect('(SUM(op.cantidad) * product.price)', 'subtotal')
+      .addSelect('SUM(op.subtotal)', 'subtotal')
       .where('order.mesaId = :mesaId', { mesaId })
-      .andWhere('order.status = :status', { status: 'pendiente' }); // ✅ solo pagadas
+      .andWhere('order.status = :status', { status: 'pendiente' });
 
     if (fechaFiltro) {
-      query.andWhere('DATE(order.createdAt) = :fecha', { fecha: fechaFiltro });
+      queryBuilder.andWhere('DATE(order.createdAt) = :fecha', { fecha: fechaFiltro });
     }
 
-    query.groupBy('product.id');
+    // Agrupar por productId Y precioUnitario para manejar cambios de precio
+    queryBuilder.groupBy('product.id, op.precioUnitario');
 
-    const detalle = await query.getRawMany();
+    const detalleRaw = await queryBuilder.getRawMany();
+
+    // Convertir a números explícitamente
+    const detalle = detalleRaw.map((item) => ({
+      productId: Number(item.productId),
+      producto: item.producto || 'Producto no disponible',
+      precioUnitario: Number(item.precioUnitario),
+      cantidad: Number(item.cantidad),
+      subtotal: Number(item.subtotal),
+    }));
 
     // Totales exactos del día por mesa
     const totalQuery = this.ordersRepository

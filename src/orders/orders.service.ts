@@ -634,17 +634,24 @@ async obtenerPendientes() {
     mesa.totalMesa += Number(order.total) || 0;
     mesa.propina += Number(order.propina) || 0;
 
-    // Agrupar productos por productId
+    // Agrupar productos por productId y precioUnitario
     for (const op of order.orderProducts) {
       const prodId = op.productId;
-      if (mesa.detalle.has(prodId)) {
-        const existing = mesa.detalle.get(prodId);
+      const precioUnit = Number(op.precioUnitario);
+
+      // Crear una clave única que incluya productId y precioUnitario
+      // para agrupar solo productos con el mismo precio
+      const key = `${prodId}_${precioUnit}`;
+
+      if (mesa.detalle.has(key)) {
+        const existing = mesa.detalle.get(key);
         existing.cantidad += Number(op.cantidad);
         existing.subtotal += Number(op.subtotal);
       } else {
-        mesa.detalle.set(prodId, {
-          producto: op.product.name,
-          precioUnitario: Number(op.product.price),
+        mesa.detalle.set(key, {
+          productId: prodId,
+          producto: op.product?.name || 'Producto no disponible',
+          precioUnitario: precioUnit,
           cantidad: Number(op.cantidad),
           subtotal: Number(op.subtotal),
         });
