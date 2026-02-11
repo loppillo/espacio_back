@@ -54,25 +54,29 @@ export class OrdersService {
 
     if (!order) throw new NotFoundException('Orden no encontrada');
 
-    const subtotal = order.orderProducts.reduce(
+    // ✅ Calcular subtotal de productos (neto) - NO se modifica
+    const neto = order.orderProducts.reduce(
       (acc, op) => acc + op.subtotal,
       0
     );
 
+    // ✅ Calcular la nueva propina basándose en el neto
     let nuevaPropina = order.propina; // ← arranca con la que ya tiene
 
     if (dto.propinaTipo !== undefined) {
       switch (dto.propinaTipo) {
-        case '5': nuevaPropina = Math.round(subtotal * 0.05); break;
-        case '10': nuevaPropina = Math.round(subtotal * 0.10); break;
-        case '12': nuevaPropina = Math.round(subtotal * 0.12); break;
+        case '5': nuevaPropina = Math.round(neto * 0.05); break;
+        case '10': nuevaPropina = Math.round(neto * 0.10); break;
+        case '12': nuevaPropina = Math.round(neto * 0.12); break;
         case 'custom': nuevaPropina = dto.propinaValor ?? 0; break;
         case 'none': nuevaPropina = 0; break;
       }
     }
 
+    // ✅ Actualizar solo propina y total (el neto NO cambia)
     order.propina = nuevaPropina;
-    order.total = subtotal + nuevaPropina;
+    order.neto = neto;
+    order.total = neto + nuevaPropina;
 
     const camposValidos: (keyof UpdateOrderDto)[] = [
       'tableNumber',
@@ -88,11 +92,12 @@ export class OrdersService {
       }
     }
 
-    // ✅ Guardar SOLO el pedazo de datos de la orden, no el objeto entero
+    // ✅ Guardar SOLO los campos necesarios
     await this.orderRepository.save({
       id: order.id,
-      propina: order.propina,
-      total: order.total,
+      neto: order.neto,      // ✅ Guardar el neto calculado
+      propina: order.propina, // ✅ Solo la propina cambia
+      total: order.total,     // ✅ Total = neto + propina
       tableNumber: order.tableNumber,
       orderType: order.orderType,
       status: order.status,
@@ -109,7 +114,7 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
-    const { products, propina = 0, neto = 0, mesaId, orderType = 'local' } = createOrderDto;
+    const { products, mesaId, orderType = 'local' } = createOrderDto;
 
     // ✅ Validar mesa
     const mesa = await this.mesaRepository.findOne({ where: { id: Number(mesaId) } });
@@ -117,12 +122,6 @@ export class OrdersService {
 
     // ✅ Sanitizar numero de mesa (extraer solo dígitos si es necesario)
     const tableNumber = parseInt(String(mesa.numero_mesa).replace(/\D/g, ''), 10) || 0;
-
-    // ✅ Sanitizar propina
-    const safePropina = Number(propina) || 0;
-
-    // ✅ Sanitizar neto
-    const safeNeto = Number(neto) || 0;
 
     // ✅ Numero de venta antes de crear el pedido
     const numeroVenta = await this.generarNumeroVenta();
@@ -157,8 +156,11 @@ export class OrdersService {
       };
     });
 
-    // ✅ Sanitizar total final
-    const safeTotal = (Number(total) || 0) + safePropina;
+    // ✅ Calcular propina automáticamente como 10% del total de productos
+    const propinaCalculada = Math.round(total * 0.10);
+
+    // ✅ Calcular total final con propina
+    const totalFinal = total + propinaCalculada;
 
     // ✅ Crear pedido con total calculado
     const newOrder = this.orderRepository.create({
@@ -167,9 +169,9 @@ export class OrdersService {
       estado: 'activo',
       status: 'pendiente',
       paymentMethod: '',
-      propina: safePropina,
+      propina: propinaCalculada,
       neto: total,
-      total: safeTotal,
+      total: totalFinal,
       numeroVenta,
       mesa,
       detalle_venta: createOrderDto.detalle_venta || null,
