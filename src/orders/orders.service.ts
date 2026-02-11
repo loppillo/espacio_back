@@ -625,6 +625,7 @@ async obtenerPendientes() {
         customer: order.customer,
         orderType: order.orderType,
         orders: [],
+        neto:order.neto,
         detalle: new Map<number, any>(),
         totalMesa: 0,
         propina: 0,
@@ -633,9 +634,9 @@ async obtenerPendientes() {
 
     const mesa = mesasMap.get(mesaId);
     mesa.orders.push(order);
-    mesa.totalMesa += Number(order.total) || 0;
+    mesa.neto = Number(order.neto) || 0;
     mesa.propina += Number(order.propina) || 0;
-
+    mesa.totalMesa = order.neto + order.propina;
     // Agrupar productos por productId y precioUnitario
     for (const op of order.orderProducts) {
       const prodId = op.productId;
@@ -669,9 +670,9 @@ async obtenerPendientes() {
     orderType: mesa.orderType,
     orderIds: mesa.orders.map((o) => o.id),
     detalle: Array.from(mesa.detalle.values()),
-    totalMesa: mesa.totalMesa,
+    neto: mesa.neto,
     propina: mesa.propina,
-    totalConPropina: mesa.totalMesa + mesa.propina,
+    totalMesa: mesa.totalMesa
   }));
 }
 
