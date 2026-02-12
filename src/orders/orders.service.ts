@@ -1100,9 +1100,9 @@ async obtenerPendientes() {
       .where('order.mesaId = :mesaId', { mesaId })
       .orderBy('order.createdAt', 'DESC');
 
-    // Filtro opcional por estado
+    // Filtro opcional por status (pendiente, pagado, etc.)
     if (estado) {
-      queryBuilder.andWhere('order.estado = :estado', { estado });
+      queryBuilder.andWhere('order.status = :estado', { estado });
     }
 
     // Filtro opcional por fecha (día específico)
