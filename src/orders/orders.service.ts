@@ -138,15 +138,15 @@ export class OrdersService {
       throw new BadRequestException('Uno o más productos no existen');
     }
 
-    // ✅ Calcular total y preparar orderProducts
-    let total = 0;
+    // ✅ Calcular neto (total de productos) y preparar orderProducts
+    let neto = 0;
     const orderProductsData = products.map(p => {
       const productEntity = productEntities.find(pe => pe.id === p.id)!;
       const price = Number(productEntity.price) || 0;
       const cantidad = Number(p.cantidad) || 0;
       const subtotal = price * cantidad;
 
-      total += subtotal;
+      neto += subtotal;
 
       return {
         productId: productEntity.id,
@@ -156,11 +156,12 @@ export class OrdersService {
       };
     });
 
-    // ✅ Calcular propina automáticamente como 10% del total de productos
-    const propinaCalculada = Math.round(total * 0.10);
+    // ✅ Calcular propina automáticamente: 10% del neto (total de productos)
+    // Fórmula: propina = neto × 0.10 (10%)
+    const propinaCalculada = Math.round(neto * 0.10);
 
-    // ✅ Calcular total final con propina
-    const totalFinal = total + propinaCalculada;
+    // ✅ Calcular total final: neto + propina
+    const totalFinal = neto + propinaCalculada;
 
     // ✅ Crear pedido con total calculado
     const newOrder = this.orderRepository.create({
@@ -170,7 +171,7 @@ export class OrdersService {
       status: 'pendiente',
       paymentMethod: '',
       propina: propinaCalculada,
-      neto: total,
+      neto: neto,
       total: totalFinal,
       numeroVenta,
       mesa,
@@ -1077,7 +1078,13 @@ async obtenerPendientes() {
    * @param mesaId - ID de la mesa
    * @param estado - Opcional: filtrar por estado ('activo', 'pagado', 'cancelado')
    */
-  async obtenerOrdenesPorMesa(mesaId: number, estado?: string) {
+  async obtenerOrdenesPorMesa(
+    mesaId: number,
+    estado?: string,
+    fecha?: string,
+    horaInicio?: string,
+    horaFin?: string,
+  ) {
     // Validar que la mesa existe
     const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
     if (!mesa) {
@@ -1098,10 +1105,65 @@ async obtenerPendientes() {
       queryBuilder.andWhere('order.estado = :estado', { estado });
     }
 
+    // Filtro opcional por fecha (día específico)
+    if (fecha) {
+      // Convertir fecha a formato YYYY-MM-DD si es necesario
+      const fechaObj = new Date(fecha);
+      if (!isNaN(fechaObj.getTime())) {
+        const year = fechaObj.getFullYear();
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+        const day = String(fechaObj.getDate()).padStart(2, '0');
+        const fechaFiltro = `${year}-${month}-${day}`;
+
+        queryBuilder.andWhere('DATE(order.createdAt) = :fecha', { fecha: fechaFiltro });
+      }
+    }
+
+    // Filtro opcional por rango de horas
+    if (horaInicio && horaFin) {
+      queryBuilder.andWhere(
+        'TIME(order.createdAt) BETWEEN :horaInicio AND :horaFin',
+        { horaInicio, horaFin }
+      );
+    } else if (horaInicio) {
+      queryBuilder.andWhere('TIME(order.createdAt) >= :horaInicio', { horaInicio });
+    } else if (horaFin) {
+      queryBuilder.andWhere('TIME(order.createdAt) <= :horaFin', { horaFin });
+    }
+
     const ordenes = await queryBuilder.getMany();
 
-    // Devolver órdenes sanitizadas
-    return ordenes;
+    // Calcular y agregar información de propina (10% del neto) a cada orden
+    const ordenesConDetalle = ordenes.map(orden => {
+      // Calcular neto (suma de productos)
+      const neto = orden.orderProducts.reduce(
+        (sum, op) => sum + (op.subtotal || 0),
+        0
+      );
+
+      // Calcular propina del 10% del neto
+      const propinaSugerida10 = Math.round(neto * 0.10);
+
+      return {
+        ...orden,
+        detalle: {
+          neto,
+          propinaActual: orden.propina || 0,
+          propinaSugerida10, // 10% calculado
+          totalConPropinaSugerida: neto + propinaSugerida10,
+          totalActual: orden.total || 0,
+        },
+        productos: orden.orderProducts.map(op => ({
+          id: op.product?.id,
+          nombre: op.product?.name,
+          cantidad: op.cantidad,
+          precioUnitario: op.precioUnitario,
+          subtotal: op.subtotal,
+        })),
+      };
+    });
+
+    return ordenesConDetalle;
   }
 
   /**

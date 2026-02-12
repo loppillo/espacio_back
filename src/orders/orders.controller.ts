@@ -202,13 +202,27 @@ export class OrdersController {
   /**
    * Obtener todas las órdenes de una mesa específica
    * GET /orders/mesa/:mesaId
+   * Query params opcionales:
+   *  - estado: filtrar por estado de la orden
+   *  - fecha: filtrar por día específico (formato: YYYY-MM-DD)
+   *  - horaInicio: filtrar desde hora específica (formato: HH:MM:SS)
+   *  - horaFin: filtrar hasta hora específica (formato: HH:MM:SS)
    */
   @Get('mesa/:mesaId')
   async obtenerOrdenesPorMesa(
     @Param('mesaId', ParseIntPipe) mesaId: number,
-    @Query('estado') estado?: string
+    @Query('estado') estado?: string,
+    @Query('fecha') fecha?: string,
+    @Query('horaInicio') horaInicio?: string,
+    @Query('horaFin') horaFin?: string,
   ) {
-    return this.ordersService.obtenerOrdenesPorMesa(mesaId, estado);
+    return this.ordersService.obtenerOrdenesPorMesa(
+      mesaId,
+      estado,
+      fecha,
+      horaInicio,
+      horaFin,
+    );
   }
 
   /**
