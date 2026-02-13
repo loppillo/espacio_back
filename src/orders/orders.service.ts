@@ -1180,8 +1180,8 @@ async obtenerPendientes() {
       const propinaCalculada = Math.round(netoTotal * 0.10);
       const totalFinal = netoTotal + propinaCalculada;
 
-      // Retornar respuesta consolidada
-      return {
+      // Preparar respuesta consolidada
+      const respuesta = {
         mesaId,
         mesa: ordenes[0].mesa,
         customer: ordenes[0].customer,
@@ -1192,6 +1192,11 @@ async obtenerPendientes() {
         propina: propinaCalculada,
         totalMesa: totalFinal,
       };
+
+      // ✅ Emitir por WebSocket para actualizaciones en tiempo real
+      this.ordersGateway.notifyMesaOrdenesUpdated(mesaId, respuesta);
+
+      return respuesta;
     }
 
     // Si no agrupar, retornar órdenes individuales con su detalle
@@ -1223,6 +1228,9 @@ async obtenerPendientes() {
         })),
       };
     });
+
+    // ✅ Emitir por WebSocket también para órdenes individuales
+    this.ordersGateway.notifyMesaOrdenesUpdated(mesaId, ordenesConDetalle);
 
     return ordenesConDetalle;
   }

@@ -96,6 +96,10 @@ export class OrdersGateway {
     this.server.emit('mesaStatusUpdated', { mesaId, status });
   }
 
+  // Emitir órdenes actualizadas de una mesa (para WebSocket en tiempo real)
+  notifyMesaOrdenesUpdated(mesaId: number, ordenes: any) {
+    this.server.emit('mesaOrdenesUpdated', { mesaId, ordenes });
+  }
 
   broadcast(theme: any) {
     this.server.emit('themeUpdated', theme);
