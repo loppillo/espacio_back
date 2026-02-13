@@ -618,7 +618,7 @@ async obtenerPendientes() {
 
   for (const order of orders) {
     const mesaId = order.mesaId ?? 0; // 0 para delivery/sin mesa
-    
+
     if (!mesasMap.has(mesaId)) {
       mesasMap.set(mesaId, {
         mesaId,
@@ -626,22 +626,22 @@ async obtenerPendientes() {
         customer: order.customer,
         orderType: order.orderType,
         orders: [],
-        neto:order.neto,
+        neto: 0,  // ✅ Inicializar en 0 para acumular
         detalle: new Map<number, any>(),
-        totalMesa: 0,
-        propina: 0,
       });
     }
 
     const mesa = mesasMap.get(mesaId);
     mesa.orders.push(order);
-    mesa.neto = Number(order.neto) || 0;
-    mesa.propina += Number(order.propina) || 0;
-    mesa.totalMesa = order.neto + order.propina;
-    // Agrupar productos por productId y precioUnitario
+
+    // ✅ Agrupar productos y acumular neto
     for (const op of order.orderProducts) {
       const prodId = op.productId;
       const precioUnit = Number(op.precioUnitario);
+      const subtotal = Number(op.subtotal);
+
+      // Acumular neto sumando todos los subtotales
+      mesa.neto += subtotal;
 
       // Crear una clave única que incluya productId y precioUnitario
       // para agrupar solo productos con el mismo precio
@@ -650,31 +650,39 @@ async obtenerPendientes() {
       if (mesa.detalle.has(key)) {
         const existing = mesa.detalle.get(key);
         existing.cantidad += Number(op.cantidad);
-        existing.subtotal += Number(op.subtotal);
+        existing.subtotal += subtotal;
       } else {
         mesa.detalle.set(key, {
           productId: prodId,
           producto: op.product?.name || 'Producto no disponible',
           precioUnitario: precioUnit,
           cantidad: Number(op.cantidad),
-          subtotal: Number(op.subtotal),
+          subtotal: subtotal,
         });
       }
     }
   }
 
   // Convertir Maps a arrays para el response
-  return Array.from(mesasMap.values()).map((mesa) => ({
-    mesaId: mesa.mesaId,
-    mesa: mesa.mesa,
-    customer: mesa.customer,
-    orderType: mesa.orderType,
-    orderIds: mesa.orders.map((o) => o.id),
-    detalle: Array.from(mesa.detalle.values()),
-    neto: mesa.neto,
-    propina: mesa.propina,
-    totalMesa: mesa.totalMesa
-  }));
+  return Array.from(mesasMap.values()).map((mesa) => {
+    // ✅ Calcular propina del 10% del neto total
+    const propina = Math.round(mesa.neto * 0.10);
+
+    // ✅ Calcular total: neto + propina
+    const totalMesa = mesa.neto + propina;
+
+    return {
+      mesaId: mesa.mesaId,
+      mesa: mesa.mesa,
+      customer: mesa.customer,
+      orderType: mesa.orderType,
+      orderIds: mesa.orders.map((o) => o.id),
+      detalle: Array.from(mesa.detalle.values()),
+      neto: mesa.neto,
+      propina: propina,
+      totalMesa: totalMesa,
+    };
+  });
 }
 
   async aceptarVenta(orderId: number): Promise<Order> {
