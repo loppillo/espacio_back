@@ -207,6 +207,7 @@ export class OrdersController {
    *  - fecha: filtrar por día específico (formato: YYYY-MM-DD)
    *  - horaInicio: filtrar desde hora específica (formato: HH:MM:SS)
    *  - horaFin: filtrar hasta hora específica (formato: HH:MM:SS)
+   *  - agrupar: true para consolidar todas las órdenes en una sola respuesta
    */
   @Get('mesa/:mesaId')
   async obtenerOrdenesPorMesa(
@@ -215,6 +216,7 @@ export class OrdersController {
     @Query('fecha') fecha?: string,
     @Query('horaInicio') horaInicio?: string,
     @Query('horaFin') horaFin?: string,
+    @Query('agrupar') agrupar?: string,
   ) {
     return this.ordersService.obtenerOrdenesPorMesa(
       mesaId,
@@ -222,6 +224,7 @@ export class OrdersController {
       fecha,
       horaInicio,
       horaFin,
+      agrupar === 'true',
     );
   }
 

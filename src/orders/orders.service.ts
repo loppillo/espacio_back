@@ -1085,6 +1085,7 @@ async obtenerPendientes() {
    * Obtener todas las órdenes de una mesa específica
    * @param mesaId - ID de la mesa
    * @param estado - Opcional: filtrar por estado ('activo', 'pagado', 'cancelado')
+   * @param agrupar - Opcional: true para consolidar todas las órdenes en una sola
    */
   async obtenerOrdenesPorMesa(
     mesaId: number,
@@ -1092,6 +1093,7 @@ async obtenerPendientes() {
     fecha?: string,
     horaInicio?: string,
     horaFin?: string,
+    agrupar?: boolean,
   ) {
     // Validar que la mesa existe
     const mesa = await this.mesaRepository.findOne({ where: { id: mesaId } });
@@ -1141,7 +1143,58 @@ async obtenerPendientes() {
 
     const ordenes = await queryBuilder.getMany();
 
-    // Calcular y agregar información de propina (10% del neto) a cada orden
+    // Si agrupar=true, consolidar todas las órdenes en una sola respuesta
+    if (agrupar && ordenes.length > 0) {
+      let netoTotal = 0;
+      const productosMap = new Map<string, any>();
+      const orderIds: number[] = [];
+
+      // Consolidar todos los productos de todas las órdenes
+      for (const orden of ordenes) {
+        orderIds.push(orden.id);
+
+        for (const op of orden.orderProducts) {
+          const prodId = op.productId;
+          const precioUnit = Number(op.precioUnitario);
+          const key = `${prodId}_${precioUnit}`;
+
+          netoTotal += Number(op.subtotal) || 0;
+
+          if (productosMap.has(key)) {
+            const existing = productosMap.get(key);
+            existing.cantidad += Number(op.cantidad);
+            existing.subtotal += Number(op.subtotal);
+          } else {
+            productosMap.set(key, {
+              id: op.product?.id,
+              nombre: op.product?.name,
+              precioUnitario: precioUnit,
+              cantidad: Number(op.cantidad),
+              subtotal: Number(op.subtotal),
+            });
+          }
+        }
+      }
+
+      // Calcular propina del 10% del neto total
+      const propinaCalculada = Math.round(netoTotal * 0.10);
+      const totalFinal = netoTotal + propinaCalculada;
+
+      // Retornar respuesta consolidada
+      return {
+        mesaId,
+        mesa: ordenes[0].mesa,
+        customer: ordenes[0].customer,
+        orderType: ordenes[0].orderType,
+        orderIds,
+        detalle: Array.from(productosMap.values()),
+        neto: netoTotal,
+        propina: propinaCalculada,
+        totalMesa: totalFinal,
+      };
+    }
+
+    // Si no agrupar, retornar órdenes individuales con su detalle
     const ordenesConDetalle = ordenes.map(orden => {
       // Calcular neto (suma de productos)
       const neto = orden.orderProducts.reduce(
