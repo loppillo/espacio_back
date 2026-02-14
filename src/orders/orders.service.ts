@@ -103,14 +103,24 @@ export class OrdersService {
       status: order.status,
     });
 
-    // WebSocket
-    this.ordersGateway.notifyOrderUpdated(order);
-
-    // Respuesta recargada
-    return this.orderRepository.findOne({
+    // ✅ Recargar la orden con todos los datos actualizados
+    const ordenActualizada = await this.orderRepository.findOne({
       where: { id },
       relations: ['orderProducts', 'orderProducts.product', 'customer', 'mesa'],
     });
+
+    // ✅ Emitir por WebSocket DESPUÉS de guardar para reflejar cambios al instante
+    this.ordersGateway.notifyOrderUpdated(ordenActualizada);
+
+    // ✅ Si hay mesa asociada, notificar actualización de la mesa también
+    if (ordenActualizada.mesa) {
+      this.ordersGateway.notifyMesaUpdated(
+        ordenActualizada.mesa.id,
+        ordenActualizada.mesa.status
+      );
+    }
+
+    return ordenActualizada;
   }
 
   async create(createOrderDto: CreateOrderDto) {
@@ -548,6 +558,7 @@ export class OrdersService {
       .leftJoinAndSelect('order.orderProducts', 'orderProducts')
       .leftJoinAndSelect('orderProducts.product', 'product')
       .where('order.mesaId = :mesaId', { mesaId })
+      .andWhere('order.status = :status', { status: 'pagado' })  // ✅ Solo mostrar pedidos pagados
       .orderBy('order.createdAt', 'DESC');
 
     // Si no se proporciona fecha, usar el día de hoy por defecto
