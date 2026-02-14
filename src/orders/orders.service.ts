@@ -647,12 +647,16 @@ async obtenerPendientes() {
         orderType: order.orderType,
         orders: [],
         neto: 0,  // ✅ Inicializar en 0 para acumular
+        propina: 0,  // ✅ Acumular propinas reales de las órdenes
         detalle: new Map<number, any>(),
       });
     }
 
     const mesa = mesasMap.get(mesaId);
     mesa.orders.push(order);
+
+    // ✅ Acumular propina real de cada orden
+    mesa.propina += Number(order.propina) || 0;
 
     // ✅ Agrupar productos y acumular neto
     for (const op of order.orderProducts) {
@@ -685,11 +689,8 @@ async obtenerPendientes() {
 
   // Convertir Maps a arrays para el response
   return Array.from(mesasMap.values()).map((mesa) => {
-    // ✅ Calcular propina del 10% del neto total
-    const propina = Math.round(mesa.neto * 0.10);
-
-    // ✅ Calcular total: neto + propina
-    const totalMesa = mesa.neto + propina;
+    // ✅ Usar la propina acumulada real de las órdenes (ya no calcular 10% fijo)
+    const totalMesa = mesa.neto + mesa.propina;
 
     return {
       mesaId: mesa.mesaId,
@@ -699,7 +700,7 @@ async obtenerPendientes() {
       orderIds: mesa.orders.map((o) => o.id),
       detalle: Array.from(mesa.detalle.values()),
       neto: mesa.neto,
-      propina: propina,
+      propina: mesa.propina,  // ✅ Ahora usa la propina real acumulada
       totalMesa: totalMesa,
     };
   });
