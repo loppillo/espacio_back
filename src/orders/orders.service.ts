@@ -63,7 +63,13 @@ export class OrdersService {
     // ✅ Calcular la nueva propina basándose en el neto
     let nuevaPropina = order.propina; // ← arranca con la que ya tiene
 
+    // 🔍 Debug log para verificar que el endpoint se está llamando
     if (dto.propinaTipo !== undefined) {
+      this.logger.debug(`🔄 Actualizando propina - Orden ID: ${id}`);
+      this.logger.debug(`   ↳ Neto actual: ${neto}`);
+      this.logger.debug(`   ↳ Propina anterior: ${order.propina}`);
+      this.logger.debug(`   ↳ Tipo de propina solicitado: ${dto.propinaTipo}`);
+
       switch (dto.propinaTipo) {
         case '5': nuevaPropina = Math.round(neto * 0.05); break;
         case '10': nuevaPropina = Math.round(neto * 0.10); break;
@@ -71,6 +77,9 @@ export class OrdersService {
         case 'custom': nuevaPropina = dto.propinaValor ?? 0; break;
         case 'none': nuevaPropina = 0; break;
       }
+
+      this.logger.debug(`   ↳ Nueva propina calculada: ${nuevaPropina}`);
+      this.logger.debug(`   ↳ Total final: ${neto + nuevaPropina}`);
     }
 
     // ✅ Actualizar solo propina y total (el neto NO cambia)
