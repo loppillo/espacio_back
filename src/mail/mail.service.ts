@@ -117,15 +117,21 @@ export class MailService {
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
     .header {
-      background-color: #ff6600;
+      background-color: #30393A;
       color: white;
       padding: 30px 20px;
       text-align: center;
+    }
+    .header img {
+      max-width: 150px;
+      height: auto;
+      margin-bottom: 15px;
     }
     .header h1 {
       font-size: 28px;
       font-weight: 600;
       margin: 0;
+      color: white;
     }
     .content {
       padding: 30px 20px;
@@ -209,6 +215,7 @@ export class MailService {
 <body>
   <div class="container">
     <div class="header">
+      <img src="https://espacioboulevardlinares.cl/logo.png" alt="Espacio Boulevard Logo" />
       <h1>¡Pedido confirmado!</h1>
     </div>
     
