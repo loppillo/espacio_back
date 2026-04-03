@@ -223,9 +223,17 @@ export class OrdersService {
     const sanitized = this.sanitizeOrder(fullOrder);
 
     // ✅ WebSocket
-    Promise.resolve().then(() => {
+    Promise.resolve().then(async () => {
       this.ordersGateway.notifyMesaUpdated(mesa.id, mesa.status);
       this.ordersGateway.notifyNewOrder(sanitized);
+      
+      // ✅ Emitir pendientes actualizados para que se actualice la vista en tiempo real
+      try {
+        const pendientesActualizados = await this.obtenerPendientes();
+        this.ordersGateway.notifyPendientesUpdated(pendientesActualizados);
+      } catch (error) {
+        console.error('Error al emitir pendientes actualizados:', error);
+      }
     });
 
     return sanitized;
