@@ -371,9 +371,17 @@ export class OrdersService {
 
     const sanitized = this.sanitizeOrder(full);
 
-    Promise.resolve().then(() =>
-      this.ordersGateway.notifyNewOrder(sanitized)
-    );
+    Promise.resolve().then(async () => {
+      this.ordersGateway.notifyNewOrder(sanitized);
+      
+      // ✅ Emitir pendientes actualizados para que se actualice la vista en tiempo real
+      try {
+        const pendientesActualizados = await this.obtenerPendientes();
+        this.ordersGateway.notifyPendientesUpdated(pendientesActualizados);
+      } catch (error) {
+        console.error('Error al emitir pendientes actualizados:', error);
+      }
+    });
 
     // ============================================================
     // NUEVA LÓGICA: CALCULAR ETA ANTES DE ENVIAR EMAIL

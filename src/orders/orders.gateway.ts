@@ -105,6 +105,10 @@ export class OrdersGateway {
     this.server.emit('themeUpdated', theme);
   }
 
+  // ✅ Notificar pendientes actualizados (para delivery)
+  notifyPendientesUpdated(pendientes: any) {
+    this.server.emit('pendientesUpdated', pendientes);
+  }
 
   // Evitar referencias circulares y objetos grandes
   sanitizeOrder(order: Order): OrderDTO {
