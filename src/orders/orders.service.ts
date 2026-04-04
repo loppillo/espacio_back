@@ -421,8 +421,8 @@ export class OrdersService {
     // -----------------------------
     if (customer.customerEmail) {
       try {
-        const productsForEmail = ops.map(op => ({
-          name: op.product.name,
+        const productsForEmail = full.orderProducts.map(op => ({
+          name: op.product?.name || 'Producto desconocido',
           cantidad: op.cantidad,
           price: op.subtotal,
         }));
