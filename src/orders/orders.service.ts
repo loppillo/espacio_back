@@ -172,6 +172,7 @@ export class OrdersService {
         cantidad,
         precioUnitario: price,
         subtotal,
+        product: productEntity,
       };
     });
 
