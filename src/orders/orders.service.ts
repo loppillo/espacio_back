@@ -337,8 +337,6 @@ export class OrdersService {
         cantidad: cantidad,
         precioUnitario: price,
         subtotal,
-        order: order,
-        product: prod,
       });
       ops.push(op);
     }
