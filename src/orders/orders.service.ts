@@ -328,7 +328,6 @@ export class OrdersService {
       const price = isNaN(Number(prod.price)) ? 0 : Number(prod.price);
       const cantidad = isNaN(Number(p.cantidad)) ? 0 : Number(p.cantidad);
       const subtotal = price * cantidad;
-
       total += subtotal;
 
       const op = this.productsOrdersRepository.create({
