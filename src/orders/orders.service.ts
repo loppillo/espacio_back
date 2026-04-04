@@ -729,7 +729,7 @@ async obtenerPendientes() {
     if (!order) throw new NotFoundException('Pedido no encontrado');
 
     // Si aceptar = pagar, entonces lo marcas como pagado
-    order.status = 'pagado';
+    order.status = 'aceptado';
     order.paymentMethod = order.paymentMethod ?? 'efectivo'; // o lo que uses
     await this.orderRepository.save(order);
 
