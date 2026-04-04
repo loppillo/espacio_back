@@ -337,6 +337,7 @@ export class OrdersService {
         precioUnitario: price,
         subtotal,
         order: order,
+        product: prod,
       });
       ops.push(op);
     }
@@ -1041,7 +1042,7 @@ async obtenerPendientes() {
 
       // Productos
       items: order.orderProducts?.map(op => ({
-        name: op.product?.name || 'Producto desconocido',
+        name: op.product?.name,
         cantidad: op.cantidad,
         precio: op.precioUnitario,
         subtotal: op.subtotal,
