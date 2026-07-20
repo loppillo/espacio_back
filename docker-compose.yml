@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16.4-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: user_node
+      POSTGRES_PASSWORD: 2#qFYnxswxwiuh
+      POSTGRES_DB: viuda_black
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - red-proyecto
+
+  app:
+    build: .
+    container_name: mi_aplicacion
+    ports:
+      - "3000:3000" # Cambia esto según el puerto de tu app (Django, Node, etc.)
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=user_node
+      - DB_PASSWORD= 2#qFYnxswxwiuh
+      - DB_NAME=viuda_black
+    depends_on:
+      - db
+    networks:
+      - red-proyecto
+
+volumes:
+  postgres_data:
+
+networks:
+  red-proyecto:
+    driver: bridge
